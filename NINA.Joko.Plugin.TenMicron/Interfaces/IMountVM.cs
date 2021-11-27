@@ -13,11 +13,6 @@
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Equipment.Interfaces.ViewModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
@@ -34,6 +29,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         bool DeleteModel(string name);
 
         void DeleteAlignment();
+
+        bool DeleteAlignmentStar(int alignmentStarIndex);
 
         int GetAlignmentStarCount();
 

@@ -18,7 +18,6 @@ using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
 using NINA.Profile.Interfaces;
-using System;
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 

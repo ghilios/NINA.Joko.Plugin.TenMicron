@@ -10,9 +10,9 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.Utility;
-using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Core.Utility;
+using NINA.Joko.Plugin.TenMicron.Interfaces;
+using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Profile.Interfaces;
 using System;
 using System.Collections.Generic;

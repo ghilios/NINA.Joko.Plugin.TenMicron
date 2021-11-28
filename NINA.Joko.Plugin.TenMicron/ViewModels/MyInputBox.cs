@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using NINA.Core.Utility.Extensions;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 

@@ -191,52 +191,40 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="nikoncswrapper, Version=1.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Equipment.2.0.0.2004-beta\lib\net48\nikoncswrapper.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\NINA.Equipment.2.0.0.2008-beta\lib\net48\nikoncswrapper.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Astrometry, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Astrometry.2.0.0.2004-beta\lib\net48\NINA.Astrometry.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Astrometry, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Astrometry.2.0.0.2008-beta\lib\net48\NINA.Astrometry.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Core, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Core.2.0.0.2004-beta\lib\net48\NINA.Core.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Core, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Core.2.0.0.2008-beta\lib\net48\NINA.Core.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Equipment, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Equipment.2.0.0.2004-beta\lib\net48\NINA.Equipment.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Equipment, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Equipment.2.0.0.2008-beta\lib\net48\NINA.Equipment.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Image, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Image.2.0.0.2004-beta\lib\net48\NINA.Image.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Image, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Image.2.0.0.2008-beta\lib\net48\NINA.Image.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.MGEN, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.MGEN.2.0.0.2004-beta\lib\net48\NINA.MGEN.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.MGEN, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.MGEN.2.0.0.2008-beta\lib\net48\NINA.MGEN.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.PlateSolving, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.PlateSolving.2.0.0.2004-beta\lib\net48\NINA.PlateSolving.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.PlateSolving, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.PlateSolving.2.0.0.2008-beta\lib\net48\NINA.PlateSolving.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Plugin, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Plugin.2.0.0.2004-beta\lib\net48\NINA.Plugin.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Plugin, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Plugin.2.0.0.2008-beta\lib\net48\NINA.Plugin.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Profile, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Profile.2.0.0.2004-beta\lib\net48\NINA.Profile.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Profile, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Profile.2.0.0.2008-beta\lib\net48\NINA.Profile.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.Sequencer, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.Sequencer.2.0.0.2004-beta\lib\net48\NINA.Sequencer.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.Sequencer, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.Sequencer.2.0.0.2008-beta\lib\net48\NINA.Sequencer.dll</HintPath>
     </Reference>
-    <Reference Include="NINA.WPF.Base, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINA.WPF.Base.2.0.0.2004-beta\lib\net48\NINA.WPF.Base.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINA.WPF.Base, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINA.WPF.Base.2.0.0.2008-beta\lib\net48\NINA.WPF.Base.dll</HintPath>
     </Reference>
-    <Reference Include="NINACustomControlLibrary, Version=2.0.0.2004, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NINACustomControlLibrary.2.0.0.2004-beta\lib\net48\NINACustomControlLibrary.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NINACustomControlLibrary, Version=2.0.0.2008, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NINACustomControlLibrary.2.0.0.2008-beta\lib\net48\NINACustomControlLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Nito.AsyncEx.Context, Version=5.1.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nito.AsyncEx.Context.5.1.2\lib\net461\Nito.AsyncEx.Context.dll</HintPath>
@@ -462,9 +450,7 @@
     <Compile Include="TenMicronPlugin.cs" />
     <Compile Include="Utility\ConstantDateTime.cs" />
     <Compile Include="Utility\MountUtility.cs" />
-    <Compile Include="Utility\PluginOptionsAccessor.cs" />
     <Compile Include="Utility\ThrowingErrorListener.cs" />
-    <Compile Include="Utility\WPFExtensions.cs" />
     <Compile Include="ViewModels\MountModelVM.cs" />
     <Compile Include="ViewModels\MountVM.cs" />
     <Compile Include="ViewModels\MyInputBox.cs" />

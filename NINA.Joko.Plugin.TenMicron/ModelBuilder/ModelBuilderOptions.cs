@@ -12,13 +12,9 @@
 
 using NINA.Core.Utility;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
-using NINA.Joko.Plugin.TenMicron.Utility;
+using NINA.Profile;
 using NINA.Profile.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
 

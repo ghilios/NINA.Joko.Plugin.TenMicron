@@ -14,4 +14,8 @@
     <DataTemplate x:Key="NINA.Joko.Plugin.TenMicron.ViewModels.MountModelVM_Dockable">
         <view:MountModelView />
     </DataTemplate>
+
+    <DataTemplate x:Key="NINA.Joko.Plugin.TenMicron.ViewModels.MountModelBuilderVM_Dockable">
+        <view:MountModelBuilderView />
+    </DataTemplate>
 </ResourceDictionary>

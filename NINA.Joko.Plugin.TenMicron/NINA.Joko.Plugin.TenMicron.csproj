@@ -381,10 +381,13 @@
     <Compile Include="Converters\DecimalDegreesToArcsecDoubleDashConverter.cs" />
     <Compile Include="Converters\DecimalMinToDoubleDashConverter.cs" />
     <Compile Include="Converters\DoubleZeroToVisibilityConverter.cs" />
-    <Compile Include="Converters\EnumStaticDescriptionConverter.cs" />
+    <Compile Include="Converters\EnumStaticDescriptionValueConverter.cs" />
+    <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />
     <Compile Include="Converters\IntNegativeToVisibilityConverter.cs" />
     <Compile Include="Converters\InverseDoubleZeroToVisibilityConverter.cs" />
+    <Compile Include="Converters\NumericToHalfConverter.cs" />
     <Compile Include="Converters\PositiveToBooleanConverter.cs" />
+    <Compile Include="Converters\ZeroToDisabledConverter.cs" />
     <Compile Include="Converters\ZeroToInfinityConverter.cs" />
     <Compile Include="Equipment\MountInfo.cs" />
     <Compile Include="Exceptions\CommandFailedException.cs" />
@@ -431,7 +434,9 @@
     <Compile Include="ModelBuilder\MountMediator.cs" />
     <Compile Include="ModelBuilder\TelescopeMediatorMountCommander.cs" />
     <Compile Include="Model\AlignmentStarPoint.cs" />
+    <Compile Include="Model\DomeShutterOpeningDataPoint.cs" />
     <Compile Include="Model\LoadedAlignmentModel.cs" />
+    <Compile Include="Model\ModelPointGenerationTypeEnum.cs" />
     <Compile Include="Options.xaml.cs">
       <DependentUpon>Options.xaml</DependentUpon>
     </Compile>
@@ -451,9 +456,13 @@
     <Compile Include="Utility\ConstantDateTime.cs" />
     <Compile Include="Utility\MountUtility.cs" />
     <Compile Include="Utility\ThrowingErrorListener.cs" />
+    <Compile Include="ViewModels\MountModelBuilderVM.cs" />
     <Compile Include="ViewModels\MountModelVM.cs" />
     <Compile Include="ViewModels\MountVM.cs" />
     <Compile Include="ViewModels\MyInputBox.cs" />
+    <Compile Include="View\MountModelBuilderView.xaml.cs">
+      <DependentUpon>MountModelBuilderView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\MountModelView.xaml.cs">
       <DependentUpon>MountModelView.xaml</DependentUpon>
     </Compile>
@@ -498,6 +507,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Resources\OptionsDataTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\MountModelBuilderView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

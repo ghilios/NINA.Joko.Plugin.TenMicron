@@ -16,9 +16,9 @@ using System.Reflection;
 
 namespace NINA.Joko.Plugin.TenMicron.Converters {
 
-    public class EnumStaticDescriptionConverter : EnumConverter {
+    public class EnumStaticDescriptionTypeConverter : EnumConverter {
 
-        public EnumStaticDescriptionConverter(Type type)
+        public EnumStaticDescriptionTypeConverter(Type type)
             : base(type) {
         }
 

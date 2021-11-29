@@ -10,10 +10,24 @@
 
 #endregion "copyright"
 
+using NINA.Joko.Plugin.TenMicron.Model;
+
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
     public interface IModelBuilderOptions {
-        double Placeholder { get; set; }
+        int GoldenSpiralStarCount { get; set; }
+
+        int SiderealTrackStartOffsetSeconds { get; set; }
+
+        int SiderealTrackEndOffsetSeconds { get; set; }
+
+        double SiderealTrackRADeltaDegrees { get; set; }
+
+        int DomeShutterWidth_mm { get; set; }
+
+        bool MinimizeDomeMovementEnabled { get; set; }
+
+        ModelPointGenerationTypeEnum ModelPointGenerationType { get; set; }
 
         void ResetDefaults();
     }

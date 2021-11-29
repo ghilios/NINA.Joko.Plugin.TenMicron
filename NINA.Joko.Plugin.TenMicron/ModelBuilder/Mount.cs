@@ -52,7 +52,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
         }
     }
 
-    [TypeConverter(typeof(EnumStaticDescriptionConverter))]
+    [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
     public enum MountStatusEnum {
 
         [Description("Tracking")]

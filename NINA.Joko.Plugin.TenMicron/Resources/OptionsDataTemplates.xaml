@@ -15,6 +15,9 @@
     <jgconverters:DecimalMinToDoubleDashConverter x:Key="DecimalMinToDoubleDashConverter" />
     <jgconverters:DecimalDegreesToArcsecDoubleDashConverter x:Key="DecimalDegreesToArcsecDoubleDashConverter" />
     <jgconverters:PositiveToBooleanConverter x:Key="PositiveToBooleanConverter" />
+    <jgconverters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />
+    <jgconverters:ZeroToDisabledConverter x:Key="ZeroToDisabledConverter" />
+    <jgconverters:NumericToHalfConverter x:Key="NumericToHalfConverter" />
     <TextBlock x:Key="Placeholder_Tooltip" Text="Placeholder text" />
     <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
         <Grid Margin="5" VerticalAlignment="Top">

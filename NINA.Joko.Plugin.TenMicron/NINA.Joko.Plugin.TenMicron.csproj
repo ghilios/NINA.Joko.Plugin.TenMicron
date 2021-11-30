@@ -420,23 +420,24 @@
       <DependentUpon>Time.g4</DependentUpon>
     </Compile>
     <Compile Include="Interfaces\IModelAccessor.cs" />
-    <Compile Include="Interfaces\IModelBuilderOptions.cs" />
+    <Compile Include="Interfaces\ITenMicronOptions.cs" />
+    <Compile Include="Interfaces\IModelPointGenerator.cs" />
     <Compile Include="Interfaces\IMount.cs" />
     <Compile Include="Interfaces\IMountCommander.cs" />
     <Compile Include="Interfaces\IMountConsumer.cs" />
     <Compile Include="Interfaces\IMountMediator.cs" />
     <Compile Include="Interfaces\IMountVM.cs" />
-    <Compile Include="ModelBuilder\AscomMountCommander.cs" />
-    <Compile Include="ModelBuilder\ModelAccessor.cs" />
-    <Compile Include="ModelBuilder\ModelBuilderOptions.cs" />
-    <Compile Include="ModelBuilder\ModelPoint.cs" />
-    <Compile Include="ModelBuilder\ModelPointGenerator.cs" />
-    <Compile Include="ModelBuilder\ModelRunner.cs" />
-    <Compile Include="ModelBuilder\Mount.cs" />
-    <Compile Include="ModelBuilder\MountAscomConfig.cs" />
-    <Compile Include="ModelBuilder\MountCommandResponses.cs" />
-    <Compile Include="ModelBuilder\MountMediator.cs" />
-    <Compile Include="ModelBuilder\TelescopeMediatorMountCommander.cs" />
+    <Compile Include="Equipment\AscomMountCommander.cs" />
+    <Compile Include="Equipment\ModelAccessor.cs" />
+    <Compile Include="TenMicronOptions.cs" />
+    <Compile Include="Model\ModelPoint.cs" />
+    <Compile Include="ModelManagement\ModelPointGenerator.cs" />
+    <Compile Include="ModelManagement\ModelBuilder.cs" />
+    <Compile Include="Equipment\Mount.cs" />
+    <Compile Include="Equipment\MountAscomConfig.cs" />
+    <Compile Include="Equipment\MountCommandResponses.cs" />
+    <Compile Include="Equipment\MountMediator.cs" />
+    <Compile Include="Equipment\TelescopeMediatorMountCommander.cs" />
     <Compile Include="Model\AlignmentStarPoint.cs" />
     <Compile Include="Model\DomeShutterOpeningDataPoint.cs" />
     <Compile Include="Model\LoadedAlignmentModel.cs" />

@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using Newtonsoft.Json;
 using NINA.Astrometry;
 using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
@@ -42,14 +43,24 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
     }
 
     public class ModelPoint : BaseINPC {
-        private readonly IProfileService profileService;
         private readonly ICustomDateTime dateTime;
         private readonly ITelescopeMediator telescopeMediator;
 
-        public ModelPoint(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
-            this.profileService = profileService;
+        public ModelPoint(ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
             this.dateTime = dateTime;
             this.telescopeMediator = telescopeMediator;
+        }
+
+        private int modelIndex;
+
+        public int ModelIndex {
+            get => modelIndex;
+            set {
+                if (modelIndex != value) {
+                    modelIndex = value;
+                    RaisePropertyChanged();
+                }
+            }
         }
 
         private double altitude;
@@ -97,6 +108,46 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
             }
         }
 
+        private AstrometricTime mountReportedLocalSiderealTime = AstrometricTime.ZERO;
+
+        public AstrometricTime MountReportedLocalSiderealTime {
+            get => mountReportedLocalSiderealTime;
+            set {
+                mountReportedLocalSiderealTime = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private AstrometricTime mountReportedRightAscension = AstrometricTime.ZERO;
+
+        public AstrometricTime MountReportedRightAscension {
+            get => mountReportedRightAscension;
+            set {
+                mountReportedRightAscension = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private CoordinateAngle mountReportedDeclination = CoordinateAngle.ZERO;
+
+        public CoordinateAngle MountReportedDeclination {
+            get => mountReportedDeclination;
+            set {
+                mountReportedDeclination = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private Coordinates plateSolvedCoordinates;
+
+        public Coordinates PlateSolvedCoordinates {
+            get => plateSolvedCoordinates;
+            set {
+                plateSolvedCoordinates = value.Transform(Epoch.JNOW);
+                RaisePropertyChanged();
+            }
+        }
+
         public TopocentricCoordinates ToTopocentric() {
             var telescopeInfo = telescopeMediator.GetInfo();
             return new TopocentricCoordinates(
@@ -113,7 +164,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
         }
 
         public override string ToString() {
-            return $"Altitude: {Altitude}, Azimuth: {Azimuth}, ModelPointState: {ModelPointState}";
+            return JsonConvert.SerializeObject(this);
         }
     }
 }

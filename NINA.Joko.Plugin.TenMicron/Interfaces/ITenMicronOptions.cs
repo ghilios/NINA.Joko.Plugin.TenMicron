@@ -14,7 +14,7 @@ using NINA.Joko.Plugin.TenMicron.Model;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IModelBuilderOptions {
+    public interface ITenMicronOptions {
         int GoldenSpiralStarCount { get; set; }
 
         int SiderealTrackStartOffsetSeconds { get; set; }

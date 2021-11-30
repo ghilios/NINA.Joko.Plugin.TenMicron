@@ -49,7 +49,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private readonly IDomeSynchronization domeSynchronization;
         private readonly IModelAccessor modelAccessor;
         private readonly ICustomDateTime dateTime;
-        private readonly IModelBuilderOptions modelBuilderOptions;
+        private readonly ITenMicronOptions modelBuilderOptions;
         private IProgress<ApplicationStatus> progress;
         private bool disposed = false;
         private CancellationTokenSource disconnectCts;
@@ -57,7 +57,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         [ImportingConstructor]
         public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator, IDomeSynchronization domeSynchronization) :
             this(profileService,
-                TenMicronPlugin.ModelBuilderOptions,
+                TenMicronPlugin.TenMicronOptions,
                 telescopeMediator,
                 domeMediator,
                 applicationStatusMediator,
@@ -69,7 +69,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public MountModelBuilderVM(
             IProfileService profileService,
-            IModelBuilderOptions modelBuilderOptions,
+            ITenMicronOptions modelBuilderOptions,
             ITelescopeMediator telescopeMediator,
             IDomeMediator domeMediator,
             IApplicationStatusMediator applicationStatusMediator,
@@ -247,7 +247,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private bool GenerateGoldenSpiral() {
             // TODO: Constructor
-            var generator = new ModelPointGenerator(this.profileService, this.dateTime, this.telescopeMediator);
+            var generator = new ModelPointGenerator(this.dateTime, this.telescopeMediator);
             // TODO: Create default horizon if one doesn't exist
             var modelPoints = generator.GenerateGoldenSpiral(this.GoldenSpiralStarCount, customHorizon);
             this.ModelPoints = new AsyncObservableCollection<ModelPoint>(modelPoints);

@@ -19,11 +19,11 @@ using System;
 
 namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
 
-    public class ModelBuilderOptions : BaseINPC, IModelBuilderOptions {
+    public class TenMicronOptions : BaseINPC, ITenMicronOptions {
         private readonly PluginOptionsAccessor optionsAccessor;
 
-        public ModelBuilderOptions(IProfileService profileService) {
-            var guid = PluginOptionsAccessor.GetAssemblyGuid(typeof(ModelBuilderOptions));
+        public TenMicronOptions(IProfileService profileService) {
+            var guid = PluginOptionsAccessor.GetAssemblyGuid(typeof(TenMicronOptions));
             if (guid == null) {
                 throw new Exception($"Guid not found in assembly metadata");
             }

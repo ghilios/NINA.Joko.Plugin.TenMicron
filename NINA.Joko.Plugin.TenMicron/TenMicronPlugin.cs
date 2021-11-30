@@ -34,18 +34,18 @@ namespace NINA.Joko.Plugin.TenMicron {
                 Settings.Default.Save();
             }
 
-            if (ModelBuilderOptions == null) {
-                ModelBuilderOptions = new ModelBuilderOptions(profileService);
+            if (TenMicronOptions == null) {
+                TenMicronOptions = new TenMicronOptions(profileService);
             }
 
-            ResetModelBuilderDefaultsCommand = new RelayCommand((object o) => ModelBuilderOptions.ResetDefaults());
+            ResetModelBuilderDefaultsCommand = new RelayCommand((object o) => TenMicronOptions.ResetDefaults());
 
             MountCommander = new TelescopeMediatorMountCommander(telescopeMediator);
             Mount = new Mount(MountCommander);
             MountMediator = new MountMediator();
         }
 
-        public static ModelBuilderOptions ModelBuilderOptions { get; private set; }
+        public static TenMicronOptions TenMicronOptions { get; private set; }
 
         public ICommand ResetModelBuilderDefaultsCommand { get; private set; }
 

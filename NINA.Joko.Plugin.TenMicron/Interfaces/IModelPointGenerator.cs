@@ -10,17 +10,14 @@
 
 #endregion "copyright"
 
-using NINA.Astrometry;
-using NINA.Core.Utility;
-using NINA.Profile.Interfaces;
-using System;
+using NINA.Core.Model;
+using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public class ModelRunner {
+    public interface IModelPointGenerator {
+
+        List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon);
     }
 }

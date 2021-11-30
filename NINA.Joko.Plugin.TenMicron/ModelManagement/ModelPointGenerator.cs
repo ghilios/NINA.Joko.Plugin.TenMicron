@@ -14,28 +14,23 @@ using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
-using NINA.Profile.Interfaces;
+using NINA.Joko.Plugin.TenMicron.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
 
-    public class ModelPointGenerator {
+    public class ModelPointGenerator : IModelPointGenerator {
 
         // Epsilon to optimize average nearest neighbor distance
         private const double EPSILON = 0.36d;
 
         private static readonly double GOLDEN_RATIO = (1.0d + Math.Sqrt(5d)) / 2.0d;
 
-        private readonly IProfileService profileService;
         private readonly ICustomDateTime dateTime;
         private readonly ITelescopeMediator telescopeMediator;
 
-        public ModelPointGenerator(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
-            this.profileService = profileService;
+        public ModelPointGenerator(ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
             this.dateTime = dateTime;
             this.telescopeMediator = telescopeMediator;
         }
@@ -72,7 +67,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                         creationState = ModelPointStateEnum.BelowHorizon;
                     }
                     points.Add(
-                        new ModelPoint(profileService, dateTime, telescopeMediator) {
+                        new ModelPoint(dateTime, telescopeMediator) {
                             Altitude = altitude.Degree,
                             Azimuth = azimuthDegrees,
                             ModelPointState = creationState

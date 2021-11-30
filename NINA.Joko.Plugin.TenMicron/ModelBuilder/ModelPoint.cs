@@ -12,88 +12,108 @@
 
 using NINA.Astrometry;
 using NINA.Core.Utility;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Joko.Plugin.TenMicron.Converters;
 using NINA.Profile.Interfaces;
+using System.ComponentModel;
 
 namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
 
+    [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
+    public enum ModelPointStateEnum {
+
+        [Description("Generated")]
+        Generated = 0,
+
+        [Description("Next")]
+        UpNext = 1,
+
+        [Description("Exposing Image")]
+        Exposing = 2,
+
+        [Description("Processing")]
+        Processing = 3,
+
+        [Description("Failed")]
+        Failed = 4,
+
+        [Description("Below Horizon")]
+        BelowHorizon = 5,
+    }
+
     public class ModelPoint : BaseINPC {
         private readonly IProfileService profileService;
+        private readonly ICustomDateTime dateTime;
+        private readonly ITelescopeMediator telescopeMediator;
 
-        public ModelPoint(IProfileService profileService, int index, Coordinates coordinates) {
+        public ModelPoint(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
             this.profileService = profileService;
-            this.Index = index;
-            this.Coordinates = coordinates;
+            this.dateTime = dateTime;
+            this.telescopeMediator = telescopeMediator;
         }
 
-        private int index;
+        private double altitude;
 
-        public int Index {
-            get => index;
-            private set {
-                if (index != value) {
-                    this.index = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        private Coordinates coordinates;
-
-        public Coordinates Coordinates {
-            get => coordinates;
-            private set {
-                if (value != coordinates) {
-                    this.coordinates = value.Transform(Epoch.JNOW);
-                    RaisePropertyChanged();
-                    this.AltAz = this.coordinates.Transform(
-                        latitude: Angle.ByDegree(this.profileService.ActiveProfile.AstrometrySettings.Latitude),
-                        longitude: Angle.ByDegree(this.profileService.ActiveProfile.AstrometrySettings.Longitude));
-                }
-            }
-        }
-
-        private TopocentricCoordinates altAz;
-
-        public TopocentricCoordinates AltAz {
-            get => altAz;
-            private set {
-                if (value != altAz) {
-                    this.altAz = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        private CoordinateAngle mountReportedDeclination;
-
-        public CoordinateAngle MountReportedDeclination {
-            get => mountReportedDeclination;
+        public double Altitude {
+            get => altitude;
             set {
-                this.mountReportedDeclination = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private AstrometricTime mountReportedRightAscension;
-
-        public AstrometricTime MountReportedRightAscension {
-            get => mountReportedRightAscension;
-            set {
-                this.mountReportedRightAscension = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private double rmsError;
-
-        public double RMSError {
-            get => rmsError;
-            set {
-                if (rmsError != value) {
-                    this.rmsError = value;
+                if (altitude != value) {
+                    altitude = value;
                     RaisePropertyChanged();
                 }
             }
+        }
+
+        private double azimuth;
+
+        public double Azimuth {
+            get => azimuth;
+            set {
+                if (azimuth != value) {
+                    azimuth = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private ModelPointStateEnum modelPointState;
+
+        public ModelPointStateEnum ModelPointState {
+            get => modelPointState;
+            set {
+                if (modelPointState != value) {
+                    modelPointState = value;
+                    RaisePropertyChanged();
+                    RaisePropertyChanged(nameof(ModelPointStateString));
+                }
+            }
+        }
+
+        public string ModelPointStateString {
+            get {
+                var fi = typeof(ModelPointStateEnum).GetField(ModelPointState.ToString());
+                var attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
+                return attributes[0].Description;
+            }
+        }
+
+        public TopocentricCoordinates ToTopocentric() {
+            var telescopeInfo = telescopeMediator.GetInfo();
+            return new TopocentricCoordinates(
+                azimuth: Angle.ByDegree(azimuth),
+                altitude: Angle.ByDegree(altitude),
+                latitude: Angle.ByDegree(telescopeInfo.SiteLatitude),
+                longitude: Angle.ByDegree(telescopeInfo.SiteLongitude),
+                elevation: telescopeInfo.SiteElevation,
+                dateTime: dateTime);
+        }
+
+        public Coordinates ToCelestial(double pressurehPa, double tempCelcius, double relativeHumidity) {
+            return ToTopocentric().Transform(Epoch.JNOW, pressurehPa: pressurehPa, tempCelcius: tempCelcius, relativeHumidity: relativeHumidity, wavelength: 0.54);
+        }
+
+        public override string ToString() {
+            return $"Altitude: {Altitude}, Azimuth: {Azimuth}, ModelPointState: {ModelPointState}";
         }
     }
 }

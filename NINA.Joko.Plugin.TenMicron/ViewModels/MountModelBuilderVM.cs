@@ -237,12 +237,21 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private Task<bool> GeneratePoints(object o) {
             try {
-                return Task.FromResult(true);
+                return Task.FromResult(GenerateGoldenSpiral());
             } catch (Exception e) {
                 Notification.ShowError($"Failed to generate points. {e.Message}");
                 Logger.Error($"Failed to generate points", e);
                 return Task.FromResult(false);
             }
+        }
+
+        private bool GenerateGoldenSpiral() {
+            // TODO: Constructor
+            var generator = new ModelPointGenerator(this.profileService, this.dateTime, this.telescopeMediator);
+            // TODO: Create default horizon if one doesn't exist
+            var modelPoints = generator.GenerateGoldenSpiral(this.GoldenSpiralStarCount, customHorizon);
+            this.ModelPoints = new AsyncObservableCollection<ModelPoint>(modelPoints);
+            return true;
         }
 
         private Task calculateDomeShutterOpeningTask;
@@ -544,6 +553,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             get => domeShutterOpeningDataPoints2;
             set {
                 domeShutterOpeningDataPoints2 = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private AsyncObservableCollection<ModelPoint> modelPoints = new AsyncObservableCollection<ModelPoint>();
+
+        public AsyncObservableCollection<ModelPoint> ModelPoints {
+            get => modelPoints;
+            set {
+                modelPoints = value;
                 RaisePropertyChanged();
             }
         }

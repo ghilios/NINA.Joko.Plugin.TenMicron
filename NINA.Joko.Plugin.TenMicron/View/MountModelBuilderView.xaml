@@ -12,6 +12,7 @@
     xmlns:enum="clr-namespace:NINA.Core.Enum;assembly=NINA.Core"
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
     xmlns:tmmodel="clr-namespace:NINA.Joko.Plugin.TenMicron.Model"
+    xmlns:tmoxy="clr-namespace:NINA.Joko.Plugin.TenMicron.Extensions.OxyPlot.Wpf"
     x:Name="UC"
     mc:Ignorable="d">
     <UserControl.Resources>
@@ -345,6 +346,10 @@
                             Position="Left"
                             TextColor="{Binding Path=Color, Source={StaticResource PrimaryBrush}}"
                             TicklineColor="{Binding Path=Color, Source={StaticResource SecondaryBrush}}" />
+                        <tmoxy:ModelPointStateColorAxis
+                            Key="ModelPointStateColorAxis"
+                            Position="None"
+                            Visibility="Collapsed" />
                     </oxy:Plot.Axes>
                     <oxy:Plot.Series>
                         <oxy:AreaSeries
@@ -373,6 +378,15 @@
                             DataFieldY2="MaxAltitude"
                             Fill="{StaticResource DomeShutterColor}"
                             Color="{StaticResource DomeShutterColor}" />
+                        <oxy:ScatterSeries
+                            MarkerType="Circle"
+                            ItemsSource="{Binding ModelPoints, UpdateSourceTrigger=PropertyChanged}"
+                            ColorAxisKey="ModelPointStateColorAxis"
+                            DataFieldX="Azimuth"
+                            DataFieldY="Altitude"
+                            MarkerSize="4"
+                            DataFieldValue="ModelPointState"
+                            TrackerFormatString="{}Altitude: {Altitude:###.##}&#176;&#x0a;Azimuth: {Azimuth:###.##}&#176;&#x0a;State: {ModelPointStateString}" />
                     </oxy:Plot.Series>
                     <oxy:Plot.Annotations>
                         <oxy:PointAnnotation
@@ -394,19 +408,6 @@
                             Visibility="{Binding DomeControlEnabled, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                             Color="{StaticResource DomeAzimuthColor}" />
                     </oxy:Plot.Annotations>
-                    <!--
-                    <oxy:Plot.Series>
-                        <oxy:ScatterSeries
-                            MarkerType="Circle"
-                            ColorAxisKey="ErrorColorAxis"
-                            ItemsSource="{Binding LoadedAlignmentModel.AlignmentStars, UpdateSourceTrigger=PropertyChanged}"
-                            DataFieldX="InvertedAltitude"
-                            DataFieldY="Azimuth"
-                            DataFieldSize="ErrorPointRadius"
-                            DataFieldValue="ErrorArcsec"
-                            TrackerFormatString="{}Altitude: {Altitude:###.####}&#176;&#x0a;Azimuth: {Azimuth:###.####}&#176;&#x0a;RMS Error: {ErrorArcsec:###.##} arcsec" />
-                    </oxy:Plot.Series>
-                        -->
                 </oxy:Plot>
             </Grid>
         </Grid>

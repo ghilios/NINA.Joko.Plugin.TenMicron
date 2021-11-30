@@ -218,6 +218,7 @@
                     </Grid.RowDefinitions>
 
                     <oxy:Plot
+                        PlotType="Polar"
                         Grid.Row="0"
                         Grid.Column="0"
                         Grid.RowSpan="2"
@@ -232,6 +233,7 @@
                         PlotAreaBorderColor="Transparent">
                         <oxy:Plot.Axes>
                             <oxy:MagnitudeAxis
+                                Key="AltitudeAxis"
                                 AxislineColor="{Binding Path=Color, Source={StaticResource PrimaryBrush}}"
                                 IntervalLength="9"
                                 IsPanEnabled="False"
@@ -246,6 +248,7 @@
                                 TextColor="Transparent"
                                 TicklineColor="{Binding Path=Color, Source={StaticResource SecondaryBrush}}" />
                             <oxy:AngleAxis
+                                Key="AzimuthAxis"
                                 AxislineColor="{Binding Path=Color, Source={StaticResource PrimaryBrush}}"
                                 IntervalLength="15"
                                 IsPanEnabled="False"
@@ -253,8 +256,10 @@
                                 MajorGridlineColor="{Binding Path=Color, Source={StaticResource PrimaryBrush}, Converter={StaticResource SetAlphaToColorConverter}, ConverterParameter=60}"
                                 MajorGridlineStyle="LongDash"
                                 MajorStep="30"
-                                StartAngle="0"
-                                EndAngle="360"
+                                Minimum="0"
+                                Maximum="360"
+                                StartAngle="450"
+                                EndAngle="90"
                                 StartPosition="0"
                                 EndPosition="1"
                                 TextColor="{Binding Path=Color, Source={StaticResource PrimaryBrush}}"
@@ -281,6 +286,8 @@
                         </oxy:Plot.Axes>
                         <oxy:Plot.Series>
                             <oxy:ScatterSeries
+                                XAxisKey="AltitudeAxis"
+                                YAxisKey="AzimuthAxis"
                                 MarkerType="Circle"
                                 ColorAxisKey="ErrorColorAxis"
                                 ItemsSource="{Binding LoadedAlignmentModel.AlignmentStars, UpdateSourceTrigger=PropertyChanged}"

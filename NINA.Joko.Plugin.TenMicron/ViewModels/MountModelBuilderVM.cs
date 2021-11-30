@@ -33,6 +33,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,13 +43,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
     [Export(typeof(IDockableVM))]
     public class MountModelBuilderVM : DockableVM, ITelescopeConsumer, IMountConsumer, IDomeConsumer {
+        private static readonly CustomHorizon EMPTY_HORIZON = GetEmptyHorizon();
         private readonly IMountMediator mountMediator;
         private readonly IApplicationStatusMediator applicationStatusMediator;
         private readonly ITelescopeMediator telescopeMediator;
         private readonly IDomeMediator domeMediator;
         private readonly IDomeSynchronization domeSynchronization;
         private readonly IModelAccessor modelAccessor;
+        private readonly IModelPointGenerator modelPointGenerator;
         private readonly ICustomDateTime dateTime;
+
         private readonly ITenMicronOptions modelBuilderOptions;
         private IProgress<ApplicationStatus> progress;
         private bool disposed = false;
@@ -64,6 +68,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 domeSynchronization,
                 TenMicronPlugin.MountMediator,
                 new ModelAccessor(telescopeMediator, TenMicronPlugin.MountMediator, new SystemDateTime()),
+                new ModelPointGenerator(new SystemDateTime(), telescopeMediator),
                 new SystemDateTime()) {
         }
 
@@ -76,6 +81,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IDomeSynchronization domeSynchronization,
             IMountMediator mountMediator,
             IModelAccessor modelAccessor,
+            IModelPointGenerator modelPointGenerator,
             ICustomDateTime dateTime) : base(profileService) {
             this.Title = "10u Model Builder";
             this.modelBuilderOptions = modelBuilderOptions;
@@ -85,6 +91,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.domeMediator = domeMediator;
             this.domeSynchronization = domeSynchronization;
             this.modelAccessor = modelAccessor;
+            this.modelPointGenerator = modelPointGenerator;
             this.dateTime = dateTime;
             this.disconnectCts = new CancellationTokenSource();
 
@@ -237,7 +244,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private Task<bool> GeneratePoints(object o) {
             try {
-                return Task.FromResult(GenerateGoldenSpiral());
+                if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.GoldenSpiral) {
+                    return Task.FromResult(GenerateGoldenSpiral(this.GoldenSpiralStarCount));
+                } else if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.SiderealPath) {
+                    return Task.FromResult(GenerateSiderealPath());
+                } else {
+                    throw new ArgumentException($"Unexpected Model Point Generation Type {this.ModelPointGenerationType}");
+                }
             } catch (Exception e) {
                 Notification.ShowError($"Failed to generate points. {e.Message}");
                 Logger.Error($"Failed to generate points", e);
@@ -245,13 +258,22 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private bool GenerateGoldenSpiral() {
-            // TODO: Constructor
-            var generator = new ModelPointGenerator(this.dateTime, this.telescopeMediator);
-            // TODO: Create default horizon if one doesn't exist
-            var modelPoints = generator.GenerateGoldenSpiral(this.GoldenSpiralStarCount, customHorizon);
+        private bool GenerateGoldenSpiral(int goldenSpiralStarCount) {
+            var modelPoints = this.modelPointGenerator.GenerateGoldenSpiral(goldenSpiralStarCount, this.CustomHorizon);
             this.ModelPoints = new AsyncObservableCollection<ModelPoint>(modelPoints);
             return true;
+        }
+
+        private bool GenerateSiderealPath() {
+            Notification.ShowError("Sidereal Path not yet implemented");
+            return false;
+        }
+
+        private static CustomHorizon GetEmptyHorizon() {
+            var horizonDefinition = $"0 0" + Environment.NewLine + "360 0";
+            using (var sr = new StringReader(horizonDefinition)) {
+                return CustomHorizon.FromReader_Standard(sr);
+            }
         }
 
         private Task calculateDomeShutterOpeningTask;
@@ -514,12 +536,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private CustomHorizon customHorizon;
+        private CustomHorizon customHorizon = EMPTY_HORIZON;
 
         public CustomHorizon CustomHorizon {
             get => customHorizon;
             private set {
-                customHorizon = value;
+                if (customHorizon == null) {
+                    customHorizon = EMPTY_HORIZON;
+                } else {
+                    customHorizon = value;
+                }
                 RaisePropertyChanged();
             }
         }

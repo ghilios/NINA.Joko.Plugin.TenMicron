@@ -10,11 +10,8 @@
 
 #endregion "copyright"
 
-using ASCOM.DriverAccess;
-using ASCOM.Utilities;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
@@ -28,8 +25,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
+using NINA.Joko.Plugin.TenMicron.Model;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -201,12 +198,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 return;
             }
 
-            mountValues.TryGetValue(nameof(MountInfo.MountId), out o);
-            MountInfo.MountId = (string)(o ?? "");
-
-            mountValues.TryGetValue(nameof(MountInfo.ProductFirmware), out o);
-            MountInfo.ProductFirmware = (ProductFirmware)(o ?? new ProductFirmware("", DateTime.MinValue, new Version()));
-
             mountValues.TryGetValue(nameof(MountInfo.UnattendedFlipEnabled), out o);
             MountInfo.UnattendedFlipEnabled = (bool)(o ?? false);
             UnattendedFlipEnabled = MountInfo.UnattendedFlipEnabled;
@@ -234,8 +225,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 }
 
                 mountValues.Add(nameof(MountInfo.Connected), true);
-                mountValues.Add(nameof(MountInfo.MountId), this.mount.GetId().Value);
-                mountValues.Add(nameof(MountInfo.ProductFirmware), this.mount.GetProductFirmware().Value);
                 mountValues.Add(nameof(MountInfo.UnattendedFlipEnabled), this.mount.GetUnattendedFlipEnabled().Value);
                 mountValues.Add(nameof(MountInfo.TrackingRateArcsecPerSec), this.mount.GetTrackingRateArcsecsPerSec().Value);
                 mountValues.Add(nameof(MountInfo.Status), this.mount.GetStatus().Value);
@@ -291,82 +280,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             return MountInfo;
         }
 
-        public string GetModelName(int modelIndex) {
-            if (supportedMountConnected) {
-                return mount.GetModelName(modelIndex);
-            }
-            return "";
-        }
-
-        public int GetModelCount() {
-            if (supportedMountConnected) {
-                return mount.GetModelCount();
-            }
-            return 0;
-        }
-
-        public bool LoadModel(string name) {
-            if (supportedMountConnected) {
-                return mount.LoadModel(name);
-            }
-            return false;
-        }
-
-        public bool SaveModel(string name) {
-            if (supportedMountConnected) {
-                return mount.SaveModel(name);
-            }
-            return false;
-        }
-
-        public bool DeleteModel(string name) {
-            if (supportedMountConnected) {
-                return mount.DeleteModel(name);
-            }
-            return false;
-        }
-
-        public void DeleteAlignment() {
-            if (supportedMountConnected) {
-                mount.DeleteAlignment();
-            }
-        }
-
-        public int GetAlignmentStarCount() {
-            if (supportedMountConnected) {
-                return mount.GetAlignmentStarCount();
-            }
-            return 0;
-        }
-
-        public AlignmentStarInfo GetAlignmentStarInfo(int alignmentStarIndex) {
-            if (supportedMountConnected) {
-                return mount.GetAlignmentStarInfo(alignmentStarIndex);
-            }
-            return null;
-        }
-
-        public AlignmentModelInfo GetAlignmentModelInfo() {
-            if (supportedMountConnected) {
-                return mount.GetAlignmentModelInfo();
-            }
-            return null;
-        }
-
-        public bool StartNewAlignmentSpec() {
-            if (supportedMountConnected) {
-                return mount.StartNewAlignmentSpec();
-            }
-            return false;
-        }
-
-        public bool FinishAlignmentSpec() {
-            if (supportedMountConnected) {
-                return mount.FinishAlignmentSpec();
-            }
-            return false;
-        }
-
         public CoordinateAngle GetMountReportedDeclination() {
             if (supportedMountConnected) {
                 return mount.GetDeclination();
@@ -386,13 +299,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 return mount.GetLocalSiderealTime();
             }
             return null;
-        }
-
-        public bool DeleteAlignmentStar(int alignmentStarIndex) {
-            if (supportedMountConnected) {
-                return mount.DeleteAlignmentStar(alignmentStarIndex);
-            }
-            return false;
         }
     }
 }

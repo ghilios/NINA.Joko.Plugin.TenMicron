@@ -20,16 +20,16 @@ using System;
 using System.Collections.Immutable;
 using System.Threading;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
     public class ModelAccessor : IModelAccessor {
         private readonly ITelescopeMediator telescopeMediator;
-        private readonly IMountMediator mountMediator;
+        private readonly IMountModelMediator mountModelMediator;
         private readonly ICustomDateTime dateTime;
 
-        public ModelAccessor(ITelescopeMediator telescopeMediator, IMountMediator mountMediator, ICustomDateTime dateTime) {
+        public ModelAccessor(ITelescopeMediator telescopeMediator, IMountModelMediator mountModelMediator, ICustomDateTime dateTime) {
             this.telescopeMediator = telescopeMediator;
-            this.mountMediator = mountMediator;
+            this.mountModelMediator = mountModelMediator;
             this.dateTime = dateTime;
         }
 
@@ -44,7 +44,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                 alignmentModel.Clear();
 
                 progress?.Report(new ApplicationStatus() { Status = "Getting Alignment Model" });
-                var alignmentStarCount = mountMediator.GetAlignmentStarCount();
+                var alignmentStarCount = mountModelMediator.GetAlignmentStarCount();
                 ct.ThrowIfCancellationRequested();
 
                 if (alignmentStarCount > 0) {
@@ -55,13 +55,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                     alignmentModel.Longitude = Angle.ByDegree(telescopeInfo.SiteLongitude);
                     alignmentModel.SiteElevation = telescopeInfo.SiteElevation;
 
-                    var alignmentModelInfo = mountMediator.GetAlignmentModelInfo();
+                    var alignmentModelInfo = mountModelMediator.GetAlignmentModelInfo();
                     alignmentModel.RMSError = alignmentModelInfo.RMSError;
                     alignmentModel.RightAscensionAzimuth = alignmentModelInfo.RightAscensionAzimuth;
                     alignmentModel.RightAscensionAltitude = alignmentModelInfo.RightAscensionAltitude;
                     alignmentModel.PolarAlignErrorDegrees = alignmentModelInfo.PolarAlignErrorDegrees;
                     alignmentModel.PAErrorAltitudeDegrees = alignmentModelInfo.RightAscensionAltitude - (decimal)telescopeInfo.SiteLatitude;
-                    alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth;
+                    alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)360.0d;
                     alignmentModel.RightAscensionPolarPositionAngleDegrees = alignmentModelInfo.RightAscensionPolarPositionAngleDegrees;
                     alignmentModel.OrthogonalityErrorDegrees = alignmentModelInfo.OrthogonalityErrorDegrees;
                     alignmentModel.AzimuthAdjustmentTurns = alignmentModelInfo.AzimuthAdjustmentTurns;
@@ -78,7 +78,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                                 Status = $"Getting Alignment Star {i} / {alignmentStarCount}",
                                 ProgressType = ApplicationStatus.StatusProgressType.ValueOfMaxValue
                             });
-                        alignmentStars.Add(mountMediator.GetAlignmentStarInfo(i));
+                        alignmentStars.Add(mountModelMediator.GetAlignmentStarInfo(i));
                         ct.ThrowIfCancellationRequested();
                     }
 

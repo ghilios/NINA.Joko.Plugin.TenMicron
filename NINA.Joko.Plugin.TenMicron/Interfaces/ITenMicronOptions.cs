@@ -27,6 +27,20 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool MinimizeDomeMovementEnabled { get; set; }
 
+        bool WestToEastSorting { get; set; }
+
+        int BuilderNumRetries { get; set; }
+
+        double MaxPointRMS { get; set; }
+
+        bool LogCommands { get; set; }
+
+        bool AllowBlindSolves { get; set; }
+
+        int MaxConcurrency { get; set; }
+
+        bool SyncFirstPoint { get; set; }
+
         ModelPointGenerationTypeEnum ModelPointGenerationType { get; set; }
 
         void ResetDefaults();

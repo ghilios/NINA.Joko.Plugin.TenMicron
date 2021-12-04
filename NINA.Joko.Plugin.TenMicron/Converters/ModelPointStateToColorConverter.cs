@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
+using NINA.Joko.Plugin.TenMicron.Model;
 using System;
 using System.Globalization;
 using System.Windows.Data;

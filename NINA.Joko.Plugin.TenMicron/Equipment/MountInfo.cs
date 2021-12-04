@@ -10,9 +10,8 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
-using NINA.Core.Enum;
 using NINA.Equipment.Equipment;
+using NINA.Joko.Plugin.TenMicron.Model;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 

@@ -14,7 +14,6 @@ using Antlr4.Runtime;
 using NINA.Joko.Plugin.TenMicron.Grammars;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Utility;
-using NINA.Astrometry;
 using NINA.Core.Enum;
 using NINA.Core.Utility;
 using System;
@@ -23,8 +22,33 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Text;
 using NINA.Joko.Plugin.TenMicron.Converters;
+using NINA.Joko.Plugin.TenMicron.Model;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Equipment {
+
+    public class ResponseBase {
+
+        public ResponseBase(string rawResponse) {
+            this.RawResponse = rawResponse;
+        }
+
+        public string RawResponse { get; private set; }
+    }
+
+    public class Response<T> : ResponseBase {
+
+        public Response(T value, string rawResponse) : base(rawResponse) {
+            this.Value = value;
+        }
+
+        public T Value { get; private set; }
+
+        public static implicit operator T(Response<T> r) => r.Value;
+
+        public override string ToString() {
+            return Value.ToString();
+        }
+    }
 
     public static class LexerCreator<T> where T : Lexer {
         public static readonly Func<ICharStream, T> Construct = ConstructImpl(typeof(T));
@@ -497,6 +521,63 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
             var rawResponse = this.mountCommander.SendCommandString(command, true);
             var result = rawResponse == "1#";
             return new Response<bool>(result, rawResponse);
+        }
+
+        public Response<decimal> GetPressure() {
+            const string command = ":GRPRS#";
+
+            var rawResponse = this.mountCommander.SendCommandString(command, true);
+            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+            return new Response<decimal>(result, rawResponse);
+        }
+
+        public Response<decimal> GetTemperature() {
+            const string command = ":GRTMP#";
+
+            var rawResponse = this.mountCommander.SendCommandString(command, true);
+            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+            return new Response<decimal>(result, rawResponse);
+        }
+
+        public Response<bool> GetRefractionCorrectionEnabled() {
+            const string command = ":GREF#";
+
+            var response = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(response, "");
+        }
+
+        private static readonly string[] DATE_FORMATS = {
+            "yyyy-MM-dd",
+            "MM/dd/yy",
+            "MM:dd:yy"
+        };
+
+        public Response<DateTime> GetUTCTime() {
+            const string command = ":GUDT#";
+
+            var rawResponse = this.mountCommander.SendCommandString(command, true);
+            var responseParts = rawResponse.Split(new char[] { ',' }, 2);
+            var datePartString = responseParts[0];
+            var timePartString = responseParts[1].TrimEnd('#');
+
+            var datePart = DateTime.ParseExact(datePartString, DATE_FORMATS, null, DateTimeStyles.None);
+            int hours = int.Parse(timePartString.Substring(0, 2));
+            int minutes = int.Parse(timePartString.Substring(3, 2));
+            int seconds;
+            if (timePartString.Length == 7) {
+                seconds = int.Parse(timePartString.Substring(6, 1)) * 6;
+            } else {
+                seconds = int.Parse(timePartString.Substring(6, 2));
+            }
+            int hundredthSeconds = 0;
+            if (timePartString.Length == 10) {
+                hundredthSeconds = int.Parse(timePartString.Substring(9, 1)) * 10;
+            } else if (timePartString.Length == 11) {
+                hundredthSeconds = int.Parse(timePartString.Substring(9, 2));
+            }
+
+            var result = new DateTime(datePart.Year, datePart.Month, datePart.Day, hours, minutes, seconds, hundredthSeconds * 10, DateTimeKind.Utc);
+            return new Response<DateTime>(result, rawResponse);
         }
     }
 }

@@ -13,7 +13,6 @@
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
@@ -29,11 +28,15 @@ using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using NINA.Core.Enum;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
     [Export(typeof(IDockableVM))]
-    public class MountModelVM : DockableVM, ITelescopeConsumer, IMountConsumer {
+    public class MountModelVM : DockableVM, IMountModelVM, ITelescopeConsumer, IMountConsumer {
+        private readonly IMount mount;
         private readonly IMountMediator mountMediator;
         private readonly IApplicationStatusMediator applicationStatusMediator;
         private readonly ITelescopeMediator telescopeMediator;
@@ -45,27 +48,30 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         [ImportingConstructor]
         public MountModelVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator) :
             this(profileService,
+                TenMicronPlugin.MountModelMediator,
                 telescopeMediator,
                 applicationStatusMediator,
+                TenMicronPlugin.Mount,
                 TenMicronPlugin.MountMediator,
-                new ModelAccessor(telescopeMediator, TenMicronPlugin.MountMediator, new SystemDateTime())) {
+                TenMicronPlugin.ModelAccessor) {
         }
 
         public MountModelVM(
             IProfileService profileService,
+            IMountModelMediator mountModelMediator,
             ITelescopeMediator telescopeMediator,
             IApplicationStatusMediator applicationStatusMediator,
+            IMount mount,
             IMountMediator mountMediator,
             IModelAccessor modelAccessor) : base(profileService) {
             this.Title = "10u Model";
+
             this.applicationStatusMediator = applicationStatusMediator;
+            this.mount = mount;
             this.mountMediator = mountMediator;
             this.telescopeMediator = telescopeMediator;
             this.modelAccessor = modelAccessor;
             this.disconnectCts = new CancellationTokenSource();
-
-            this.telescopeMediator.RegisterConsumer(this);
-            this.mountMediator.RegisterConsumer(this);
 
             this.ModelNames = new AsyncObservableCollection<string>() { GetUnselectedModelName() };
             this.SelectedModelName = GetUnselectedModelName();
@@ -76,6 +82,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.SaveSelectedModelCommand = new AsyncCommand<bool>(SaveSelectedModel);
             this.SaveAsModelCommand = new AsyncCommand<bool>(SaveAsModel);
             this.DeleteWorstStarCommand = new AsyncCommand<bool>(DeleteWorstStar);
+
+            mountModelMediator.RegisterHandler(this);
+            this.telescopeMediator.RegisterConsumer(this);
+            this.mountMediator.RegisterConsumer(this);
         }
 
         private Task<bool> DeleteWorstStar(object o) {
@@ -95,7 +105,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 if (worstStarIndex >= 0) {
                     var toDelete = alignmentStars[worstStarIndex];
                     Logger.Info($"Deleting alignment star {worstStarIndex + 1}. Alt={toDelete.Altitude:.00}, Az={toDelete.Azimuth:.00}, RMS={toDelete.ErrorArcsec:.00} arcsec");
-                    if (!this.mountMediator.DeleteAlignmentStar(worstStarIndex + 1)) {
+                    if (!this.DeleteAlignmentStar(worstStarIndex + 1)) {
                         Notification.ShowError("Failed to delete worst alignment star");
                         Logger.Error("Failed to delete worst alignment star");
                         return Task.FromResult(false);
@@ -118,7 +128,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Deleting model {selectedModelName}");
-                this.mountMediator.DeleteModel(selectedModelName);
+                this.DeleteModel(selectedModelName);
                 ModelNamesLoaded = false;
                 _ = LoadModelNames(this.disconnectCts.Token);
                 return Task.FromResult(true);
@@ -134,7 +144,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Loading model {selectedModelName}");
                 ModelLoaded = false;
-                this.mountMediator.LoadModel(selectedModelName);
+                this.LoadModel(selectedModelName);
                 _ = LoadAlignmentModel(this.disconnectCts.Token);
                 ModelLoaded = true;
                 return Task.FromResult(true);
@@ -149,8 +159,12 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Saving model as {selectedModelName}");
-                this.mountMediator.SaveModel(selectedModelName);
-                return Task.FromResult(true);
+                if (this.SaveModel(selectedModelName)) {
+                    Notification.ShowInformation($"Saved {selectedModelName}");
+                    return Task.FromResult(true);
+                }
+                Notification.ShowError("Failed to save model");
+                return Task.FromResult(false);
             } catch (Exception e) {
                 Notification.ShowError($"Failed to save {selectedModelName}. {e.Message}");
                 Logger.Error($"Failed to save {selectedModelName}", e);
@@ -164,10 +178,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 if (result.MessageBoxResult == System.Windows.MessageBoxResult.OK) {
                     var inputModelName = result.InputText;
                     Logger.Info($"Saving model as {inputModelName}");
-                    this.mountMediator.SaveModel(result.InputText);
-                    ModelNamesLoaded = false;
-                    _ = LoadModelNames(this.disconnectCts.Token);
-                    return Task.FromResult(true);
+                    if (this.SaveModel(inputModelName)) {
+                        Notification.ShowInformation($"Saved {inputModelName}");
+                        ModelNamesLoaded = false;
+                        _ = LoadModelNames(this.disconnectCts.Token);
+                        return Task.FromResult(true);
+                    }
+                    Notification.ShowError("Failed to save model");
+                    return Task.FromResult(false);
                 } else {
                     Logger.Info("Save cancelled by user");
                     return Task.FromResult(false);
@@ -194,9 +212,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public void UpdateDeviceInfo(MountInfo deviceInfo) {
             this.MountInfo = deviceInfo;
             if (this.MountInfo.Connected) {
-                Connect();
+                DoConnect();
             } else {
-                Disconnect();
+                DoDisconnect();
             }
         }
 
@@ -236,7 +254,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public LoadedAlignmentModel LoadedAlignmentModel => loadedAlignmentModel;
 
-        private void Connect() {
+        private void DoConnect() {
             if (Connected) {
                 return;
             }
@@ -255,6 +273,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 await LoadAlignmentModel(this.disconnectCts.Token);
             }, this.disconnectCts.Token);
             Connected = true;
+        }
+
+        private void DoDisconnect() {
+            if (!Connected) {
+                return;
+            }
+
+            this.disconnectCts?.Cancel();
+            LoadedAlignmentModel.Clear();
+            Connected = false;
         }
 
         private Task alignmentModelLoadTask;
@@ -285,6 +313,22 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.alignmentModelLoadTask = null;
         }
 
+        public async Task<LoadedAlignmentModel> GetLoadedAlignmentModel(CancellationToken ct) {
+            var localAlignmentModelLoadTask = alignmentModelLoadTask;
+            if (localAlignmentModelLoadTask == null) {
+                return LoadedAlignmentModel.Clone();
+            }
+
+            var tcs = new TaskCompletionSource<object>();
+            using (ct.Register(() => tcs.SetCanceled())) {
+                _ = await Task.WhenAny(localAlignmentModelLoadTask, tcs.Task);
+                if (ct.IsCancellationRequested) {
+                    throw new OperationCanceledException();
+                }
+                return LoadedAlignmentModel.Clone();
+            }
+        }
+
         private Task alignmentModelNameLoadTask;
 
         private async Task LoadModelNames(CancellationToken ct) {
@@ -296,13 +340,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 bool succeeded = false;
                 try {
                     ModelNamesLoaded = false;
-                    var modelCount = this.mountMediator.GetModelCount();
+                    var modelCount = this.GetModelCount();
                     ct.ThrowIfCancellationRequested();
                     this.ModelNames.Clear();
                     this.ModelNames.Add(GetUnselectedModelName());
                     for (int i = 1; i <= modelCount; i++) {
                         ct.ThrowIfCancellationRequested();
-                        this.ModelNames.Add(this.mountMediator.GetModelName(i));
+                        this.ModelNames.Add(this.GetModelName(i));
                     }
                     succeeded = true;
                 } catch (OperationCanceledException) {
@@ -320,16 +364,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             await this.alignmentModelNameLoadTask;
             this.alignmentModelNameLoadTask = null;
-        }
-
-        private void Disconnect() {
-            if (!Connected) {
-                return;
-            }
-
-            this.disconnectCts?.Cancel();
-            LoadedAlignmentModel.Clear();
-            Connected = false;
         }
 
         private static string GetUnselectedModelName() {
@@ -401,5 +435,130 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public ICommand SaveSelectedModelCommand { get; private set; }
         public ICommand SaveAsModelCommand { get; private set; }
         public ICommand DeleteWorstStarCommand { get; private set; }
+
+        public Task<IList<string>> Rescan() {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> Connect() {
+            throw new NotImplementedException();
+        }
+
+        public Task Disconnect() {
+            throw new NotImplementedException();
+        }
+
+        public MountModelInfo GetDeviceInfo() {
+            return new MountModelInfo() {
+                Connected = Connected,
+                LoadedAlignmentModel = LoadedAlignmentModel,
+                ModelNames = ImmutableList.ToImmutableList(ModelNames)
+            };
+        }
+
+        public string GetModelName(int modelIndex) {
+            if (Connected) {
+                return mount.GetModelName(modelIndex);
+            }
+            return "";
+        }
+
+        public int GetModelCount() {
+            if (Connected) {
+                return mount.GetModelCount();
+            }
+            return 0;
+        }
+
+        public bool LoadModel(string name) {
+            if (Connected) {
+                if (mount.LoadModel(name)) {
+                    _ = LoadAlignmentModel(disconnectCts.Token);
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+
+        public bool SaveModel(string name) {
+            if (Connected) {
+                return mount.SaveModel(name);
+            }
+            return false;
+        }
+
+        public bool DeleteModel(string name) {
+            if (Connected) {
+                return mount.DeleteModel(name);
+            }
+            return false;
+        }
+
+        public void DeleteAlignment() {
+            if (Connected) {
+                mount.DeleteAlignment();
+                LoadedAlignmentModel.Clear();
+            }
+        }
+
+        public int GetAlignmentStarCount() {
+            if (Connected) {
+                return mount.GetAlignmentStarCount();
+            }
+            return 0;
+        }
+
+        public AlignmentStarInfo GetAlignmentStarInfo(int alignmentStarIndex) {
+            if (Connected) {
+                return mount.GetAlignmentStarInfo(alignmentStarIndex);
+            }
+            return null;
+        }
+
+        public AlignmentModelInfo GetAlignmentModelInfo() {
+            if (Connected) {
+                return mount.GetAlignmentModelInfo();
+            }
+            return null;
+        }
+
+        public bool StartNewAlignmentSpec() {
+            if (Connected) {
+                return mount.StartNewAlignmentSpec();
+            }
+            return false;
+        }
+
+        public bool FinishAlignmentSpec() {
+            if (Connected) {
+                if (mount.FinishAlignmentSpec()) {
+                    _ = LoadAlignmentModel(disconnectCts.Token);
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+
+        public bool DeleteAlignmentStar(int alignmentStarIndex) {
+            if (Connected) {
+                return mount.DeleteAlignmentStar(alignmentStarIndex);
+            }
+            return false;
+        }
+
+        public int AddAlignmentStar(
+            AstrometricTime mountRightAscension,
+            CoordinateAngle mountDeclination,
+            PierSide sideOfPier,
+            AstrometricTime plateSolvedRightAscension,
+            CoordinateAngle plateSolvedDeclination,
+            AstrometricTime localSiderealTime) {
+            if (Connected) {
+                return mount.AddAlignmentPointToSpec(mountRightAscension, mountDeclination, sideOfPier, plateSolvedRightAscension, plateSolvedDeclination, localSiderealTime);
+            }
+            return -1;
+        }
     }
 }

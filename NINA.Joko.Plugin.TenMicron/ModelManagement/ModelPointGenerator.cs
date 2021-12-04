@@ -15,10 +15,11 @@ using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
+using NINA.Joko.Plugin.TenMicron.Model;
 using System;
 using System.Collections.Generic;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
     public class ModelPointGenerator : IModelPointGenerator {
 
@@ -50,17 +51,28 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                     // (altitude) phi = arccos(1 - 2 * (i + epsilon) / (n - 1 + 2 * epsilon))
                     var azimuth = Angle.ByRadians(2.0d * Math.PI * i / GOLDEN_RATIO);
                     // currentNumPoints * 2 enables us to process only half of the sphere
-                    var altitude = Angle.ByRadians(Math.Acos(1.0d - 2.0d * ((double)i + EPSILON) / ((currentNumPoints * 2) - 1.0d + 2.0d * EPSILON)));
+                    var inverseAltitude = Angle.ByRadians(Math.Acos(1.0d - 2.0d * ((double)i + EPSILON) / ((currentNumPoints * 2) - 1.0d + 2.0d * EPSILON)));
                     // The golden spiral algorithm uses theta from 0 - 180, where theta 0 is zenith
-                    var altitudeDegrees = 90.0d - AstroUtil.EuclidianModulus(altitude.Degree, 180.0);
-                    if (altitudeDegrees < 0.0 || double.IsNaN(altitudeDegrees)) {
+                    var altitudeDegrees = 90.0d - AstroUtil.EuclidianModulus(inverseAltitude.Degree, 180.0);
+                    if (altitudeDegrees < 0.0d || double.IsNaN(altitudeDegrees)) {
                         continue;
                     }
 
                     var azimuthDegrees = AstroUtil.EuclidianModulus(azimuth.Degree, 360.0);
+                    if (azimuthDegrees < 0.1d) {
+                        // Make sure no point is exactly at 0 or 360
+                        azimuthDegrees = 0.1d;
+                    }
+                    if (altitudeDegrees < 0.1d) {
+                        altitudeDegrees = 0.1d;
+                    }
+                    if (altitudeDegrees > 89.9) {
+                        altitudeDegrees = 89.9;
+                    }
+
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
-                    if (altitude.Degree >= horizonAltitude) {
+                    if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;
                     } else {
@@ -68,7 +80,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                     }
                     points.Add(
                         new ModelPoint(dateTime, telescopeMediator) {
-                            Altitude = altitude.Degree,
+                            Altitude = altitudeDegrees,
                             Azimuth = azimuthDegrees,
                             ModelPointState = creationState
                         });

@@ -12,13 +12,15 @@
 
 using Newtonsoft.Json;
 using NINA.Astrometry;
+using NINA.Core.Enum;
 using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Joko.Plugin.TenMicron.Converters;
-using NINA.Profile.Interfaces;
+using NINA.Joko.Plugin.TenMicron.Model;
+using System;
 using System.ComponentModel;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Model {
 
     [TypeConverter(typeof(EnumStaticDescriptionTypeConverter))]
     public enum ModelPointStateEnum {
@@ -35,11 +37,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
         [Description("Processing")]
         Processing = 3,
 
+        [Description("Added to Model")]
+        AddedToModel = 4,
+
         [Description("Failed")]
-        Failed = 4,
+        Failed = 99,
 
         [Description("Below Horizon")]
-        BelowHorizon = 5,
+        BelowHorizon = 100,
     }
 
     public class ModelPoint : BaseINPC {
@@ -84,6 +89,40 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                     azimuth = value;
                     RaisePropertyChanged();
                 }
+            }
+        }
+
+        private double minDomeAzimuth = double.NaN;
+
+        public double MinDomeAzimuth {
+            get => minDomeAzimuth;
+            set {
+                if (minDomeAzimuth != value) {
+                    minDomeAzimuth = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double maxDomeAzimuth = double.NaN;
+
+        public double MaxDomeAzimuth {
+            get => maxDomeAzimuth;
+            set {
+                if (maxDomeAzimuth != value) {
+                    maxDomeAzimuth = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private Coordinates coordinates;
+
+        public Coordinates Coordinates {
+            get => coordinates;
+            set {
+                coordinates = value;
+                RaisePropertyChanged();
             }
         }
 
@@ -138,13 +177,69 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
             }
         }
 
+        private PierSide mountReportedSideOfPier = PierSide.pierUnknown;
+
+        public PierSide MountReportedSideOfPier {
+            get => mountReportedSideOfPier;
+            set {
+                if (mountReportedSideOfPier != value) {
+                    mountReportedSideOfPier = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         private Coordinates plateSolvedCoordinates;
 
         public Coordinates PlateSolvedCoordinates {
             get => plateSolvedCoordinates;
             set {
-                plateSolvedCoordinates = value.Transform(Epoch.JNOW);
+                plateSolvedCoordinates = value?.Transform(Epoch.JNOW);
                 RaisePropertyChanged();
+            }
+        }
+
+        private AstrometricTime plateSolvedRightAscension = AstrometricTime.ZERO;
+
+        public AstrometricTime PlateSolvedRightAscension {
+            get => plateSolvedRightAscension;
+            set {
+                plateSolvedRightAscension = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private CoordinateAngle plateSolvedDeclination = CoordinateAngle.ZERO;
+
+        public CoordinateAngle PlateSolvedDeclination {
+            get => plateSolvedDeclination;
+            set {
+                plateSolvedDeclination = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private double rmsError = double.NaN;
+
+        public double RMSError {
+            get => rmsError;
+            set {
+                if (rmsError != value) {
+                    rmsError = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private DateTime captureTime = DateTime.MinValue;
+
+        public DateTime CaptureTime {
+            get => captureTime;
+            set {
+                if (captureTime != value) {
+                    captureTime = value;
+                    RaisePropertyChanged();
+                }
             }
         }
 
@@ -159,12 +254,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                 dateTime: dateTime);
         }
 
-        public Coordinates ToCelestial(double pressurehPa, double tempCelcius, double relativeHumidity) {
-            return ToTopocentric().Transform(Epoch.JNOW, pressurehPa: pressurehPa, tempCelcius: tempCelcius, relativeHumidity: relativeHumidity, wavelength: 0.54);
+        public Coordinates ToCelestial(double pressurehPa, double tempCelcius, double relativeHumidity, double wavelength) {
+            return ToTopocentric().Transform(Epoch.JNOW, pressurehPa: pressurehPa, tempCelcius: tempCelcius, relativeHumidity: relativeHumidity, wavelength: wavelength);
         }
 
         public override string ToString() {
-            return JsonConvert.SerializeObject(this);
+            return $"Alt={Altitude}, Az={Azimuth}, State={ModelPointState}, RMSError={RMSError}, ModelIndex={ModelIndex}, Coordinates={Coordinates}, MountRA={MountReportedRightAscension}, MountDEC={MountReportedDeclination}, MountLST={MountReportedLocalSiderealTime}, MountPier={MountReportedSideOfPier}, SolvedCoordinates={PlateSolvedCoordinates}, CaptureTime={CaptureTime}";
         }
     }
 }

@@ -11,7 +11,6 @@
 #endregion "copyright"
 
 using NINA.Astrometry;
-using NINA.Core.Enum;
 using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
@@ -24,7 +23,7 @@ using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
+using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Profile.Interfaces;
 using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.WPF.Base.ViewModel;
@@ -52,9 +51,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private readonly IModelAccessor modelAccessor;
         private readonly IModelPointGenerator modelPointGenerator;
         private readonly ICustomDateTime dateTime;
+        private readonly IModelBuilder modelBuilder;
 
         private readonly ITenMicronOptions modelBuilderOptions;
         private IProgress<ApplicationStatus> progress;
+        private IProgress<ApplicationStatus> stepProgress;
         private bool disposed = false;
         private CancellationTokenSource disconnectCts;
 
@@ -67,9 +68,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 applicationStatusMediator,
                 domeSynchronization,
                 TenMicronPlugin.MountMediator,
-                new ModelAccessor(telescopeMediator, TenMicronPlugin.MountMediator, new SystemDateTime()),
-                new ModelPointGenerator(new SystemDateTime(), telescopeMediator),
-                new SystemDateTime()) {
+                TenMicronPlugin.ModelAccessor,
+                TenMicronPlugin.ModelPointGenerator,
+                TenMicronPlugin.ModelBuilder,
+                TenMicronPlugin.DateTime) {
         }
 
         public MountModelBuilderVM(
@@ -82,6 +84,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IMountMediator mountMediator,
             IModelAccessor modelAccessor,
             IModelPointGenerator modelPointGenerator,
+            IModelBuilder modelBuilder,
             ICustomDateTime dateTime) : base(profileService) {
             this.Title = "10u Model Builder";
             this.modelBuilderOptions = modelBuilderOptions;
@@ -92,6 +95,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.domeSynchronization = domeSynchronization;
             this.modelAccessor = modelAccessor;
             this.modelPointGenerator = modelPointGenerator;
+            this.modelBuilder = modelBuilder;
             this.dateTime = dateTime;
             this.disconnectCts = new CancellationTokenSource();
 
@@ -104,6 +108,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.LoadHorizon();
 
             this.GeneratePointsCommand = new AsyncCommand<bool>(GeneratePoints);
+            this.ClearPointsCommand = new AsyncCommand<bool>(ClearPoints);
+            this.BuildCommand = new AsyncCommand<bool>(BuildModel);
+            this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
         }
 
         private void ProfileService_ProfileChanged(object sender, EventArgs e) {
@@ -224,12 +231,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     this.applicationStatusMediator.StatusUpdate(p);
                 });
             }
+            if (this.stepProgress == null) {
+                this.stepProgress = new Progress<ApplicationStatus>(p => {
+                    p.Source = "10u Build Step";
+                    this.applicationStatusMediator.StatusUpdate(p);
+                });
+            }
 
             this.disconnectCts?.Cancel();
             this.disconnectCts = new CancellationTokenSource();
             this.domeShutterAzimuthForOpening = null;
             this.DomeShutterOpeningDataPoints.Clear();
             this.DomeShutterOpeningDataPoints2.Clear();
+            this.BuildInProgress = false;
             Connected = true;
         }
 
@@ -258,6 +272,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
+        private Task<bool> ClearPoints(object o) {
+            this.ModelPoints.Clear();
+            return Task.FromResult(true);
+        }
+
         private bool GenerateGoldenSpiral(int goldenSpiralStarCount) {
             var modelPoints = this.modelPointGenerator.GenerateGoldenSpiral(goldenSpiralStarCount, this.CustomHorizon);
             this.ModelPoints = new AsyncObservableCollection<ModelPoint>(modelPoints);
@@ -267,6 +286,63 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private bool GenerateSiderealPath() {
             Notification.ShowError("Sidereal Path not yet implemented");
             return false;
+        }
+
+        private CancellationTokenSource modelBuildCts;
+        private Task<LoadedAlignmentModel> modelBuildTask;
+
+        private async Task<bool> BuildModel(object o) {
+            try {
+                if (modelBuildCts != null) {
+                    throw new Exception("Model build already in progress");
+                }
+
+                BuildInProgress = true;
+                modelBuildCts = new CancellationTokenSource();
+                var options = new ModelBuilderOptions() {
+                    WestToEastSorting = WestToEastSorting,
+                    NumRetries = BuilderNumRetries,
+                    MaxPointRMS = MaxPointRMS,
+                    MinimizeDomeMovement = MinimizeDomeMovementEnabled,
+                    SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
+                    AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
+                    MaxConcurrency = modelBuilderOptions.MaxConcurrency,
+                    DomeShutterWidth_mm = DomeShutterWidth_mm
+                };
+                var modelPoints = ModelPoints.ToList();
+                modelBuildTask = modelBuilder.Build(modelPoints, options, modelBuildCts.Token, progress, stepProgress);
+                var builtModel = await modelBuildTask;
+                modelBuildTask = null;
+                modelBuildCts = null;
+                if (builtModel == null) {
+                    Notification.ShowError($"Failed to build 10u model");
+                    return false;
+                } else {
+                    Notification.ShowInformation($"10u model build completed. {builtModel.AlignmentStarCount} stars, RMS error {builtModel.RMSError:0.##} arcsec");
+                }
+                return true;
+            } catch (Exception e) {
+                Notification.ShowError($"Failed to build model. {e.Message}");
+                Logger.Error($"Failed to build model", e);
+                return false;
+            } finally {
+                modelBuildCts?.Cancel();
+                modelBuildCts = null;
+                BuildInProgress = false;
+            }
+        }
+
+        private async Task<bool> CancelBuildModel(object o) {
+            try {
+                modelBuildCts?.Cancel();
+                var localModelBuildTask = modelBuildTask;
+                if (localModelBuildTask != null) {
+                    await localModelBuildTask;
+                }
+                return true;
+            } catch (Exception) {
+                return false;
+            }
         }
 
         private static CustomHorizon GetEmptyHorizon() {
@@ -359,31 +435,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             const double altitudeDelta = 3.0d;
             for (double altitude = 0.0; altitude <= 90.0; altitude += altitudeDelta) {
                 var altitudeAngle = Angle.ByDegree(altitude);
-                var radiusAtAltitude = Math.Cos(altitudeAngle.Radians) * domeRadius;
-                var oppositeOverHypotenuse = 0.5 * DomeShutterWidth_mm / radiusAtAltitude;
-
-                /*
-                 * TODO: This should be used during point building
-                var latitude = Angle.ByDegree(TelescopeInfo.SiteLatitude);
-                var longitude = Angle.ByDegree(TelescopeInfo.SiteLongitude);
-                var elevation = TelescopeInfo.SiteElevation;
-                var lst = TelescopeInfo.SiderealTime;
-                var sideOfPier = azimuth <= 180.0 ? PierSide.pierEast : PierSide.pierWest;
-                var topocentricCoordinates = new TopocentricCoordinates(azimuth: azimuthAngle, altitude: altitudeAngle, latitude: latitude, longitude: longitude, dateTime: this.dateTime);
-                var equatorialCoordinates = topocentricCoordinates.Transform(Epoch.JNOW);
-                var domeCoordinates = this.domeSynchronization.TargetDomeCoordinates(equatorialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
-                */
-
-                var apertureAngleThreshold = Angle.ByRadians(Math.Asin(oppositeOverHypotenuse));
-                var leftAzimuthBoundary = azimuthAngle - apertureAngleThreshold;
-                var rightAzimuthBoundary = azimuthAngle + apertureAngleThreshold;
+                (var leftAzimuthBoundary, var rightAzimuthBoundary) = DomeUtility.CalculateDomeAzimuthRange(altitudeAngle: altitudeAngle, azimuthAngle: azimuthAngle, domeRadius: domeRadius, domeShutterWidthMm: DomeShutterWidth_mm);
+                var apertureAngleThresholdDegree = (azimuthAngle - leftAzimuthBoundary).Degree;
 
                 if (leftAzimuthBoundary.Degree < 0.0 || rightAzimuthBoundary.Degree > 360.0) {
                     double boundaryAltitude;
+                    // Interpolate since the target azimuth is beyond the circle boundary
                     if (leftAzimuthBoundary.Degree < 0.0) {
-                        boundaryAltitude = altitude - altitudeDelta * (1.0d - azimuthAngle.Degree / apertureAngleThreshold.Degree);
+                        boundaryAltitude = altitude - altitudeDelta * (1.0d - azimuthAngle.Degree / apertureAngleThresholdDegree);
                     } else {
-                        boundaryAltitude = altitude - altitudeDelta * (1.0d - (360.0d - azimuthAngle.Degree) / apertureAngleThreshold.Degree);
+                        boundaryAltitude = altitude - altitudeDelta * (1.0d - (360.0d - azimuthAngle.Degree) / apertureAngleThresholdDegree);
                     }
 
                     if (leftLimit == null || leftLimit.MinAltitude > boundaryAltitude) {
@@ -401,7 +462,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                         };
                     }
                 }
-                if (oppositeOverHypotenuse < 1.0) {
+                if (!double.IsNaN(leftAzimuthBoundary.Degree)) {
                     dataPoints.Add(new DomeShutterOpeningDataPoint() {
                         Azimuth = (leftAzimuthBoundary.Degree + 360.0) % 360.0,
                         MinAltitude = altitude,
@@ -414,7 +475,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     });
                 }
 
-                if (oppositeOverHypotenuse >= 1.0 && !fullCoverageReached) {
+                if (double.IsNaN(leftAzimuthBoundary.Degree) && !fullCoverageReached) {
                     if (leftLimit == null) {
                         leftLimit = new DomeShutterOpeningDataPoint() {
                             Azimuth = 0,
@@ -593,6 +654,51 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
+        public bool WestToEastSorting {
+            get => this.modelBuilderOptions.WestToEastSorting;
+            set {
+                if (this.modelBuilderOptions.WestToEastSorting != value) {
+                    this.modelBuilderOptions.WestToEastSorting = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public int BuilderNumRetries {
+            get => this.modelBuilderOptions.BuilderNumRetries;
+            set {
+                if (this.modelBuilderOptions.BuilderNumRetries != value) {
+                    this.modelBuilderOptions.BuilderNumRetries = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public double MaxPointRMS {
+            get => this.modelBuilderOptions.MaxPointRMS;
+            set {
+                if (this.modelBuilderOptions.MaxPointRMS != value) {
+                    this.modelBuilderOptions.MaxPointRMS = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool buildInProgress;
+
+        public bool BuildInProgress {
+            get => buildInProgress;
+            private set {
+                if (buildInProgress != value) {
+                    buildInProgress = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public ICommand ClearPointsCommand { get; private set; }
         public ICommand GeneratePointsCommand { get; private set; }
+        public ICommand BuildCommand { get; private set; }
+        public ICommand CancelBuildCommand { get; private set; }
     }
 }

@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
+using NINA.Joko.Plugin.TenMicron.Model;
 using OxyPlot;
 using OxyPlot.Axes;
 
@@ -31,13 +31,16 @@ namespace NINA.Joko.Plugin.TenMicron.Extensions.OxyPlot {
                     return OxyColors.Red;
 
                 case ModelPointStateEnum.UpNext:
-                    return OxyColors.YellowGreen;
+                    return OxyColors.Yellow;
 
                 case ModelPointStateEnum.Exposing:
                     return OxyColors.LightBlue;
 
                 case ModelPointStateEnum.Processing:
                     return OxyColors.Blue;
+
+                case ModelPointStateEnum.AddedToModel:
+                    return OxyColors.ForestGreen;
             }
             return OxyColors.Black;
         }

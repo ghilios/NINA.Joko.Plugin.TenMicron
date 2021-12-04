@@ -11,36 +11,12 @@
 #endregion "copyright"
 
 using NINA.Joko.Plugin.TenMicron.Equipment;
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Equipment.Interfaces.Mediator;
+using NINA.Joko.Plugin.TenMicron.Model;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
     public interface IMountMediator : IDeviceMediator<IMountVM, IMountConsumer, MountInfo> {
-
-        string GetModelName(int modelIndex);
-
-        int GetModelCount();
-
-        bool LoadModel(string name);
-
-        bool SaveModel(string name);
-
-        bool DeleteModel(string name);
-
-        void DeleteAlignment();
-
-        bool DeleteAlignmentStar(int alignmentStarIndex);
-
-        int GetAlignmentStarCount();
-
-        AlignmentStarInfo GetAlignmentStarInfo(int alignmentStarIndex);
-
-        AlignmentModelInfo GetAlignmentModelInfo();
-
-        bool StartNewAlignmentSpec();
-
-        bool FinishAlignmentSpec();
 
         CoordinateAngle GetMountReportedDeclination();
 

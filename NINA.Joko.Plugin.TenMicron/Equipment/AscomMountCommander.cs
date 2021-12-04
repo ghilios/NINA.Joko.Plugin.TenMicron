@@ -14,7 +14,7 @@ using ASCOM.DriverAccess;
 using NINA.Joko.Plugin.TenMicron.Exceptions;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
     public class AscomMountCommander : IMountCommander {
         private readonly Telescope ascomTelescope;

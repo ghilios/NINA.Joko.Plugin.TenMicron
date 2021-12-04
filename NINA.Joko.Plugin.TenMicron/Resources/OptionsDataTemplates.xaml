@@ -1,13 +1,18 @@
 ﻿<ResourceDictionary
     x:Class="NINA.Joko.Plugin.TenMicron.Resources.OptionsDataTemplates"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:xceed="http://schemas.xceed.com/wpf/xaml/toolkit"
+    xmlns:local="clr-namespace:NINA.Joko.Plugin.TenMicron"
     xmlns:interfaces="clr-namespace:NINA.Joko.Plugin.TenMicron.Interfaces"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:jgconverters="clr-namespace:NINA.Joko.Plugin.TenMicron.Converters"
+    xmlns:tmrules="clr-namespace:NINA.Joko.Plugin.TenMicron.ValidationRules"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
-    xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary">
+    xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
+    mc:Ignorable="d">
     <jgconverters:DoubleZeroToVisibilityConverter x:Key="DoubleZeroToVisibilityConverter" />
     <jgconverters:IntNegativeToVisibilityConverter x:Key="IntNegativeToVisibilityConverter" />
     <jgconverters:InverseDoubleZeroToVisibilityConverter x:Key="InverseDoubleZeroToVisibilityConverter" />
@@ -19,6 +24,85 @@
     <jgconverters:ZeroToDisabledConverter x:Key="ZeroToDisabledConverter" />
     <jgconverters:NumericToHalfConverter x:Key="NumericToHalfConverter" />
     <jgconverters:ModelPointStateToColorConverter x:Key="ModelPointStateToColorConverter" />
+    <jgconverters:CollectionContainsItemsToBooleanConverterNoCheck x:Key="CollectionContainsItemsToBooleanConverterNoCheck" />
     <TextBlock x:Key="Placeholder_Tooltip" Text="Placeholder text" />
-    <DataTemplate x:Key="TenMicron_ModelBuilder_Options" />
+    <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
+        <Grid d:DataContext="{d:DesignInstance local:TenMicronOptions, IsDesignTimeCreatable=False}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid.Resources>
+                <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
+                <TextBlock x:Key="MaxConcurrency_Tooltip" Text="The maximum number of plate solves that can run concurrently during a model build. This can be set to infinite if you have plenty of system memory or are using a fast plate solver such as ASTAP with blind solves disabled" />
+                <TextBlock x:Key="SyncFirstPoint_Tooltip" Text="The existing alignment model is cleared when a new model build starts, so the pointing model is likely to be off. This setting solves and syncs the first model point to get closer to the actual requested physicaly coordinates in the sky. This is more important for a sidereal track model as opposed to a full sky one" />
+                <TextBlock x:Key="AllowBlindSolves_Tooltip" Text="Plate solving is done over a narrow search radius to ensure it is fast. This should generally work since you know where the telescope is pointed, but could fail if the pointing model is very far off (more than 30 degrees). This setting enables falling back to blind solves when they fail, at the expense of potentially much longer model build times" />
+            </Grid.Resources>
+            <TextBlock
+                Grid.Row="0" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Log Commands"
+                ToolTip="{StaticResource LogCommands_Tooltip}" />
+            <CheckBox
+                Grid.Row="0" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsChecked="{Binding LogCommands}"
+                ToolTip="{StaticResource LogCommands_Tooltip}" />
+            <TextBlock
+                Grid.Row="1" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Max Concurrency"
+                ToolTip="{StaticResource MaxConcurrency_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="1" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                ToolTip="{StaticResource MaxConcurrency_Tooltip}"
+                Unit="plate solves">
+                <Binding Path="MaxConcurrency" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToInfinityConverter}">
+                    <Binding.ValidationRules>
+                        <tmrules:PositiveIntegerOrInfiniteRule />
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
+            <TextBlock
+                Grid.Row="2" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Sync First Point"
+                ToolTip="{StaticResource SyncFirstPoint_Tooltip}" />
+            <!-- TODO: Enable after sync first is supported -->
+            <CheckBox
+                Grid.Row="2" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsChecked="{Binding SyncFirstPoint}"
+                IsEnabled="False"
+                ToolTip="{StaticResource SyncFirstPoint_Tooltip}" />
+            <TextBlock
+                Grid.Row="3" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Allow Blind Solves"
+                ToolTip="{StaticResource AllowBlindSolves_Tooltip}" />
+            <CheckBox
+                Grid.Row="3" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsChecked="{Binding AllowBlindSolves}"
+                ToolTip="{StaticResource AllowBlindSolves_Tooltip}" />
+        </Grid>
+    </DataTemplate>
 </ResourceDictionary>

@@ -11,13 +11,14 @@
 #endregion "copyright"
 
 using ASCOM.DriverAccess;
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using Newtonsoft.Json;
 using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Joko.Plugin.TenMicron.Equipment;
 
 namespace NINA.Joko.Plugin.TenMicron.Utility {
 

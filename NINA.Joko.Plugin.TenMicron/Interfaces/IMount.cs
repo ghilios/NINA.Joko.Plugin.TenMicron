@@ -10,8 +10,10 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Core.Enum;
+using NINA.Joko.Plugin.TenMicron.Equipment;
+using NINA.Joko.Plugin.TenMicron.Model;
+using System;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
@@ -80,5 +82,13 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         void SetMaximumPrecision(ProductFirmware productFirmware);
 
         Response<bool> SetMeridianSlewLimit(int degrees);
+
+        Response<decimal> GetPressure();
+
+        Response<decimal> GetTemperature();
+
+        Response<bool> GetRefractionCorrectionEnabled();
+
+        Response<DateTime> GetUTCTime();
     }
 }

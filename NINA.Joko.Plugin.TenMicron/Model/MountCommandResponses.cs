@@ -14,31 +14,7 @@ using NINA.Astrometry;
 using NINA.Core.Utility;
 using System;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
-
-    public class ResponseBase {
-
-        public ResponseBase(string rawResponse) {
-            this.RawResponse = rawResponse;
-        }
-
-        public string RawResponse { get; private set; }
-    }
-
-    public class Response<T> : ResponseBase {
-
-        public Response(T value, string rawResponse) : base(rawResponse) {
-            this.Value = value;
-        }
-
-        public T Value { get; private set; }
-
-        public static implicit operator T(Response<T> r) => r.Value;
-
-        public override string ToString() {
-            return Value.ToString();
-        }
-    }
+namespace NINA.Joko.Plugin.TenMicron.Model {
 
     public class CoordinateAngle {
         public static CoordinateAngle ZERO = new CoordinateAngle(true, 0, 0, 0, 0);
@@ -67,6 +43,23 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                 degrees *= -1;
             }
             return Angle.ByDegree(degrees);
+        }
+
+        public static CoordinateAngle FromAngle(Angle angle) {
+            var angleRemaining = angle.Degree;
+            bool positive = angleRemaining >= 0.0d;
+            angleRemaining = Math.Abs(angleRemaining);
+            var degrees = (int)angleRemaining;
+            angleRemaining -= degrees;
+            angleRemaining *= 60.0d;
+            var minutes = (int)angleRemaining;
+            angleRemaining -= minutes;
+            angleRemaining *= 60.0d;
+            var seconds = (int)angleRemaining;
+            angleRemaining -= seconds;
+            angleRemaining *= 100.0d;
+            var hundredthSeconds = (int)angleRemaining;
+            return new CoordinateAngle(positive, degrees, minutes, seconds, hundredthSeconds);
         }
 
         public CoordinateAngle RoundSeconds() {
@@ -110,6 +103,21 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
         public Angle ToAngle() {
             var hours = (double)Hours + (Minutes * 6000 + Seconds * 100 + HundredthSeconds) / (6000d * 60d);
             return Angle.ByHours(hours);
+        }
+
+        public static AstrometricTime FromAngle(Angle angle) {
+            var angleRemaining = AstroUtil.EuclidianModulus(angle.Hours, 24.0d);
+            var hours = (int)angleRemaining;
+            angleRemaining -= hours;
+            angleRemaining *= 60.0d;
+            var minutes = (int)angleRemaining;
+            angleRemaining -= minutes;
+            angleRemaining *= 60.0d;
+            var seconds = (int)angleRemaining;
+            angleRemaining -= seconds;
+            angleRemaining *= 100.0d;
+            var hundredthSeconds = (int)(angleRemaining / 100.0d);
+            return new AstrometricTime(hours, minutes, seconds, hundredthSeconds);
         }
 
         public AstrometricTime RoundTenthSecond() {

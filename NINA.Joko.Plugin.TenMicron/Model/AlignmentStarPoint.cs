@@ -10,7 +10,6 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Astrometry;
 using System;

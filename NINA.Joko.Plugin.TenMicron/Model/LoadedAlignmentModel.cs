@@ -10,11 +10,8 @@
 
 #endregion "copyright"
 
-using NINA.Joko.Plugin.TenMicron.ModelBuilder;
 using NINA.Astrometry;
 using NINA.Core.Utility;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -268,6 +265,27 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             this.AlignmentStarCount = -1;
             this.OriginalAlignmentStars = ImmutableList.Create<AlignmentStarInfo>();
             SynchronizePoints();
+        }
+
+        public LoadedAlignmentModel Clone() {
+            var model = new LoadedAlignmentModel() {
+                ModelName = this.ModelName,
+                RightAscensionAzimuth = this.RightAscensionAzimuth,
+                RightAscensionAltitude = this.RightAscensionAltitude,
+                PolarAlignErrorDegrees = this.PolarAlignErrorDegrees,
+                PAErrorAltitudeDegrees = this.PAErrorAltitudeDegrees,
+                PAErrorAzimuthDegrees = this.PAErrorAzimuthDegrees,
+                RightAscensionPolarPositionAngleDegrees = this.RightAscensionPolarPositionAngleDegrees,
+                OrthogonalityErrorDegrees = this.OrthogonalityErrorDegrees,
+                AzimuthAdjustmentTurns = this.AzimuthAdjustmentTurns,
+                AltitudeAdjustmentTurns = this.AltitudeAdjustmentTurns,
+                ModelTerms = this.ModelTerms,
+                RMSError = this.RMSError,
+                AlignmentStarCount = this.AlignmentStarCount,
+                OriginalAlignmentStars = this.OriginalAlignmentStars
+            };
+            model.SynchronizePoints();
+            return model;
         }
     }
 }

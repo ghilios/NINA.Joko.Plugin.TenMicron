@@ -10,13 +10,15 @@
 
 #endregion "copyright"
 
+using NINA.Equipment.Equipment;
+using NINA.Joko.Plugin.TenMicron.Model;
+using System.Collections.Immutable;
+
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
-    public class MountAscomConfig {
-        public bool EnableUncheckedRawCommands { get; set; }
-        public bool UseJ2000Coordinates { get; set; }
-        public bool EnableSync { get; set; }
-        public bool UseSyncAsAlignment { get; set; }
-        public string RefractionUpdateFile { get; set; }
+    public class MountModelInfo : DeviceInfo {
+        public ImmutableList<string> ModelNames { get; set; }
+
+        public LoadedAlignmentModel LoadedAlignmentModel { get; set; }
     }
 }

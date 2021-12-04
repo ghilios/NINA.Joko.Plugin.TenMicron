@@ -12,47 +12,13 @@
 
 using NINA.WPF.Base.Mediator;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
-using NINA.Joko.Plugin.TenMicron.Equipment;
+using NINA.Core.Enum;
+using System;
+using NINA.Joko.Plugin.TenMicron.Model;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
     public class MountMediator : DeviceMediator<IMountVM, IMountConsumer, MountInfo>, IMountMediator {
-
-        public void DeleteAlignment() {
-            handler.DeleteAlignment();
-        }
-
-        public bool DeleteAlignmentStar(int alignmentStarIndex) {
-            return handler.DeleteAlignmentStar(alignmentStarIndex);
-        }
-
-        public bool DeleteModel(string name) {
-            return handler.DeleteModel(name);
-        }
-
-        public bool FinishAlignmentSpec() {
-            return handler.FinishAlignmentSpec();
-        }
-
-        public AlignmentModelInfo GetAlignmentModelInfo() {
-            return handler.GetAlignmentModelInfo();
-        }
-
-        public int GetAlignmentStarCount() {
-            return handler.GetAlignmentStarCount();
-        }
-
-        public AlignmentStarInfo GetAlignmentStarInfo(int alignmentStarIndex) {
-            return handler.GetAlignmentStarInfo(alignmentStarIndex);
-        }
-
-        public int GetModelCount() {
-            return handler.GetModelCount();
-        }
-
-        public string GetModelName(int modelIndex) {
-            return handler.GetModelName(modelIndex);
-        }
 
         public CoordinateAngle GetMountReportedDeclination() {
             return handler.GetMountReportedDeclination();
@@ -64,18 +30,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
 
         public AstrometricTime GetMountReportedRightAscension() {
             return handler.GetMountReportedRightAscension();
-        }
-
-        public bool LoadModel(string name) {
-            return handler.LoadModel(name);
-        }
-
-        public bool SaveModel(string name) {
-            return handler.SaveModel(name);
-        }
-
-        public bool StartNewAlignmentSpec() {
-            return handler.StartNewAlignmentSpec();
         }
     }
 }

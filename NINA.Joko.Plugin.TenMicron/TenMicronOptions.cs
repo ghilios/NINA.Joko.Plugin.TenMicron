@@ -17,7 +17,7 @@ using NINA.Profile;
 using NINA.Profile.Interfaces;
 using System;
 
-namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
+namespace NINA.Joko.Plugin.TenMicron {
 
     public class TenMicronOptions : BaseINPC, ITenMicronOptions {
         private readonly PluginOptionsAccessor optionsAccessor;
@@ -40,6 +40,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
             domeShutterWidth_mm = optionsAccessor.GetValueInt32("DomeShutterWidth_mm", 0);
             minimizeDomeMovementEnabled = optionsAccessor.GetValueBoolean("MinimizeDomeMovementEnabled", true);
             modelPointGenerationType = optionsAccessor.GetValueEnum("ModelPointGenerationType", ModelPointGenerationTypeEnum.GoldenSpiral);
+            builderNumRetries = optionsAccessor.GetValueInt32("BuilderNumRetries", 0);
+            westToEastSorting = optionsAccessor.GetValueBoolean("WestToEastSorting", false);
+            maxPointRMS = optionsAccessor.GetValueDouble("MaxPointRMS", double.NaN);
+            logCommands = optionsAccessor.GetValueBoolean("LogCommands", false);
+            maxConcurrency = optionsAccessor.GetValueInt32("MaxConcurrency", 3);
+            allowBlindSolves = optionsAccessor.GetValueBoolean("AllowBlindSolves", false);
+            syncFirstPoint = optionsAccessor.GetValueBoolean("SyncFirstPoint", true);
         }
 
         public void ResetDefaults() {
@@ -50,6 +57,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
             DomeShutterWidth_mm = 0;
             MinimizeDomeMovementEnabled = true;
             ModelPointGenerationType = ModelPointGenerationTypeEnum.GoldenSpiral;
+            BuilderNumRetries = 0;
+            WestToEastSorting = false;
+            MaxPointRMS = double.NaN;
+            LogCommands = false;
+            MaxConcurrency = 3;
+            AllowBlindSolves = false;
+            SyncFirstPoint = true;
         }
 
         private int goldenSpiralStarCount;
@@ -147,6 +161,107 @@ namespace NINA.Joko.Plugin.TenMicron.ModelBuilder {
                 if (modelPointGenerationType != value) {
                     modelPointGenerationType = value;
                     optionsAccessor.SetValueEnum("ModelPointGenerationType", modelPointGenerationType);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool westToEastSorting;
+
+        public bool WestToEastSorting {
+            get => westToEastSorting;
+            set {
+                if (westToEastSorting != value) {
+                    westToEastSorting = value;
+                    optionsAccessor.SetValueBoolean("WestToEastSorting", westToEastSorting);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int builderNumRetries;
+
+        public int BuilderNumRetries {
+            get => builderNumRetries;
+            set {
+                if (builderNumRetries != value) {
+                    if (value < 0) {
+                        throw new ArgumentException("BuilderNumRetries must be non-negative", "BuilderNumRetries");
+                    }
+                    builderNumRetries = value;
+                    optionsAccessor.SetValueInt32("BuilderNumRetries", builderNumRetries);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double maxPointRMS;
+
+        public double MaxPointRMS {
+            get => maxPointRMS;
+            set {
+                if (maxPointRMS != value) {
+                    if (value <= 0.0d || double.IsNaN(value)) {
+                        maxPointRMS = double.NaN;
+                    } else {
+                        maxPointRMS = value;
+                    }
+                    optionsAccessor.SetValueDouble("MaxPointRMS", maxPointRMS);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool logCommands;
+
+        public bool LogCommands {
+            get => logCommands;
+            set {
+                if (logCommands != value) {
+                    logCommands = value;
+                    optionsAccessor.SetValueBoolean("LogCommands", logCommands);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool syncFirstPoint;
+
+        public bool SyncFirstPoint {
+            get => syncFirstPoint;
+            set {
+                if (syncFirstPoint != value) {
+                    syncFirstPoint = value;
+                    optionsAccessor.SetValueBoolean("SyncFirstPoint", syncFirstPoint);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool allowBlindSolves;
+
+        public bool AllowBlindSolves {
+            get => allowBlindSolves;
+            set {
+                if (allowBlindSolves != value) {
+                    allowBlindSolves = value;
+                    optionsAccessor.SetValueBoolean("AllowBlindSolves", allowBlindSolves);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int maxConcurrency;
+
+        public int MaxConcurrency {
+            get => maxConcurrency;
+            set {
+                if (maxConcurrency != value) {
+                    if (maxConcurrency < 0) {
+                        throw new ArgumentException("MaxConcurrency must be non-negative", "MaxConcurrency");
+                    }
+                    maxConcurrency = value;
+                    optionsAccessor.SetValueInt32("MaxConcurrency", maxConcurrency);
                     RaisePropertyChanged();
                 }
             }

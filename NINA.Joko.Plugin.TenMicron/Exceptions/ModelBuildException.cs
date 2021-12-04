@@ -10,14 +10,13 @@
 
 #endregion "copyright"
 
-using NINA.Core.Model;
-using NINA.Joko.Plugin.TenMicron.Model;
-using System.Collections.Generic;
+using System;
 
-namespace NINA.Joko.Plugin.TenMicron.Interfaces {
+namespace NINA.Joko.Plugin.TenMicron.Exceptions {
 
-    public interface IModelPointGenerator {
+    public class ModelBuildException : Exception {
 
-        List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon);
+        public ModelBuildException(string message) : base(message) {
+        }
     }
 }

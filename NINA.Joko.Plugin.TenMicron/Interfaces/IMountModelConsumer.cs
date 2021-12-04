@@ -10,14 +10,11 @@
 
 #endregion "copyright"
 
-using NINA.Core.Model;
-using NINA.Joko.Plugin.TenMicron.Model;
-using System.Collections.Generic;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Joko.Plugin.TenMicron.Equipment;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IModelPointGenerator {
-
-        List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon);
+    public interface IMountModelConsumer : IDeviceConsumer<MountModelInfo> {
     }
 }

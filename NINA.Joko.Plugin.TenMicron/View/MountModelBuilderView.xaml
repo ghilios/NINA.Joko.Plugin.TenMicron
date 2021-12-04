@@ -5,6 +5,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:NINA.Joko.Plugin.TenMicron.View"
+    xmlns:localvm="clr-namespace:NINA.Joko.Plugin.TenMicron.ViewModels"
+    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:swm="clr-namespace:System.Windows.Media;assembly=PresentationCore"
@@ -13,6 +15,7 @@
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
     xmlns:tmmodel="clr-namespace:NINA.Joko.Plugin.TenMicron.Model"
     xmlns:tmoxy="clr-namespace:NINA.Joko.Plugin.TenMicron.Extensions.OxyPlot.Wpf"
+    d:DataContext="{d:DesignInstance localvm:MountModelBuilderVM, IsDesignTimeCreatable=False}"
     x:Name="UC"
     mc:Ignorable="d">
     <UserControl.Resources>
@@ -23,6 +26,8 @@
         <TextBlock x:Key="SiderealTrackStartOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dusk to start point generation for the target object" />
         <TextBlock x:Key="SiderealTrackEndOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dawn to end point generation for the target object" />
         <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
+        <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
+        <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Visibility="{Binding MountInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
@@ -74,25 +79,37 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Button
-                            Grid.Row="1" Grid.Column="0"
-                            Grid.ColumnSpan="2"
-                            Height="30"
-                            Margin="10,5,10,0"
-                            Command="{Binding GeneratePointsCommand}">
-                            <Button.ToolTip>
-                                <ToolTip ToolTipService.ShowOnDisabled="False">
-                                    <TextBlock Text="Generate Points" />
-                                </ToolTip>
-                            </Button.ToolTip>
-                            <Grid>
-                                <Path
+                        <UniformGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
+                            <Button
+                                Height="30"
+                                Margin="10,5,10,0"
+                                Command="{Binding GeneratePointsCommand}">
+                                <Button.ToolTip>
+                                    <ToolTip ToolTipService.ShowOnDisabled="False">
+                                        <TextBlock Text="Generate Points" />
+                                    </ToolTip>
+                                </Button.ToolTip>
+                                <Grid>
+                                    <Path
                                     Margin="5"
                                     Data="{StaticResource LoopSVG}"
                                     Fill="{StaticResource ButtonForegroundBrush}"
                                     Stretch="Uniform" />
-                            </Grid>
-                        </Button>
+                                </Grid>
+                            </Button>
+                            <Button
+                                Height="30"
+                                Margin="10,5,10,0"
+                                Command="{Binding ClearPointsCommand}">
+                                <Button.IsEnabled>
+                                    <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                        <Binding Path="ModelPoints" Converter="{StaticResource CollectionContainsItemsToBooleanConverterNoCheck}" />
+                                        <Binding Path="BuildInProgress" Converter="{StaticResource InverseBooleanConverter}" />
+                                    </MultiBinding>
+                                </Button.IsEnabled>
+                                <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear" ToolTip="Clear generated points" />
+                            </Button>
+                        </UniformGrid>
                     </Grid>
                 </GroupBox>
                 <GroupBox>
@@ -284,6 +301,74 @@
                         </ninactrl:UnitTextBox>
                     </Grid>
                 </GroupBox>
+                <GroupBox>
+                    <GroupBox.Header>
+                        <Grid Height="36" Margin="5">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="18"
+                                Text="Builder" />
+                        </Grid>
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            Grid.Row="0" Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="West to East"
+                            ToolTip="{StaticResource WestToEast_Tooltip}" />
+                        <CheckBox
+                            Grid.Row="0" Grid.Column="1"
+                            MinWidth="80"
+                            Margin="5,5,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            ToolTip="{StaticResource WestToEast_Tooltip}"
+                            IsChecked="{Binding WestToEastSorting}" />
+                        <TextBlock
+                            Grid.Row="1" Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="Retries"
+                            ToolTip="{StaticResource BuilderRetries_Tooltip}" />
+                        <ninactrl:UnitTextBox
+                            Grid.Row="1" Grid.Column="1"
+                            MinWidth="80"
+                            Margin="5,5,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Unit="retries"
+                            ToolTip="{StaticResource BuilderRetries_Tooltip}">
+                            <Binding Path="BuilderRetries_Tooltip" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
+                                <Binding.ValidationRules>
+                                    <rules:GreaterZeroRule />
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox>
+                        <ninactrl:CancellableButton
+                            Grid.Row="2" Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            Height="30"
+                            Margin="10,5,10,0"
+                            ButtonText="Build"
+                            IsEnabled="{Binding ModelPoints, Converter={StaticResource CollectionContainsItemsToBooleanConverter}}"
+                            CancelButtonImage="{StaticResource CancelSVG}"
+                            CancelCommand="{Binding CancelBuildCommand}"
+                            CancelToolTip="{ns:Loc LblCancel}"
+                            ToolTip="Build the model"
+                            Command="{Binding BuildCommand}" />
+                    </Grid>
+                </GroupBox>
             </StackPanel>
             <Separator Grid.Column="1" Margin="10,5,5,10" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
             <Grid Grid.Column="2" Grid.Row="0" Grid.RowSpan="2">
@@ -310,6 +395,7 @@
                         <!-- Cornflowerblue = 0xFF6495ED -->
                         <Color x:Key="DomeShutterColor" A="50" R="0x64" G="0x95" B="0xED" />
                         <Color x:Key="DomeAzimuthColor" A="100" R="0x64" G="0x95" B="0xED" />
+                        <Color x:Key="DomeAzimuthTextColor" A="50" R="0x00" G="0x00" B="0x00" />
                     </oxy:Plot.Resources>
                     <oxy:Plot.Axes>
                         <oxy:LinearAxis
@@ -322,6 +408,8 @@
                             MajorStep="30"
                             Maximum="360"
                             Minimum="0"
+                            AbsoluteMinimum="-1"
+                            AbsoluteMaximum="361"
                             MinorStep="{Binding Path=MajorStep, RelativeSource={RelativeSource Self}}"
                             Position="Bottom"
                             StartPosition="0"
@@ -390,7 +478,7 @@
                     </oxy:Plot.Series>
                     <oxy:Plot.Annotations>
                         <oxy:PointAnnotation
-                            Stroke="{Binding Path=Color, Source={StaticResource PrimaryBrush}}"
+                            Stroke="{Binding Path=Color, Source={StaticResource PrimaryBrush}, Converter={StaticResource SetAlphaToColorConverter}, ConverterParameter=60}"
                             StrokeThickness="2"
                             Shape="Cross"
                             Size="8"
@@ -400,7 +488,9 @@
                             Y="{Binding ScopePosition.Y}" />
                         <oxy:LineAnnotation
                             MaximumY="90"
-                            TextColor="Transparent"
+                            TextColor="{StaticResource DomeAzimuthTextColor}"
+                            Text="Dome Az"
+                            TextOrientation="AlongLine"
                             Type="Vertical"
                             LineStyle="Solid"
                             StrokeThickness="2"

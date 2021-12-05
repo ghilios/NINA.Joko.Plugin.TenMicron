@@ -30,8 +30,14 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public int DomeShutterWidth_mm { get; set; } = 0;
     }
 
+    public class PointNextUpEventArgs : EventArgs {
+        public ModelPoint Point { get; set; } = null;
+    }
+
     public interface IModelBuilder {
 
         Task<LoadedAlignmentModel> Build(List<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null);
+
+        event EventHandler<PointNextUpEventArgs> PointNextUp;
     }
 }

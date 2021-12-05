@@ -85,6 +85,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.domeMediator = domeMediator;
             this.modelPointGenerator = modelPointGenerator;
             this.modelBuilder = modelBuilder;
+            this.modelBuilder.PointNextUp += ModelBuilder_PointNextUp;
+
             this.disconnectCts = new CancellationTokenSource();
 
             this.telescopeMediator.RegisterConsumer(this);
@@ -100,6 +102,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ClearPointsCommand = new AsyncCommand<bool>(ClearPoints);
             this.BuildCommand = new AsyncCommand<bool>(BuildModel);
             this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
+        }
+
+        private void ModelBuilder_PointNextUp(object sender, PointNextUpEventArgs e) {
+            if (e.Point == null) {
+                this.NextUpDomeAzimuthPosition = new DataPoint();
+                this.ShowNextUpDomeAzimuthPosition = false;
+            } else {
+                this.NextUpDomeAzimuthPosition = new DataPoint(e.Point.DomeAzimuth, e.Point.Altitude);
+                this.ShowNextUpDomeAzimuthPosition = true;
+            }
         }
 
         private void ProfileService_ProfileChanged(object sender, EventArgs e) {
@@ -594,6 +606,28 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             get => scopePosition;
             set {
                 scopePosition = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool showNextUpDomeAzimuthPosition = false;
+
+        public bool ShowNextUpDomeAzimuthPosition {
+            get => showNextUpDomeAzimuthPosition;
+            set {
+                if (showNextUpDomeAzimuthPosition != value) {
+                    showNextUpDomeAzimuthPosition = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private DataPoint nextUpDomeAzimuthPosition;
+
+        public DataPoint NextUpDomeAzimuthPosition {
+            get => nextUpDomeAzimuthPosition;
+            set {
+                nextUpDomeAzimuthPosition = value;
                 RaisePropertyChanged();
             }
         }

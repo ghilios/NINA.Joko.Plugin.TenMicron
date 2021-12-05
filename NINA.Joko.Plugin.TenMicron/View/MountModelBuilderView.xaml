@@ -349,7 +349,7 @@
                             VerticalAlignment="Center"
                             Unit="retries"
                             ToolTip="{StaticResource BuilderRetries_Tooltip}">
-                            <Binding Path="BuilderRetries_Tooltip" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
+                            <Binding Path="BuilderNumRetries" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
                                 <Binding.ValidationRules>
                                     <rules:GreaterZeroRule />
                                 </Binding.ValidationRules>
@@ -395,6 +395,9 @@
                         <!-- Cornflowerblue = 0xFF6495ED -->
                         <Color x:Key="DomeShutterColor" A="50" R="0x64" G="0x95" B="0xED" />
                         <Color x:Key="DomeAzimuthColor" A="100" R="0x64" G="0x95" B="0xED" />
+
+                        <!-- BlueViolet = 0xFF8A2BE2 -->
+                        <Color x:Key="NextUpDomeAzimuthColor" A="80" R="0x8A" G="0x2B" B="0xE2" />
                         <Color x:Key="DomeAzimuthTextColor" A="50" R="0x00" G="0x00" B="0x00" />
                     </oxy:Plot.Resources>
                     <oxy:Plot.Axes>
@@ -474,7 +477,7 @@
                             DataFieldY="Altitude"
                             MarkerSize="4"
                             DataFieldValue="ModelPointState"
-                            TrackerFormatString="{}Altitude: {Altitude:###.##}&#176;&#x0a;Azimuth: {Azimuth:###.##}&#176;&#x0a;State: {ModelPointStateString}" />
+                            TrackerFormatString="{}Altitude: {Altitude:##0.00}&#176;&#x0a;Azimuth: {Azimuth:##0.00}&#176;&#x0a;State: {ModelPointStateString}&#x0a;RMS Error: {RMSError:0.0##}" />
                     </oxy:Plot.Series>
                     <oxy:Plot.Annotations>
                         <oxy:PointAnnotation
@@ -497,6 +500,29 @@
                             X="{Binding DomeInfo.Azimuth, UpdateSourceTrigger=PropertyChanged}"
                             Visibility="{Binding DomeControlEnabled, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                             Color="{StaticResource DomeAzimuthColor}" />
+                        <oxy:LineAnnotation
+                            MaximumY="90"
+                            TextColor="{StaticResource DomeAzimuthTextColor}"
+                            Text="Next Up Dome Az"
+                            TextOrientation="AlongLine"
+                            TextLinePosition="-1"
+                            Type="Vertical"
+                            LineStyle="Solid"
+                            StrokeThickness="2"
+                            X="{Binding NextUpDomeAzimuthPosition.X, UpdateSourceTrigger=PropertyChanged}"
+                            Visibility="{Binding ShowNextUpDomeAzimuthPosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
+                            Color="{StaticResource NextUpDomeAzimuthColor}" />
+                        <oxy:PointAnnotation
+                            Stroke="{StaticResource NextUpDomeAzimuthColor}"
+                            StrokeThickness="2"
+                            Shape="Plus"
+                            Size="8"
+                            Opacity="0.6"
+                            Text="Dome Target"
+                            TextColor="{StaticResource NextUpDomeAzimuthColor}"
+                            X="{Binding NextUpDomeAzimuthPosition.X}"
+                            Y="{Binding NextUpDomeAzimuthPosition.Y}"
+                            Visibility="{Binding ShowNextUpDomeAzimuthPosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
                     </oxy:Plot.Annotations>
                 </oxy:Plot>
             </Grid>

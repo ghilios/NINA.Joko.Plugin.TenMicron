@@ -50,13 +50,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private readonly IProfileService profileService;
         private readonly IPlateSolverFactory plateSolverFactory;
         private readonly IFilterWheelMediator filterWheelMediator;
-        private readonly ICustomDateTime dateTime;
         private volatile int processingInProgressCount;
+
+        public event EventHandler<PointNextUpEventArgs> PointNextUp;
 
         public ModelBuilder(
             IProfileService profileService, IMountModelMediator mountModelMediator, IMount mount, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator, ICameraMediator cameraMediator,
             IDomeSynchronization domeSynchronization, IPlateSolverFactory plateSolverFactory, IImagingMediator imagingMediator, IFilterWheelMediator filterWheelMediator,
-            IWeatherDataMediator weatherDataMediator, ICustomDateTime dateTime) {
+            IWeatherDataMediator weatherDataMediator) {
             this.mountModelMediator = mountModelMediator;
             this.imagingMediator = imagingMediator;
             this.mount = mount;
@@ -68,7 +69,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             this.profileService = profileService;
             this.plateSolverFactory = plateSolverFactory;
             this.filterWheelMediator = filterWheelMediator;
-            this.dateTime = dateTime;
         }
 
         private class ModelBuilderState {
@@ -176,6 +176,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     Status2 = ""
                 });
                 stepProgress?.Report(new ApplicationStatus() { });
+                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = null });
                 if (startedAtPark) {
                     Notification.ShowInformation("Re-parking telescope after 10u model build");
                     await telescopeMediator.ParkTelescope(stepProgress, innerCts.Token);
@@ -229,6 +230,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
             // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
             PreStep3_CacheDomeAzimuthRanges(state);
+
+            // Pre-Step 4: Sync the first point, if configured to do so
+            await PreStep4_SyncFirstPoint(state, ct, stepProgress);
 
             int retryCount = -1;
             LoadedAlignmentModel builtModel = null;
@@ -379,29 +383,73 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
+        private async Task PreStep4_SyncFirstPoint(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
+            if (state.Options.SyncFirstPoint) {
+                var eligiblePoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
+                var firstPoint = eligiblePoints.OrderBy(p => p, state.PointAzimuthComparer).First();
+                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = firstPoint });
+                var firstPointSlews = new List<Task<bool>>();
+
+                if (state.UseDome) {
+                    firstPointSlews.Add(domeMediator.SlewToAzimuth(firstPoint.DomeAzimuth, ct));
+                }
+                firstPointSlews.Add(SlewTelescopeToPoint(state, firstPoint, ct));
+
+                var results = await Task.WhenAll(firstPointSlews);
+                if (!results.All(r => r)) {
+                    throw new Exception("Failed to slew dome and/or telescope for first sync");
+                }
+                ct.ThrowIfCancellationRequested();
+
+                var exposureData = await CaptureImage(firstPoint, stepProgress, ct);
+                ct.ThrowIfCancellationRequested();
+
+                var solveResult = await SolveImage(state.Options, exposureData, ct);
+                ct.ThrowIfCancellationRequested();
+
+                if (solveResult?.Success == true) {
+                    if (!await telescopeMediator.Sync(solveResult.Coordinates)) {
+                        Logger.Warning($"Failed to sync first point {firstPoint}. Moving on");
+                        Notification.ShowInformation("Failed to sync first point. Moving on");
+                    } else {
+                        Notification.ShowInformation("First point solved and synced for 10u model build");
+                    }
+                } else {
+                    Logger.Warning("Failed to plate solve first point for initial sync. Moving on");
+                    Notification.ShowInformation("Failed to plate solve first point for initial sync. Moving on");
+                }
+            }
+        }
+
+        private async Task<bool> SlewTelescopeToPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct) {
+            // Instead of issuing an AltAz slew directly (which requires direct communication with the mount), calculate refraction-adjusted RA/Dec coordinates and slew there instead
+            var nextPointCoordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
+            Logger.Info($"Slewing to {nextPointCoordinates} for point at Alt={point.Altitude:0.###}, Az={point.Azimuth:0.###}");
+            return await this.telescopeMediator.SlewToCoordinatesAsync(nextPointCoordinates, ct);
+        }
+
         private async Task ProcessPoints(
             ModelBuilderState state,
             CancellationToken ct,
             IProgress<ApplicationStatus> overallProgress,
             IProgress<ApplicationStatus> stepProgress) {
-            var sideOfPierPoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
-            var nextPoint = sideOfPierPoints.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
-            Logger.Info($"Processing {sideOfPierPoints.Count} points. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
+            var eligiblePoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
+            var nextPoint = eligiblePoints.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
+            PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = nextPoint });
+
+            Logger.Info($"Processing {eligiblePoints.Count} points. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
             if (state.UseDome) {
-                _ = SlewDomeIfNecessary(state, sideOfPierPoints, ct);
+                _ = SlewDomeIfNecessary(state, eligiblePoints, ct);
             }
 
             while (nextPoint != null) {
                 ct.ThrowIfCancellationRequested();
+                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = nextPoint });
                 nextPoint.ModelPointState = ModelPointStateEnum.UpNext;
 
                 bool success = false;
                 try {
-                    // TODO: Use AltAz slew on mount
-                    var nextPointCoordinates = nextPoint.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
-                    Logger.Info($"Slewing to {nextPointCoordinates} for point at Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}");
-                    // TODO: Move this to a utility method
-                    if (!await this.telescopeMediator.SlewToCoordinatesAsync(nextPointCoordinates, ct)) {
+                    if (!await SlewTelescopeToPoint(state, nextPoint, ct)) {
                         Logger.Error($"Failed to slew to {nextPoint}. Continuing to the next point");
                         nextPoint.ModelPointState = ModelPointStateEnum.Failed;
                         ++state.FailedPoints;
@@ -453,31 +501,26 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     ++state.FailedPoints;
                 }
 
-                // Using a simple azimuth-based ordering for now.
-                // TODO: Sequence slews based on cartesian distance?
                 // TODO: Add Stop vs Cancel button
                 // TODO: Add execution timer, including remaining estimate
-                // TODO: Add line for "next point dome azimuth"
-                // TODO: Split download from exposure in NINA core
                 // TODO: Update plugin description to represent what is supported
-                // TODO: Slew to AltAz instead of using transformations
                 // TODO: Add option to save failed points and plate solve image
                 if (state.UseDome) {
-                    var nextCandidates = sideOfPierPoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
+                    var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                     if (nextPoint == null) {
                         // No points remaining visible through the slit. Widen the search to all eligible points on this side of the pier and slew the dome
-                        nextCandidates = sideOfPierPoints.Where(IsPointEligibleForBuild);
+                        nextCandidates = eligiblePoints.Where(IsPointEligibleForBuild);
                         nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                         if (nextPoint != null) {
                             Logger.Info($"Next point not visible through dome. Dome slew required. Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}, CurrentDomeAz={domeMediator.GetInfo().Azimuth:0.###}");
-                            _ = SlewDomeIfNecessary(state, sideOfPierPoints, ct);
+                            _ = SlewDomeIfNecessary(state, eligiblePoints, ct);
                         }
                     } else {
                         Logger.Info($"Next point still visible through dome. No dome slew required. Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}, CurrentDomeAz={domeMediator.GetInfo().Azimuth:0.###}");
                     }
                 } else {
-                    var nextCandidates = sideOfPierPoints.Where(IsPointEligibleForBuild);
+                    var nextCandidates = eligiblePoints.Where(IsPointEligibleForBuild);
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                 }
 
@@ -637,7 +680,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 PixelSize = profileService.ActiveProfile.CameraSettings.PixelSize,
                 ReattemptDelay = TimeSpan.FromMinutes(profileService.ActiveProfile.PlateSolveSettings.ReattemptDelay),
                 Regions = profileService.ActiveProfile.PlateSolveSettings.Regions,
-                SearchRadius = profileService.ActiveProfile.PlateSolveSettings.SearchRadius
+                SearchRadius = profileService.ActiveProfile.PlateSolveSettings.SearchRadius,
             };
 
             // Plate solves are done concurrently, so do not show progress

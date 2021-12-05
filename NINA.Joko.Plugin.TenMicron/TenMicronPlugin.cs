@@ -27,6 +27,12 @@ using NINA.PlateSolving.Interfaces;
 
 namespace NINA.Joko.Plugin.TenMicron {
 
+    /// <summary>
+    /// Longer term consideration TODO list:
+    ///  1. Split download time from exposure to avoid waiting for download before slewing to the next point
+    ///  2. Minimize distance between points instead of going purely based on azimuth
+    ///  3. Use AltAz slew on the mount instead of calculating our own refaction-adjusted RA/DEC
+    /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {
 
@@ -53,7 +59,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             DateTime = new SystemDateTime();
             ModelAccessor = new ModelAccessor(telescopeMediator, MountModelMediator, DateTime);
             ModelPointGenerator = new ModelPointGenerator(DateTime, telescopeMediator);
-            ModelBuilder = new ModelBuilder(profileService, MountModelMediator, Mount, telescopeMediator, domeMediator, cameraMediator, domeSynchronization, plateSolverFactory, imagingMediator, filterWheelMediator, weatherDataMediator, DateTime);
+            ModelBuilder = new ModelBuilder(profileService, MountModelMediator, Mount, telescopeMediator, domeMediator, cameraMediator, domeSynchronization, plateSolverFactory, imagingMediator, filterWheelMediator, weatherDataMediator);
         }
 
         public static TenMicronOptions TenMicronOptions { get; private set; }

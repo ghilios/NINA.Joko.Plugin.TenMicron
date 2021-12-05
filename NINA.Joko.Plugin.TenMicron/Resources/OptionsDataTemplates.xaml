@@ -80,7 +80,6 @@
                 VerticalAlignment="Center"
                 Text="Sync First Point"
                 ToolTip="{StaticResource SyncFirstPoint_Tooltip}" />
-            <!-- TODO: Enable after sync first is supported -->
             <CheckBox
                 Grid.Row="2" Grid.Column="1"
                 MinWidth="80"
@@ -88,7 +87,6 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 IsChecked="{Binding SyncFirstPoint}"
-                IsEnabled="False"
                 ToolTip="{StaticResource SyncFirstPoint_Tooltip}" />
             <TextBlock
                 Grid.Row="3" Grid.Column="0"

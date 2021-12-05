@@ -503,6 +503,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     return false;
                 }
                 return true;
+            } catch (OperationCanceledException) {
+                Logger.Info("Dome slew cancelled");
+                return false;
             } catch (Exception e) {
                 Logger.Error("Dome slew failed", e);
                 Notification.ShowError($"Dome Slew failed: {e.Message}");

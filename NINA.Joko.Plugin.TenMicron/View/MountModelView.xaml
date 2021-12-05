@@ -5,8 +5,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:NINA.Joko.Plugin.TenMicron.View"
+    xmlns:localvm="clr-namespace:NINA.Joko.Plugin.TenMicron.ViewModels"
     xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
     xmlns:swm="clr-namespace:System.Windows.Media;assembly=PresentationCore"
+    d:DataContext="{d:DesignInstance localvm:MountModelVM, IsDesignTimeCreatable=False}"
     x:Name="UC"
     mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -225,7 +227,6 @@
                         MinWidth="300"
                         MinHeight="300"
                         Width="Auto"
-                        Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}}"
                         VerticalAlignment="Stretch"
                         HorizontalAlignment="Stretch"
                         Background="{StaticResource BackgroundBrush}"

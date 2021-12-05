@@ -539,8 +539,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     ++state.FailedPoints;
                 }
 
-                // TODO: Add Stop vs Cancel button
-                // TODO: Update plugin description to represent what is supported
                 if (state.UseDome) {
                     var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();

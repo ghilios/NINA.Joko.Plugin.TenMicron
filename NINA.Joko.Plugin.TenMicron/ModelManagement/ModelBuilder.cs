@@ -101,6 +101,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
             }
 
+            public DateTime IterationStartTime { get; set; }
             public ModelBuilderOptions Options { get; private set; }
             public ImmutableList<ModelPoint> ModelPoints { get; private set; }
             public ImmutableList<ModelPoint> ValidPoints { get; private set; }
@@ -216,6 +217,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             ValidateRequest(modelPoints);
         }
 
+        private void StartProgressReporter(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> overallProgress) {
+            _ = Task.Run(async () => {
+                while (!ct.IsCancellationRequested) {
+                    ReportOverallProgress(state, overallProgress);
+                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                }
+            });
+        }
+
         private async Task<LoadedAlignmentModel> DoBuild(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> overallProgress, IProgress<ApplicationStatus> stepProgress) {
             ct.ThrowIfCancellationRequested();
             var validPoints = state.ValidPoints;
@@ -234,14 +244,17 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             // Pre-Step 4: Sync the first point, if configured to do so
             await PreStep4_SyncFirstPoint(state, ct, stepProgress);
 
+            StartProgressReporter(state, ct, overallProgress);
+
             int retryCount = -1;
             LoadedAlignmentModel builtModel = null;
             while (retryCount++ < options.NumRetries) {
                 state.FailedPoints = 0;
+                state.PointsProcessed = 0;
                 state.BuildAttempt = retryCount + 1;
+                state.IterationStartTime = DateTime.Now;
 
                 Logger.Info($"Starting model build iteration {retryCount + 1}");
-                ReportOverallProgress(state, overallProgress);
 
                 // Step 1: Clear alignment model
                 Logger.Info("Deleting current alignment model");
@@ -265,7 +278,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                 point.ModelPointState = ModelPointStateEnum.Failed;
                             }
                             ++state.PointsProcessed;
-                            ReportOverallProgress(state, overallProgress);
                         }
                     }
                 }
@@ -495,7 +507,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 ++state.PointsProcessed;
-                ReportOverallProgress(state, overallProgress);
                 if (!success) {
                     nextPoint.ModelPointState = ModelPointStateEnum.Failed;
                     ++state.FailedPoints;
@@ -504,7 +515,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 // TODO: Add Stop vs Cancel button
                 // TODO: Add execution timer, including remaining estimate
                 // TODO: Update plugin description to represent what is supported
-                // TODO: Add option to save failed points and plate solve image
                 if (state.UseDome) {
                     var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
@@ -617,14 +627,27 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         }
 
         private void ReportOverallProgress(ModelBuilderState state, IProgress<ApplicationStatus> overallProgress) {
+            var elapsedTime = DateTime.Now - state.IterationStartTime;
+            var elapsedTimeSecondsRounded = TimeSpan.FromSeconds((int)elapsedTime.TotalSeconds);
+            var completedPoints = state.PointsProcessed + state.FailedPoints;
+            TimeSpan totalEstimatedTime;
+            string elapsedProgressStatus;
+            if (completedPoints >= 2) {
+                var totalEstimatedTimeSeconds = elapsedTime.TotalSeconds * state.ValidPoints.Count / completedPoints;
+                totalEstimatedTime = TimeSpan.FromSeconds((int)totalEstimatedTimeSeconds);
+                elapsedProgressStatus = $"{elapsedTimeSecondsRounded.ToString("g")} / {totalEstimatedTime.ToString("g")}";
+            } else {
+                elapsedProgressStatus = $"{elapsedTimeSecondsRounded.ToString("g")} / -";
+            }
+
             overallProgress?.Report(new ApplicationStatus() {
                 Status = $"Build Attempt",
                 ProgressType = ApplicationStatus.StatusProgressType.ValueOfMaxValue,
                 Progress = state.BuildAttempt,
                 MaxProgress = state.Options.NumRetries + 1,
-                Status2 = $"Stars",
+                Status2 = $"Elapsed {elapsedProgressStatus}",
                 ProgressType2 = ApplicationStatus.StatusProgressType.ValueOfMaxValue,
-                Progress2 = state.PointsProcessed,
+                Progress2 = completedPoints,
                 MaxProgress2 = state.ValidPoints.Count
             });
         }
@@ -663,7 +686,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 1
             );
             point.ModelPointState = ModelPointStateEnum.Exposing;
-            return await this.imagingMediator.CaptureImage(seq, ct, stepProgress);
+            var exposureData = await this.imagingMediator.CaptureImage(seq, ct, stepProgress);
+            // Fire and forget to prepare image, which will put the latest captured image in the imaging tab view
+            _ = Task.Run(async () => {
+                var imageData = await exposureData.ToImageData();
+                _ = this.imagingMediator.PrepareImage(imageData, new PrepareImageParameters(autoStretch: true, detectStars: false), ct);
+            });
+            return exposureData;
         }
 
         private async Task<PlateSolveResult> SolveImage(ModelBuilderOptions options, IExposureData exposureData, CancellationToken ct) {

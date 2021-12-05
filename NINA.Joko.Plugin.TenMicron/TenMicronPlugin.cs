@@ -32,6 +32,7 @@ namespace NINA.Joko.Plugin.TenMicron {
     ///  1. Split download time from exposure to avoid waiting for download before slewing to the next point
     ///  2. Minimize distance between points instead of going purely based on azimuth
     ///  3. Use AltAz slew on the mount instead of calculating our own refaction-adjusted RA/DEC
+    ///  4. Option to save failed points and images used to plate solve
     /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {

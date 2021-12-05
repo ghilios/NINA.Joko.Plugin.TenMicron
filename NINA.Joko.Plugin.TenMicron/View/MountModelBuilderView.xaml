@@ -500,18 +500,6 @@
                             X="{Binding DomeInfo.Azimuth, UpdateSourceTrigger=PropertyChanged}"
                             Visibility="{Binding DomeControlEnabled, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                             Color="{StaticResource DomeAzimuthColor}" />
-                        <oxy:LineAnnotation
-                            MaximumY="90"
-                            TextColor="{StaticResource DomeAzimuthTextColor}"
-                            Text="Next Up Dome Az"
-                            TextOrientation="AlongLine"
-                            TextLinePosition="-1"
-                            Type="Vertical"
-                            LineStyle="Solid"
-                            StrokeThickness="2"
-                            X="{Binding NextUpDomeAzimuthPosition.X, UpdateSourceTrigger=PropertyChanged}"
-                            Visibility="{Binding ShowNextUpDomeAzimuthPosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
-                            Color="{StaticResource NextUpDomeAzimuthColor}" />
                         <oxy:PointAnnotation
                             Stroke="{StaticResource NextUpDomeAzimuthColor}"
                             StrokeThickness="2"

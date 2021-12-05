@@ -746,7 +746,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public CustomHorizon CustomHorizon {
             get => customHorizon;
             private set {
-                if (customHorizon == null) {
+                if (value == null) {
                     customHorizon = EMPTY_HORIZON;
                 } else {
                     customHorizon = value;

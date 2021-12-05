@@ -159,7 +159,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 Logger.Info($"Filter before building model set to {oldFilter.Name}, and will be restored after completion");
             }
 
+            var reenableDomeFollower = false;
             var state = new ModelBuilderState(options, modelPoints, mount, domeMediator, weatherDataMediator);
+            if (state.UseDome && domeMediator.IsFollowingScope) {
+                Notification.ShowInformation("Stopping dome follower to build 10u model. It will be turned back on after completion");
+                reenableDomeFollower = true;
+            }
+
             var innerCts = new CancellationTokenSource();
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, innerCts.Token);
             try {
@@ -181,6 +187,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 if (oldFilter != null) {
                     Logger.Info($"Restoring filter to {oldFilter} after 10u model build");
                     await filterWheelMediator.ChangeFilter(oldFilter, progress: stepProgress);
+                }
+
+                if (reenableDomeFollower) {
+                    if (!await domeMediator.EnableFollowing(innerCts.Token)) {
+                        Logger.Warning("Failed to re-enable dome follower after 10u model build");
+                        Notification.ShowWarning("Failed to re-enable dome follower after 10u model build");
+                    }
                 }
                 state.ProcessingSemaphore?.Dispose();
                 // Make sure any remaining tasks are cancelled, just in case an exception left some remaining work in progress
@@ -447,7 +460,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 // TODO: Add line for "next point dome azimuth"
                 // TODO: Split download from exposure in NINA core
                 // TODO: Update plugin description to represent what is supported
-                // TODO: Disable/Re-enable dome following
                 // TODO: Slew to AltAz instead of using transformations
                 // TODO: Add option to save failed points and plate solve image
                 if (state.UseDome) {

@@ -33,6 +33,12 @@ namespace NINA.Joko.Plugin.TenMicron {
     ///  2. Minimize distance between points instead of going purely based on azimuth
     ///  3. Use AltAz slew on the mount instead of calculating our own refaction-adjusted RA/DEC
     ///  4. Option to save failed points and images used to plate solve
+    ///
+    /// Short term TODO list:
+    ///  1. Add Min and Max Altitude for point generation. This will supplement the horizon
+    ///  2. Retries, including max RMS
+    ///  3. Sidereal track
+    ///  4. Plugins to trigger model build
     /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {

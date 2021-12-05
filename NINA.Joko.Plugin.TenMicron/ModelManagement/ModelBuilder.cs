@@ -101,6 +101,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
             }
 
+            public Separation SyncSeparation { get; set; } = null;
             public DateTime IterationStartTime { get; set; }
             public ModelBuilderOptions Options { get; private set; }
             public ImmutableList<ModelPoint> ModelPoints { get; private set; }
@@ -238,14 +239,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             PreStep1_ClearState(state);
             processingInProgressCount = 0;
 
-            // Pre-Step 2: Calculate refraction-correction adjusted RA/DEC for selected Alt/Az points
-            PreStep2_CacheCelestialCoordinates(state, stopOrCancelCt);
+            // Pre-Step 2: Sync the first point, if configured to do so
+            await PreStep2_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
 
-            // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
-            PreStep3_CacheDomeAzimuthRanges(state);
+            // Pre-Step 3: Calculate refraction-correction adjusted RA/DEC for selected Alt/Az points
+            PreStep3_CacheCelestialCoordinates(state, stopOrCancelCt);
 
-            // Pre-Step 4: Sync the first point, if configured to do so
-            await PreStep4_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
+            // Pre-Step 4: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
+            PreStep4_CacheDomeAzimuthRanges(state);
 
             StartProgressReporter(state, stopOrCancelCt, overallProgress);
 
@@ -380,7 +381,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private void PreStep2_CacheCelestialCoordinates(ModelBuilderState state, CancellationToken ct) {
+        private void PreStep3_CacheCelestialCoordinates(ModelBuilderState state, CancellationToken ct) {
             Logger.Info($"Refraction correction={state.RefractionCorrectionEnabled}. Using pressure={state.PressurehPa}, temperature={state.Temperature}, relative humidity={state.Humidity}, wavelength={state.Wavelength}");
             Logger.Info("Caching celestial coordinates for proximity sorting");
             foreach (var point in state.ValidPoints) {
@@ -389,7 +390,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private void PreStep3_CacheDomeAzimuthRanges(ModelBuilderState state) {
+        private void PreStep4_CacheDomeAzimuthRanges(ModelBuilderState state) {
             if (!state.UseDome) {
                 return;
             }
@@ -404,6 +405,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             foreach (var modelPoint in state.ValidPoints.Where(IsPointEligibleForBuild).ToList()) {
                 // Use celestial coordinates that have not been adjusted for refraction to calculate dome azimuth. This ensures we get a logical RA/Dec that points to the physical location, especially if refraction correction is on
                 var celestialCoordinates = modelPoint.ToTopocentric().Transform(Epoch.JNOW);
+                if (state.SyncSeparation != null) {
+                    celestialCoordinates -= state.SyncSeparation;
+                }
+
                 var sideOfPier = MeridianFlip.ExpectedPierSide(celestialCoordinates, Angle.ByHours(lst));
                 var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
                 var domeAzimuth = targetDomeCoordinates.Azimuth;
@@ -422,7 +427,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private async Task PreStep4_SyncFirstPoint(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
+        private async Task PreStep2_SyncFirstPoint(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
             if (state.Options.SyncFirstPoint) {
                 var eligiblePoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
                 var firstPoint = eligiblePoints.OrderBy(p => p, state.PointAzimuthComparer).First();
@@ -440,6 +445,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
                 ct.ThrowIfCancellationRequested();
 
+                var scopeCoordinates = telescopeMediator.GetCurrentPosition();
+
                 var exposureData = await CaptureImage(firstPoint, stepProgress, ct);
                 ct.ThrowIfCancellationRequested();
 
@@ -447,12 +454,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 ct.ThrowIfCancellationRequested();
 
                 if (solveResult?.Success == true) {
-                    if (!await telescopeMediator.Sync(solveResult.Coordinates)) {
-                        Logger.Warning($"Failed to sync first point {firstPoint}. Moving on");
-                        Notification.ShowInformation("Failed to sync first point. Moving on");
-                    } else {
-                        Notification.ShowInformation("First point solved and synced for 10u model build");
-                    }
+                    state.SyncSeparation = solveResult.DetermineSeparation(scopeCoordinates);
+                    Notification.ShowInformation("First point solved, and offset will be used for 10u model build");
                 } else {
                     Logger.Warning("Failed to plate solve first point for initial sync. Moving on");
                     Notification.ShowInformation("Failed to plate solve first point for initial sync. Moving on");
@@ -463,6 +466,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private async Task<bool> SlewTelescopeToPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct) {
             // Instead of issuing an AltAz slew directly (which requires direct communication with the mount), calculate refraction-adjusted RA/Dec coordinates and slew there instead
             var nextPointCoordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
+            if (state.SyncSeparation != null) {
+                var nextPointCoordinatesAdjusted = nextPointCoordinates - state.SyncSeparation;
+                Logger.Info($"Adjusted {nextPointCoordinates} to {nextPointCoordinatesAdjusted}");
+                nextPointCoordinates = nextPointCoordinatesAdjusted;
+            }
+
             Logger.Info($"Slewing to {nextPointCoordinates} for point at Alt={point.Altitude:0.###}, Az={point.Azimuth:0.###}");
             return await this.telescopeMediator.SlewToCoordinatesAsync(nextPointCoordinates, ct);
         }

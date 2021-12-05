@@ -498,7 +498,7 @@
                             DataFieldY="Altitude"
                             MarkerSize="4"
                             DataFieldValue="ModelPointState"
-                            TrackerFormatString="{}Altitude: {Altitude:##0.00}&#176;&#x0a;Azimuth: {Azimuth:##0.00}&#176;&#x0a;State: {ModelPointStateString}&#x0a;RMS Error: {RMSError:0.0##}" />
+                            TrackerFormatString="{}Altitude: {Altitude:##0.00}&#176;&#x0a;Azimuth: {Azimuth:##0.00}&#176;&#x0a;State: {ModelPointStateString}&#x0a;RMS Error: {RMSErrorString}" />
                     </oxy:Plot.Series>
                     <oxy:Plot.Annotations>
                         <oxy:PointAnnotation

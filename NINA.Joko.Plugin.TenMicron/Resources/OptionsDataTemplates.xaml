@@ -37,12 +37,16 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
                 <TextBlock x:Key="MaxConcurrency_Tooltip" Text="The maximum number of plate solves that can run concurrently during a model build. This can be set to infinite if you have plenty of system memory or are using a fast plate solver such as ASTAP with blind solves disabled" />
                 <TextBlock x:Key="SyncFirstPoint_Tooltip" Text="The existing alignment model is cleared when a new model build starts, so the pointing model is likely to be off. This setting solves and computes an offset for the first model point to get closer to the actual requested physicaly coordinates in the sky. This is more important for a sidereal track model as opposed to a full sky one. No sync is actually performed, since that would affect the reproducibility of the model build." />
                 <TextBlock x:Key="AllowBlindSolves_Tooltip" Text="Plate solving is done over a narrow search radius to ensure it is fast. This should generally work since you know where the telescope is pointed, but could fail if the pointing model is very far off (more than 30 degrees). This setting enables falling back to blind solves when they fail, at the expense of potentially much longer model build times" />
+                <TextBlock x:Key="MinPointAltitude_Tooltip" Text="The minimum altitude allowed for point generation" />
+                <TextBlock x:Key="MaxPointAltitude_Tooltip" Text="The maximum altitude allowed for point generation" />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -101,6 +105,50 @@
                 VerticalAlignment="Center"
                 IsChecked="{Binding AllowBlindSolves}"
                 ToolTip="{StaticResource AllowBlindSolves_Tooltip}" />
+            <TextBlock
+                Grid.Row="4" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Min Altitude"
+                ToolTip="{StaticResource MinPointAltitude_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="4" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                ToolTip="{StaticResource MinPointAltitude_Tooltip}"
+                Unit="°">
+                <Binding Path="MinPointAltitude" UpdateSourceTrigger="LostFocus">
+                    <Binding.ValidationRules>
+                        <rules:IntRangeRule>
+                            <rules:IntRangeRule.ValidRange>
+                                <rules:IntRangeChecker Maximum="90" Minimum="0" />
+                            </rules:IntRangeRule.ValidRange>
+                        </rules:IntRangeRule>
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
+            <TextBlock
+                Grid.Row="5" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Max Altitude"
+                ToolTip="{StaticResource MaxPointAltitude_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="5" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                ToolTip="{StaticResource MaxPointAltitude_Tooltip}"
+                Unit="°">
+                <Binding Path="MaxPointAltitude" UpdateSourceTrigger="LostFocus">
+                    <Binding.ValidationRules>
+                        <rules:IntRangeRule>
+                            <rules:IntRangeRule.ValidRange>
+                                <rules:IntRangeChecker Maximum="90" Minimum="0" />
+                            </rules:IntRangeRule.ValidRange>
+                        </rules:IntRangeRule>
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

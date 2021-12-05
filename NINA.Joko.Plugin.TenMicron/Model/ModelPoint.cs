@@ -19,6 +19,7 @@ using NINA.Joko.Plugin.TenMicron.Converters;
 using NINA.Joko.Plugin.TenMicron.Model;
 using System;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace NINA.Joko.Plugin.TenMicron.Model {
 
@@ -41,7 +42,10 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
         AddedToModel = 4,
 
         [Description("Failed")]
-        Failed = 99,
+        Failed = 98,
+
+        [Description("Outside Altitude Bounds")]
+        OutsideAltitudeBounds = 99,
 
         [Description("Below Horizon")]
         BelowHorizon = 100,
@@ -239,7 +243,17 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
                 if (rmsError != value) {
                     rmsError = value;
                     RaisePropertyChanged();
+                    RaisePropertyChanged(nameof(RMSErrorString));
                 }
+            }
+        }
+
+        public string RMSErrorString {
+            get {
+                if (double.IsNaN(rmsError)) {
+                    return "-";
+                }
+                return rmsError.ToString("0.0##", CultureInfo.CurrentUICulture);
             }
         }
 

@@ -47,6 +47,8 @@ namespace NINA.Joko.Plugin.TenMicron {
             maxConcurrency = optionsAccessor.GetValueInt32("MaxConcurrency", 3);
             allowBlindSolves = optionsAccessor.GetValueBoolean("AllowBlindSolves", false);
             syncFirstPoint = optionsAccessor.GetValueBoolean("SyncFirstPoint", true);
+            minPointAltitude = optionsAccessor.GetValueInt32("MinPointAltitude", 0);
+            maxPointAltitude = optionsAccessor.GetValueInt32("MaxPointAltitude", 90);
         }
 
         public void ResetDefaults() {
@@ -64,6 +66,40 @@ namespace NINA.Joko.Plugin.TenMicron {
             MaxConcurrency = 3;
             AllowBlindSolves = false;
             SyncFirstPoint = true;
+            MinPointAltitude = 0;
+            MaxPointAltitude = 90;
+        }
+
+        private int minPointAltitude;
+
+        public int MinPointAltitude {
+            get => minPointAltitude;
+            set {
+                if (minPointAltitude != value) {
+                    if (value < 0 || value > 90) {
+                        throw new ArgumentException("MinPointAltitude must be between 0 and 90, inclusive", "MinPointAltitude");
+                    }
+                    minPointAltitude = value;
+                    optionsAccessor.SetValueInt32("MinPointAltitude", minPointAltitude);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int maxPointAltitude;
+
+        public int MaxPointAltitude {
+            get => maxPointAltitude;
+            set {
+                if (maxPointAltitude != value) {
+                    if (value < 0 || value > 90) {
+                        throw new ArgumentException("MaxPointAltitude must be between 0 and 90, inclusive", "MaxPointAltitude");
+                    }
+                    maxPointAltitude = value;
+                    optionsAccessor.SetValueInt32("MaxPointAltitude", maxPointAltitude);
+                    RaisePropertyChanged();
+                }
+            }
         }
 
         private int goldenSpiralStarCount;

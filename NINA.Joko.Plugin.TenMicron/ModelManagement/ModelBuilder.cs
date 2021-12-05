@@ -78,7 +78,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var maxConcurrent = options.MaxConcurrency > 0 ? options.MaxConcurrency : int.MaxValue;
                 this.ProcessingSemaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
                 this.ModelPoints = ImmutableList.ToImmutableList(modelPoints);
-                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => p.ModelPointState != ModelPointStateEnum.BelowHorizon));
+                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => p.ModelPointState != ModelPointStateEnum.BelowHorizon && p.ModelPointState != ModelPointStateEnum.OutsideAltitudeBounds));
                 this.PendingTasks = new List<Task<bool>>();
 
                 var domeInfo = domeMediator.GetInfo();
@@ -316,7 +316,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         Logger.Info($"{state.FailedPoints} failed points during model build iteration {state.BuildAttempt}. {options.NumRetries - state.BuildAttempt + 1} retries remaining");
                     }
                 }
-            } catch (OperationCanceledException e) {
+            } catch (OperationCanceledException) {
                 if (stopToken.IsCancellationRequested) {
                     Notification.ShowInformation("10u model build stopped");
                     builtModel = await FinishAlignment(state, ct);

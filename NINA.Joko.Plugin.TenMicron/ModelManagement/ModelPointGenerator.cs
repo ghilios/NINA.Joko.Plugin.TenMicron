@@ -30,10 +30,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private readonly ICustomDateTime dateTime;
         private readonly ITelescopeMediator telescopeMediator;
+        private readonly ITenMicronOptions options;
 
-        public ModelPointGenerator(ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
+        public ModelPointGenerator(ICustomDateTime dateTime, ITelescopeMediator telescopeMediator, ITenMicronOptions options) {
             this.dateTime = dateTime;
             this.telescopeMediator = telescopeMediator;
+            this.options = options;
         }
 
         public List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon) {
@@ -72,7 +74,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
-                    if (altitudeDegrees >= horizonAltitude) {
+                    if (altitudeDegrees < options.MinPointAltitude || altitudeDegrees > options.MaxPointAltitude) {
+                        creationState = ModelPointStateEnum.OutsideAltitudeBounds;
+                    } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;
                     } else {

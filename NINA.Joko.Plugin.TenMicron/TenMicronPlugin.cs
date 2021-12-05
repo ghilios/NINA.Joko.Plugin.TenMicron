@@ -35,10 +35,9 @@ namespace NINA.Joko.Plugin.TenMicron {
     ///  4. Option to save failed points and images used to plate solve
     ///
     /// Short term TODO list:
-    ///  1. Add Min and Max Altitude for point generation. This will supplement the horizon
-    ///  2. Retries, including max RMS
-    ///  3. Sidereal track
-    ///  4. Plugins to trigger model build
+    ///  1. Retries, including max RMS
+    ///  2. Sidereal track
+    ///  3. Plugins to trigger model build
     /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {
@@ -65,7 +64,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MountModelMediator = new MountModelMediator();
             DateTime = new SystemDateTime();
             ModelAccessor = new ModelAccessor(telescopeMediator, MountModelMediator, DateTime);
-            ModelPointGenerator = new ModelPointGenerator(DateTime, telescopeMediator);
+            ModelPointGenerator = new ModelPointGenerator(DateTime, telescopeMediator, TenMicronOptions);
             ModelBuilder = new ModelBuilder(profileService, MountModelMediator, Mount, telescopeMediator, domeMediator, cameraMediator, domeSynchronization, plateSolverFactory, imagingMediator, filterWheelMediator, weatherDataMediator);
         }
 

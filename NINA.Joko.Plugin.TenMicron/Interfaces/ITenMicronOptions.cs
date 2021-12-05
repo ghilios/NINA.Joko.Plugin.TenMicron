@@ -43,6 +43,10 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         ModelPointGenerationTypeEnum ModelPointGenerationType { get; set; }
 
+        int MinPointAltitude { get; set; }
+
+        int MaxPointAltitude { get; set; }
+
         void ResetDefaults();
     }
 }

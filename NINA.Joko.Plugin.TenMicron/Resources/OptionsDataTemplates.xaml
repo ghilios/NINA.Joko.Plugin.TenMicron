@@ -39,6 +39,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -47,6 +48,7 @@
                 <TextBlock x:Key="AllowBlindSolves_Tooltip" Text="Plate solving is done over a narrow search radius to ensure it is fast. This should generally work since you know where the telescope is pointed, but could fail if the pointing model is very far off (more than 30 degrees). This setting enables falling back to blind solves when they fail, at the expense of potentially much longer model build times" />
                 <TextBlock x:Key="MinPointAltitude_Tooltip" Text="The minimum altitude allowed for point generation" />
                 <TextBlock x:Key="MaxPointAltitude_Tooltip" Text="The maximum altitude allowed for point generation" />
+                <TextBlock x:Key="ShowRemovedPoints_Tooltip" Text="Whether to show points that were rejected for being outside of the altitude bounds or below the defined horizon" />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -149,6 +151,19 @@
                     </Binding.ValidationRules>
                 </Binding>
             </ninactrl:UnitTextBox>
+            <TextBlock
+                Grid.Row="6" Grid.Column="0"
+                VerticalAlignment="Center"
+                Text="Show Removed Points"
+                ToolTip="{StaticResource ShowRemovedPoints_Tooltip}" />
+            <CheckBox
+                Grid.Row="6" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsChecked="{Binding ShowRemovedPoints}"
+                ToolTip="{StaticResource ShowRemovedPoints_Tooltip}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

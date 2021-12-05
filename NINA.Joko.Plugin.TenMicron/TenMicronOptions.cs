@@ -49,6 +49,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             syncFirstPoint = optionsAccessor.GetValueBoolean("SyncFirstPoint", true);
             minPointAltitude = optionsAccessor.GetValueInt32("MinPointAltitude", 0);
             maxPointAltitude = optionsAccessor.GetValueInt32("MaxPointAltitude", 90);
+            showRemovedPoints = optionsAccessor.GetValueBoolean("ShowRemovedPoints", true);
         }
 
         public void ResetDefaults() {
@@ -68,6 +69,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             SyncFirstPoint = true;
             MinPointAltitude = 0;
             MaxPointAltitude = 90;
+            ShowRemovedPoints = true;
         }
 
         private int minPointAltitude;
@@ -298,6 +300,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                     }
                     maxConcurrency = value;
                     optionsAccessor.SetValueInt32("MaxConcurrency", maxConcurrency);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool showRemovedPoints;
+
+        public bool ShowRemovedPoints {
+            get => showRemovedPoints;
+            set {
+                if (showRemovedPoints != value) {
+                    showRemovedPoints = value;
+                    optionsAccessor.SetValueBoolean("ShowRemovedPoints", showRemovedPoints);
                     RaisePropertyChanged();
                 }
             }

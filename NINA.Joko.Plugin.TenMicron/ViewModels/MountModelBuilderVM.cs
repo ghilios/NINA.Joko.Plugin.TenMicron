@@ -30,6 +30,7 @@ using NINA.WPF.Base.ViewModel;
 using OxyPlot;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -86,6 +87,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.modelPointGenerator = modelPointGenerator;
             this.modelBuilder = modelBuilder;
             this.modelBuilder.PointNextUp += ModelBuilder_PointNextUp;
+            this.modelBuilderOptions.PropertyChanged += ModelBuilderOptions_PropertyChanged;
 
             this.disconnectCts = new CancellationTokenSource();
 
@@ -103,6 +105,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.BuildCommand = new AsyncCommand<bool>(BuildModel);
             this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
             this.StopBuildCommand = new AsyncCommand<bool>(StopBuildModel);
+        }
+
+        private void ModelBuilderOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(modelBuilderOptions.ShowRemovedPoints)) {
+                if (!this.modelBuilderOptions.ShowRemovedPoints) {
+                    var localModelPoints = this.ModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
+                    this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
+                } else {
+                    this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(this.ModelPoints);
+                }
+            }
         }
 
         private void ModelBuilder_PointNextUp(object sender, PointNextUpEventArgs e) {
@@ -284,12 +297,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private Task<bool> ClearPoints(object o) {
             this.ModelPoints.Clear();
+            this.DisplayModelPoints.Clear();
             return Task.FromResult(true);
         }
 
         private bool GenerateGoldenSpiral(int goldenSpiralStarCount) {
-            var modelPoints = this.modelPointGenerator.GenerateGoldenSpiral(goldenSpiralStarCount, this.CustomHorizon);
-            this.ModelPoints = new AsyncObservableCollection<ModelPoint>(modelPoints);
+            var localModelPoints = this.modelPointGenerator.GenerateGoldenSpiral(goldenSpiralStarCount, this.CustomHorizon);
+            this.ModelPoints = ImmutableList.ToImmutableList(localModelPoints);
+            if (!this.modelBuilderOptions.ShowRemovedPoints) {
+                localModelPoints = localModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated).ToList();
+            }
+            this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
             return true;
         }
 
@@ -788,12 +806,22 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private AsyncObservableCollection<ModelPoint> modelPoints = new AsyncObservableCollection<ModelPoint>();
+        private ImmutableList<ModelPoint> modelPoints = ImmutableList.Create<ModelPoint>();
 
-        public AsyncObservableCollection<ModelPoint> ModelPoints {
+        public ImmutableList<ModelPoint> ModelPoints {
             get => modelPoints;
             set {
                 modelPoints = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private AsyncObservableCollection<ModelPoint> displayModelPoints = new AsyncObservableCollection<ModelPoint>();
+
+        public AsyncObservableCollection<ModelPoint> DisplayModelPoints {
+            get => displayModelPoints;
+            set {
+                displayModelPoints = value;
                 RaisePropertyChanged();
             }
         }

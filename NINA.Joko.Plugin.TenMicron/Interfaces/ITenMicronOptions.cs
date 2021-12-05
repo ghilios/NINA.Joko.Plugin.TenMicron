@@ -11,10 +11,11 @@
 #endregion "copyright"
 
 using NINA.Joko.Plugin.TenMicron.Model;
+using System.ComponentModel;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface ITenMicronOptions {
+    public interface ITenMicronOptions : INotifyPropertyChanged {
         int GoldenSpiralStarCount { get; set; }
 
         int SiderealTrackStartOffsetSeconds { get; set; }
@@ -46,6 +47,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         int MinPointAltitude { get; set; }
 
         int MaxPointAltitude { get; set; }
+
+        bool ShowRemovedPoints { get; set; }
 
         void ResetDefaults();
     }

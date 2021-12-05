@@ -492,7 +492,7 @@
                             Color="{StaticResource DomeShutterColor}" />
                         <oxy:ScatterSeries
                             MarkerType="Circle"
-                            ItemsSource="{Binding ModelPoints, UpdateSourceTrigger=PropertyChanged}"
+                            ItemsSource="{Binding DisplayModelPoints, UpdateSourceTrigger=PropertyChanged}"
                             ColorAxisKey="ModelPointStateColorAxis"
                             DataFieldX="Azimuth"
                             DataFieldY="Altitude"

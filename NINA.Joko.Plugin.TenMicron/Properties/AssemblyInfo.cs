@@ -23,9 +23,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("0.1.0.0")]
 
 // [MANDATORY] The name of your plugin
-[assembly: AssemblyTitle("10 Micron Utilities")]
+[assembly: AssemblyTitle("10 Micron Tools")]
 // [MANDATORY] A short description of your plugin
-[assembly: AssemblyDescription("10 Micron Mount Utilities, including model building")]
+[assembly: AssemblyDescription("10 Micron Mount Tools, including model building")]
 
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
 
@@ -65,7 +65,7 @@ using System.Runtime.InteropServices;
 //[Optional] An in-depth description of your plugin
 [assembly: AssemblyMetadata("LongDescription", @"This plugin provides tools for 10 micron mounts, such as building pointing models.
 
-* NOTE: This plugin is still in early development, and doesn't yet support building models *
+* NOTE: This plugin is still in early development *
 
 # Features #
 

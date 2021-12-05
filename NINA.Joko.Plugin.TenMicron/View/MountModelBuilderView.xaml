@@ -32,7 +32,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Visibility="{Binding MountInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -67,7 +67,7 @@
                             ToolTip="{StaticResource PointGenerator_Tooltip}" />
                         <ComboBox
                             Grid.Row="0" Grid.Column="1"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             Name="PART_ModelPointGenerationTypeList"
                             MinWidth="120"
                             ToolTip="{StaticResource PointGenerator_Tooltip}"
@@ -146,7 +146,7 @@
                         <ninactrl:UnitTextBox
                             Grid.Row="0" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="stars"
@@ -202,7 +202,7 @@
                         <ninactrl:UnitTextBox
                             Grid.Row="0" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="seconds"
@@ -218,7 +218,7 @@
                         <ninactrl:UnitTextBox
                             Grid.Row="1" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="seconds"
@@ -234,7 +234,7 @@
                         <ninactrl:UnitTextBox
                             Grid.Row="2" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="°"
@@ -274,7 +274,7 @@
                         <CheckBox
                             Grid.Row="0" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}"
@@ -288,7 +288,7 @@
                         <ninactrl:UnitTextBox
                             Grid.Row="1" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="mm"
@@ -330,7 +330,7 @@
                         <CheckBox
                             Grid.Row="0" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             ToolTip="{StaticResource WestToEast_Tooltip}"
@@ -341,14 +341,16 @@
                             VerticalAlignment="Center"
                             Text="Retries"
                             ToolTip="{StaticResource BuilderRetries_Tooltip}" />
+                        <!-- Restore this after it works -->
                         <ninactrl:UnitTextBox
                             Grid.Row="1" Grid.Column="1"
                             MinWidth="80"
-                            Margin="5,5,0,0"
+                            Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="retries"
-                            ToolTip="{StaticResource BuilderRetries_Tooltip}">
+                            ToolTip="{StaticResource BuilderRetries_Tooltip}"
+                            IsEnabled="False">
                             <Binding Path="BuilderNumRetries" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
                                 <Binding.ValidationRules>
                                     <rules:GreaterZeroRule />

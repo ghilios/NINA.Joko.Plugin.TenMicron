@@ -453,6 +453,96 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         private void CalculateAzimuthAwareDomeShutterOpening(double azimuth, CancellationToken ct) {
+            var azimuthTolerance = profileService.ActiveProfile.DomeSettings.AzimuthTolerance_degrees;
+            var dataPoints1_1 = new List<DomeShutterOpeningDataPoint>();
+            var dataPoints1_2 = new List<DomeShutterOpeningDataPoint>();
+            var dataPoints2_1 = new List<DomeShutterOpeningDataPoint>();
+            var dataPoints2_2 = new List<DomeShutterOpeningDataPoint>();
+            var azimuthAngle = Angle.ByDegree(azimuth);
+            var domeRadius = this.profileService.ActiveProfile.DomeSettings.DomeRadius_mm;
+            if (domeRadius <= 0) {
+                throw new ArgumentException("Dome Radius is not set in Dome Options");
+            }
+
+            const double altitudeDelta = 3.0d;
+            for (double altitude = 0.0; altitude <= 90.0; altitude += altitudeDelta) {
+                ct.ThrowIfCancellationRequested();
+                var altitudeAngle = Angle.ByDegree(altitude);
+                (var leftAzimuthBoundary, var rightAzimuthBoundary) = DomeUtility.CalculateDomeAzimuthRange(altitudeAngle: altitudeAngle, azimuthAngle: azimuthAngle, domeRadius: domeRadius, domeShutterWidthMm: DomeShutterWidth_mm);
+                if (leftAzimuthBoundary.Degree < 0.0) {
+                    var addDegrees = AstroUtil.EuclidianModulus(leftAzimuthBoundary.Degree, 360.0d) - leftAzimuthBoundary.Degree;
+                    leftAzimuthBoundary += Angle.ByDegree(addDegrees);
+                    rightAzimuthBoundary += Angle.ByDegree(addDegrees);
+                }
+
+                if (rightAzimuthBoundary.Degree < 360.0) {
+                    dataPoints1_1.Add(new DomeShutterOpeningDataPoint() {
+                        Azimuth = leftAzimuthBoundary.Degree,
+                        MinAltitude = altitude,
+                        MaxAltitude = 90.0
+                    });
+                    dataPoints1_2.Add(new DomeShutterOpeningDataPoint() {
+                        Azimuth = rightAzimuthBoundary.Degree,
+                        MinAltitude = altitude,
+                        MaxAltitude = 90.0
+                    });
+                } else {
+                    if (azimuth > 180.0d) {
+                        dataPoints1_1.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = leftAzimuthBoundary.Degree,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints1_2.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = 359.9d,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints2_1.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = 0.0,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints2_2.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = rightAzimuthBoundary.Degree - 360.0,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                    } else {
+                        dataPoints2_1.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = leftAzimuthBoundary.Degree,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints2_2.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = 359.9d,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints1_1.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = 0.0,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                        dataPoints1_2.Add(new DomeShutterOpeningDataPoint() {
+                            Azimuth = rightAzimuthBoundary.Degree - 360.0,
+                            MinAltitude = altitude,
+                            MaxAltitude = 90.0
+                        });
+                    }
+                }
+            }
+
+            ct.ThrowIfCancellationRequested();
+            dataPoints1_1.Reverse();
+            dataPoints2_1.Reverse();
+            this.DomeShutterOpeningDataPoints = new AsyncObservableCollection<DomeShutterOpeningDataPoint>(dataPoints1_1.Concat(dataPoints1_2));
+            this.DomeShutterOpeningDataPoints2 = new AsyncObservableCollection<DomeShutterOpeningDataPoint>(dataPoints2_1.Concat(dataPoints2_2));
+        }
+
+        /*
+         * This block was used to provide dome coverage charts that allowed for infinite range. This should be brought back when the zenith can properly be accounted for
+        private void CalculateAzimuthAwareDomeShutterOpening(double azimuth, CancellationToken ct) {
             var dataPoints = new List<DomeShutterOpeningDataPoint>();
             var azimuthAngle = Angle.ByDegree(azimuth);
             var domeRadius = this.profileService.ActiveProfile.DomeSettings.DomeRadius_mm;
@@ -534,6 +624,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.DomeShutterOpeningDataPoints = new AsyncObservableCollection<DomeShutterOpeningDataPoint>(dataPoints.OrderBy(dp => dp.Azimuth));
             this.DomeShutterOpeningDataPoints2.Clear();
         }
+        */
 
         public ModelPointGenerationTypeEnum ModelPointGenerationType {
             get => this.modelBuilderOptions.ModelPointGenerationType;

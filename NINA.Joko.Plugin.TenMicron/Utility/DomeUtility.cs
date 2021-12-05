@@ -26,7 +26,7 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
                 // Put an upper bound on the amount of aperture covered by a shutter of one quadrant of the dome. This could be improved further by knowing how much zenith clearance the shutter has
                 apertureThresholdAngle = Angle.ByDegree(45.0d);
             } else {
-                apertureThresholdAngle = Angle.ByRadians(Math.Min(45.0d, apertureThresholdRadians));
+                apertureThresholdAngle = Angle.ByRadians(Math.Min(Math.PI / 4.0d, apertureThresholdRadians));
             }
             var leftAzimuthBoundary = azimuthAngle - apertureThresholdAngle;
             var rightAzimuthBoundary = azimuthAngle + apertureThresholdAngle;

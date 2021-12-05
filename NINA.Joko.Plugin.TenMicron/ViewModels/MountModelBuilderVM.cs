@@ -102,6 +102,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ClearPointsCommand = new AsyncCommand<bool>(ClearPoints);
             this.BuildCommand = new AsyncCommand<bool>(BuildModel);
             this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
+            this.StopBuildCommand = new AsyncCommand<bool>(StopBuildModel);
         }
 
         private void ModelBuilder_PointNextUp(object sender, PointNextUpEventArgs e) {
@@ -298,6 +299,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         private CancellationTokenSource modelBuildCts;
+        private CancellationTokenSource modelBuildStopCts;
         private Task<LoadedAlignmentModel> modelBuildTask;
 
         private async Task<bool> BuildModel(object o) {
@@ -308,6 +310,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
                 BuildInProgress = true;
                 modelBuildCts = new CancellationTokenSource();
+                modelBuildStopCts = new CancellationTokenSource();
                 var options = new ModelBuilderOptions() {
                     WestToEastSorting = WestToEastSorting,
                     NumRetries = BuilderNumRetries,
@@ -319,10 +322,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     DomeShutterWidth_mm = DomeShutterWidth_mm
                 };
                 var modelPoints = ModelPoints.ToList();
-                modelBuildTask = modelBuilder.Build(modelPoints, options, modelBuildCts.Token, progress, stepProgress);
+                modelBuildTask = modelBuilder.Build(modelPoints, options, modelBuildCts.Token, modelBuildStopCts.Token, progress, stepProgress);
                 var builtModel = await modelBuildTask;
                 modelBuildTask = null;
                 modelBuildCts = null;
+                modelBuildStopCts = null;
                 if (builtModel == null) {
                     Notification.ShowError($"Failed to build 10u model");
                     return false;
@@ -341,6 +345,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             } finally {
                 modelBuildCts?.Cancel();
                 modelBuildCts = null;
+                modelBuildStopCts = null;
                 BuildInProgress = false;
             }
         }
@@ -348,6 +353,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private async Task<bool> CancelBuildModel(object o) {
             try {
                 modelBuildCts?.Cancel();
+                var localModelBuildTask = modelBuildTask;
+                if (localModelBuildTask != null) {
+                    await localModelBuildTask;
+                }
+                return true;
+            } catch (Exception) {
+                return false;
+            }
+        }
+
+        private async Task<bool> StopBuildModel(object o) {
+            try {
+                modelBuildStopCts?.Cancel();
                 var localModelBuildTask = modelBuildTask;
                 if (localModelBuildTask != null) {
                     await localModelBuildTask;
@@ -735,5 +753,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public ICommand GeneratePointsCommand { get; private set; }
         public ICommand BuildCommand { get; private set; }
         public ICommand CancelBuildCommand { get; private set; }
+        public ICommand StopBuildCommand { get; private set; }
     }
 }

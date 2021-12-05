@@ -22,7 +22,7 @@
         <TextBlock x:Key="Stars_Tooltip" Text="Number of stars to include in the model" />
         <TextBlock x:Key="PointGenerator_Tooltip" Text="The algorithm used to generate points for an alignment model. Golden Spiral is used for a full sky model, and Sidereal Path generates points along the sidereal path of an RA/DEC coordinate" />
         <TextBlock x:Key="DomeShutterWidth_Tooltip" Text="The width of the dome shutter, in mm. If set, this is used to determine if the scope is pointing out of the shutter instead of the Threshold setting from Dome Options" />
-        <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, stars will be ordered to minimize how frequently the dome rotates" />
+        <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
         <TextBlock x:Key="SiderealTrackStartOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dusk to start point generation for the target object" />
         <TextBlock x:Key="SiderealTrackEndOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dawn to end point generation for the target object" />
         <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
@@ -82,7 +82,7 @@
                         <UniformGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
                             <Button
                                 Height="30"
-                                Margin="10,5,10,0"
+                                Margin="10,10,5,10"
                                 Command="{Binding GeneratePointsCommand}">
                                 <Button.ToolTip>
                                     <ToolTip ToolTipService.ShowOnDisabled="False">
@@ -91,15 +91,15 @@
                                 </Button.ToolTip>
                                 <Grid>
                                     <Path
-                                    Margin="5"
-                                    Data="{StaticResource LoopSVG}"
-                                    Fill="{StaticResource ButtonForegroundBrush}"
-                                    Stretch="Uniform" />
+                                        Margin="5"
+                                        Data="{StaticResource LoopSVG}"
+                                        Fill="{StaticResource ButtonForegroundBrush}"
+                                        Stretch="Uniform" />
                                 </Grid>
                             </Button>
                             <Button
                                 Height="30"
-                                Margin="10,5,10,0"
+                                Margin="5,10,10,10"
                                 Command="{Binding ClearPointsCommand}">
                                 <Button.IsEnabled>
                                     <MultiBinding Converter="{StaticResource BooleanAndConverter}">
@@ -269,7 +269,7 @@
                             Grid.Row="0" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="Minimize Dome Movement"
+                            Text="Optimize"
                             ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}" />
                         <CheckBox
                             Grid.Row="0" Grid.Column="1"
@@ -355,18 +355,37 @@
                                 </Binding.ValidationRules>
                             </Binding>
                         </ninactrl:UnitTextBox>
-                        <ninactrl:CancellableButton
-                            Grid.Row="2" Grid.Column="0"
-                            Grid.ColumnSpan="2"
-                            Height="30"
-                            Margin="10,5,10,0"
-                            ButtonText="Build"
-                            IsEnabled="{Binding ModelPoints, Converter={StaticResource CollectionContainsItemsToBooleanConverter}}"
-                            CancelButtonImage="{StaticResource CancelSVG}"
-                            CancelCommand="{Binding CancelBuildCommand}"
-                            CancelToolTip="{ns:Loc LblCancel}"
-                            ToolTip="Build the model"
-                            Command="{Binding BuildCommand}" />
+                        <UniformGrid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
+                            <ninactrl:CancellableButton
+                                Height="30"
+                                Margin="10,10,5,10"
+                                ButtonImage="{StaticResource PlaySVG}"
+                                IsEnabled="{Binding ModelPoints, Converter={StaticResource CollectionContainsItemsToBooleanConverter}}"
+                                CancelButtonImage="{StaticResource CancelSVG}"
+                                CancelCommand="{Binding CancelBuildCommand}"
+                                CancelToolTip="{ns:Loc LblCancel}"
+                                ToolTip="Build the model"
+                                Command="{Binding BuildCommand}" />
+                            <Button
+                                Height="30"
+                                Margin="5,10,10,10"
+                                Command="{Binding StopBuildCommand}"
+                                IsEnabled="{Binding BuildInProgress}">
+                                <Button.ToolTip>
+                                    <ToolTip ToolTipService.ShowOnDisabled="True">
+                                        <TextBlock Text="Stop a running build and use whatever model is built up to that point" />
+                                    </ToolTip>
+                                </Button.ToolTip>
+                                <Grid>
+                                    <Path
+                                        Width="20"
+                                        Margin="5"
+                                        Data="{StaticResource StopSVG}"
+                                        Fill="{StaticResource PrimaryBrush}"
+                                        Stretch="Uniform" />
+                                </Grid>
+                            </Button>
+                        </UniformGrid>
                     </Grid>
                 </GroupBox>
             </StackPanel>

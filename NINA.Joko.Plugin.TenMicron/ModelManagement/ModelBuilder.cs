@@ -140,7 +140,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        public async Task<LoadedAlignmentModel> Build(List<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null) {
+        public async Task<LoadedAlignmentModel> Build(List<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, CancellationToken stopToken = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null) {
             ct.ThrowIfCancellationRequested();
             PreFlightChecks(modelPoints);
 
@@ -170,7 +170,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var innerCts = new CancellationTokenSource();
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, innerCts.Token);
             try {
-                return await DoBuild(state, linkedCts.Token, overallProgress, stepProgress);
+                return await DoBuild(state, linkedCts.Token, stopToken, overallProgress, stepProgress);
             } finally {
                 overallProgress?.Report(new ApplicationStatus() {
                     Status = "",
@@ -226,116 +226,143 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             });
         }
 
-        private async Task<LoadedAlignmentModel> DoBuild(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> overallProgress, IProgress<ApplicationStatus> stepProgress) {
+        private async Task<LoadedAlignmentModel> DoBuild(ModelBuilderState state, CancellationToken ct, CancellationToken stopToken, IProgress<ApplicationStatus> overallProgress, IProgress<ApplicationStatus> stepProgress) {
             ct.ThrowIfCancellationRequested();
             var validPoints = state.ValidPoints;
             var options = state.Options;
+
+            var stopOrCancelCts = CancellationTokenSource.CreateLinkedTokenSource(ct, stopToken);
+            var stopOrCancelCt = stopOrCancelCts.Token;
 
             // Pre-Step 1: Clear state for all points except those below the horizon
             PreStep1_ClearState(state);
             processingInProgressCount = 0;
 
             // Pre-Step 2: Calculate refraction-correction adjusted RA/DEC for selected Alt/Az points
-            PreStep2_CacheCelestialCoordinates(state, ct);
+            PreStep2_CacheCelestialCoordinates(state, stopOrCancelCt);
 
             // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
             PreStep3_CacheDomeAzimuthRanges(state);
 
             // Pre-Step 4: Sync the first point, if configured to do so
-            await PreStep4_SyncFirstPoint(state, ct, stepProgress);
+            await PreStep4_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
 
-            StartProgressReporter(state, ct, overallProgress);
+            StartProgressReporter(state, stopOrCancelCt, overallProgress);
 
             int retryCount = -1;
             LoadedAlignmentModel builtModel = null;
-            while (retryCount++ < options.NumRetries) {
-                state.FailedPoints = 0;
-                state.PointsProcessed = 0;
-                state.BuildAttempt = retryCount + 1;
-                state.IterationStartTime = DateTime.Now;
+            try {
+                while (retryCount++ < options.NumRetries) {
+                    state.FailedPoints = 0;
+                    state.PointsProcessed = 0;
+                    state.BuildAttempt = retryCount + 1;
+                    state.IterationStartTime = DateTime.Now;
 
-                Logger.Info($"Starting model build iteration {retryCount + 1}");
-
-                // Step 1: Clear alignment model
-                Logger.Info("Deleting current alignment model");
-                this.mountModelMediator.DeleteAlignment();
-
-                // Step 2: Start new alignment model
-                Logger.Info("Starting new alignment spec");
-                if (!this.mountModelMediator.StartNewAlignmentSpec()) {
-                    throw new ModelBuildException("Failed to start new alignment spec");
-                }
-
-                // Step 3: Add all successful points, which is applicable for retries
-                {
-                    var existingSuccessfulPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.AddedToModel).ToList();
-                    if (existingSuccessfulPoints.Count > 0) {
-                        Logger.Info($"Adding {existingSuccessfulPoints.Count} previously successful points to the new alignment spec");
-                        foreach (var point in existingSuccessfulPoints) {
-                            if (!AddModelPointToAlignmentSpec(point)) {
-                                Logger.Error($"Failed to add point {point} during retry. Changing to failed state");
-                                ++state.FailedPoints;
-                                point.ModelPointState = ModelPointStateEnum.Failed;
-                            }
-                            ++state.PointsProcessed;
-                        }
-                    }
-                }
-
-                // Step 4: Process points based on ordering. If dome is involved, it is the point with the least minimum azimuth range or the largest maximum azimuth range, based on E/W ordering and whether MinimizeDomeMovement is enabled
-                await ProcessPoints(state, ct, overallProgress, stepProgress);
-                ct.ThrowIfCancellationRequested();
-
-                // Step 5: Wait for remaining pending processing tasks
-                await WaitForProcessing(state.PendingTasks, ct, stepProgress);
-                ct.ThrowIfCancellationRequested();
-
-                var numPendingFailures = state.PendingTasks.Select(pt => pt.Result).Count(x => !x);
-                Logger.Info($"{numPendingFailures} failures during post-capture processing");
-                state.FailedPoints += numPendingFailures;
-
-                var completedPoints = validPoints.Count - state.FailedPoints;
-                if (completedPoints > 2) {
-                    Logger.Info("Completing alignment spec");
-                    if (!mountModelMediator.FinishAlignmentSpec()) {
-                        Logger.Error("Failed to complete alignment spec. Aborting");
-                        return null;
-                    }
-
-                    builtModel = await mountModelMediator.GetLoadedAlignmentModel(ct);
+                    // For these first few steps, only abort if cancel is requested. This way a stop can leave a valid model, if possible
                     ct.ThrowIfCancellationRequested();
-                    var modelAlignmentStars = builtModel.AlignmentStars.ToArray();
-                    foreach (var point in validPoints) {
-                        if (point.ModelPointState == ModelPointStateEnum.AddedToModel) {
-                            var successfulPoint = false;
-                            if (point.ModelIndex > 0 && point.ModelIndex <= modelAlignmentStars.Length) {
-                                point.RMSError = modelAlignmentStars[point.ModelIndex - 1].ErrorArcsec;
-                                // TODO: Add check for max RMS error to fail the star
-                                successfulPoint = true;
-                            } else {
-                                Logger.Error($"Point {point} has invalid model index {point.ModelIndex}. There are {modelAlignmentStars.Length} alignment stars in the model");
-                            }
+                    Logger.Info($"Starting model build iteration {retryCount + 1}");
 
-                            if (!successfulPoint) {
-                                point.ModelPointState = ModelPointStateEnum.Failed;
-                                ++state.FailedPoints;
-                                --completedPoints;
+                    // Step 1: Clear alignment model
+                    Logger.Info("Deleting current alignment model");
+                    this.mountModelMediator.DeleteAlignment();
+                    ct.ThrowIfCancellationRequested();
+
+                    // Step 2: Start new alignment model
+                    Logger.Info("Starting new alignment spec");
+                    if (!this.mountModelMediator.StartNewAlignmentSpec()) {
+                        throw new ModelBuildException("Failed to start new alignment spec");
+                    }
+
+                    // Step 3: Add all successful points, which is applicable for retries
+                    {
+                        var existingSuccessfulPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.AddedToModel).ToList();
+                        if (existingSuccessfulPoints.Count > 0) {
+                            Logger.Info($"Adding {existingSuccessfulPoints.Count} previously successful points to the new alignment spec");
+                            foreach (var point in existingSuccessfulPoints) {
+                                ct.ThrowIfCancellationRequested();
+                                if (!AddModelPointToAlignmentSpec(point)) {
+                                    Logger.Error($"Failed to add point {point} during retry. Changing to failed state");
+                                    ++state.FailedPoints;
+                                    point.ModelPointState = ModelPointStateEnum.Failed;
+                                }
+                                ++state.PointsProcessed;
                             }
                         }
                     }
-                } else {
-                    Logger.Error("Not enough successful points to complete alignment spec");
-                }
 
-                if (state.FailedPoints == 0) {
-                    Logger.Info($"No failed points remaining after build iteration {state.BuildAttempt}");
-                    break;
+                    // From here on we can abort with either stop or cancel
+                    stopOrCancelCt.ThrowIfCancellationRequested();
+
+                    // Step 4: Process points based on ordering. If dome is involved, it is the point with the least minimum azimuth range or the largest maximum azimuth range, based on E/W ordering and whether MinimizeDomeMovement is enabled
+                    await ProcessPoints(state, stopOrCancelCt, overallProgress, stepProgress);
+                    stopOrCancelCt.ThrowIfCancellationRequested();
+
+                    // Step 5: Wait for remaining pending processing tasks
+                    await WaitForProcessing(state.PendingTasks, stopOrCancelCt, stepProgress);
+                    stopOrCancelCt.ThrowIfCancellationRequested();
+
+                    var numPendingFailures = state.PendingTasks.Select(pt => pt.Result).Count(x => !x);
+                    Logger.Info($"{numPendingFailures} failures during post-capture processing");
+                    state.FailedPoints += numPendingFailures;
+
+                    // Now that we're through with the work, we only abort on cancellation (not stop)
+                    builtModel = await FinishAlignment(state, ct);
+
+                    if (state.FailedPoints == 0) {
+                        Logger.Info($"No failed points remaining after build iteration {state.BuildAttempt}");
+                        break;
+                    } else {
+                        Logger.Info($"{state.FailedPoints} failed points during model build iteration {state.BuildAttempt}. {options.NumRetries - state.BuildAttempt + 1} retries remaining");
+                    }
+                }
+            } catch (OperationCanceledException e) {
+                if (stopToken.IsCancellationRequested) {
+                    Notification.ShowInformation("10u model build stopped");
+                    builtModel = await FinishAlignment(state, ct);
                 } else {
-                    Logger.Info($"{state.FailedPoints} failed points during model build iteration {state.BuildAttempt}. {options.NumRetries - state.BuildAttempt + 1} retries remaining");
+                    throw;
                 }
             }
 
             return builtModel;
+        }
+
+        private async Task<LoadedAlignmentModel> FinishAlignment(ModelBuilderState state, CancellationToken ct) {
+            var completedPoints = state.ValidPoints.Count - state.FailedPoints;
+            if (completedPoints > 2) {
+                Logger.Info("Completing alignment spec");
+                if (!mountModelMediator.FinishAlignmentSpec()) {
+                    Logger.Error("Failed to complete alignment spec. Aborting");
+                    return null;
+                }
+
+                var builtModel = await mountModelMediator.GetLoadedAlignmentModel(ct);
+                ct.ThrowIfCancellationRequested();
+                var modelAlignmentStars = builtModel.AlignmentStars.ToArray();
+                foreach (var point in state.ValidPoints) {
+                    if (point.ModelPointState == ModelPointStateEnum.AddedToModel) {
+                        var successfulPoint = false;
+                        if (point.ModelIndex > 0 && point.ModelIndex <= modelAlignmentStars.Length) {
+                            point.RMSError = modelAlignmentStars[point.ModelIndex - 1].ErrorArcsec;
+                            // TODO: Add check for max RMS error to fail the star
+                            successfulPoint = true;
+                        } else {
+                            Logger.Error($"Point {point} has invalid model index {point.ModelIndex}. There are {modelAlignmentStars.Length} alignment stars in the model");
+                        }
+
+                        if (!successfulPoint) {
+                            point.ModelPointState = ModelPointStateEnum.Failed;
+                            ++state.FailedPoints;
+                            --completedPoints;
+                        }
+                    }
+                }
+                return builtModel;
+            } else {
+                Logger.Error("Not enough successful points to complete alignment spec");
+                Notification.ShowError("Not enough successful points to complete alignment spec");
+                return null;
+            }
         }
 
         private void PreStep1_ClearState(ModelBuilderState state) {
@@ -513,7 +540,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 // TODO: Add Stop vs Cancel button
-                // TODO: Add execution timer, including remaining estimate
                 // TODO: Update plugin description to represent what is supported
                 if (state.UseDome) {
                     var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));

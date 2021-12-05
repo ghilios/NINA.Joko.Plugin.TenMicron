@@ -47,10 +47,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private readonly IApplicationStatusMediator applicationStatusMediator;
         private readonly ITelescopeMediator telescopeMediator;
         private readonly IDomeMediator domeMediator;
-        private readonly IDomeSynchronization domeSynchronization;
-        private readonly IModelAccessor modelAccessor;
         private readonly IModelPointGenerator modelPointGenerator;
-        private readonly ICustomDateTime dateTime;
         private readonly IModelBuilder modelBuilder;
 
         private readonly ITenMicronOptions modelBuilderOptions;
@@ -60,18 +57,15 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private CancellationTokenSource disconnectCts;
 
         [ImportingConstructor]
-        public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator, IDomeSynchronization domeSynchronization) :
+        public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator) :
             this(profileService,
                 TenMicronPlugin.TenMicronOptions,
                 telescopeMediator,
                 domeMediator,
                 applicationStatusMediator,
-                domeSynchronization,
                 TenMicronPlugin.MountMediator,
-                TenMicronPlugin.ModelAccessor,
                 TenMicronPlugin.ModelPointGenerator,
-                TenMicronPlugin.ModelBuilder,
-                TenMicronPlugin.DateTime) {
+                TenMicronPlugin.ModelBuilder) {
         }
 
         public MountModelBuilderVM(
@@ -80,23 +74,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             ITelescopeMediator telescopeMediator,
             IDomeMediator domeMediator,
             IApplicationStatusMediator applicationStatusMediator,
-            IDomeSynchronization domeSynchronization,
             IMountMediator mountMediator,
-            IModelAccessor modelAccessor,
             IModelPointGenerator modelPointGenerator,
-            IModelBuilder modelBuilder,
-            ICustomDateTime dateTime) : base(profileService) {
+            IModelBuilder modelBuilder) : base(profileService) {
             this.Title = "10u Model Builder";
             this.modelBuilderOptions = modelBuilderOptions;
             this.applicationStatusMediator = applicationStatusMediator;
             this.mountMediator = mountMediator;
             this.telescopeMediator = telescopeMediator;
             this.domeMediator = domeMediator;
-            this.domeSynchronization = domeSynchronization;
-            this.modelAccessor = modelAccessor;
             this.modelPointGenerator = modelPointGenerator;
             this.modelBuilder = modelBuilder;
-            this.dateTime = dateTime;
             this.disconnectCts = new CancellationTokenSource();
 
             this.telescopeMediator.RegisterConsumer(this);
@@ -105,6 +93,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.profileService.ProfileChanged += ProfileService_ProfileChanged;
             this.profileService.ActiveProfile.AstrometrySettings.PropertyChanged += AstrometrySettings_PropertyChanged;
+            this.profileService.ActiveProfile.DomeSettings.PropertyChanged += DomeSettings_PropertyChanged;
             this.LoadHorizon();
 
             this.GeneratePointsCommand = new AsyncCommand<bool>(GeneratePoints);
@@ -114,7 +103,15 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         private void ProfileService_ProfileChanged(object sender, EventArgs e) {
+            this.profileService.ActiveProfile.AstrometrySettings.PropertyChanged += AstrometrySettings_PropertyChanged;
+            this.profileService.ActiveProfile.DomeSettings.PropertyChanged += DomeSettings_PropertyChanged;
             this.LoadHorizon();
+        }
+
+        private void DomeSettings_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(this.profileService.ActiveProfile.DomeSettings.AzimuthTolerance_degrees)) {
+                _ = CalculateDomeShutterOpening(disconnectCts.Token);
+            }
         }
 
         private void AstrometrySettings_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -321,6 +318,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     Notification.ShowInformation($"10u model build completed. {builtModel.AlignmentStarCount} stars, RMS error {builtModel.RMSError:0.##} arcsec");
                 }
                 return true;
+            } catch (OperationCanceledException) {
+                Notification.ShowInformation("Model build cancelled");
+                Logger.Info("Model build cancelled");
+                return false;
             } catch (Exception e) {
                 Notification.ShowError($"Failed to build model. {e.Message}");
                 Logger.Error($"Failed to build model", e);

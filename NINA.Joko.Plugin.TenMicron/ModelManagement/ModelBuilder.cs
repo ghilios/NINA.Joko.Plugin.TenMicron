@@ -119,7 +119,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             public int FailedPoints { get; set; }
 
             private static IComparer<ModelPoint> GetPointComparer(bool useDome, ModelBuilderOptions options) {
-                if (useDome) {
+                if (useDome && options.MinimizeDomeMovement) {
                     return Comparer<ModelPoint>.Create(
                         (mp1, mp2) => {
                             if (!options.WestToEastSorting) {
@@ -170,8 +170,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     Status2 = ""
                 });
                 stepProgress?.Report(new ApplicationStatus() { });
-                // TODO: Add Stop, separate from Cancel. Don't park or reslew on cancellation, but a stop-all would be a good idea
-                /*
                 if (startedAtPark) {
                     Notification.ShowInformation("Re-parking telescope after 10u model build");
                     await telescopeMediator.ParkTelescope(stepProgress, innerCts.Token);
@@ -179,9 +177,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     Notification.ShowInformation("Restoring telescope position after 10u model build");
                     await telescopeMediator.SlewToCoordinatesAsync(startCoordinates, innerCts.Token);
                 }
-                */
-                // TODO: REVERTME
-                telescopeMediator.StopSlew();
 
                 if (oldFilter != null) {
                     Logger.Info($"Restoring filter to {oldFilter} after 10u model build");
@@ -258,20 +253,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     }
                 }
 
-                // Step 4: Handle each side of pier separately, based on ordering
-                //   E->W: First point less than 180
-                //   W->E: First point >= 180
-                var firstSideOfPier = options.WestToEastSorting ? PierSide.pierWest : PierSide.pierEast;
-                var secondSideOfPier = options.WestToEastSorting ? PierSide.pierEast : PierSide.pierWest;
-                var sideOfPiers = new PierSide[] { firstSideOfPier, secondSideOfPier };
-                foreach (var sideOfPier in sideOfPiers) {
-                    // Step 5: Choose the first point based on ordering. If dome is involved, it is the point with the least minimum azimuth range or the largest maximum azimuth range, based on E/W ordering
-                    await ProcessSideOfPierPoints(state, sideOfPier, ct, overallProgress, stepProgress);
-                }
-
-                await WaitForProcessing(state.PendingTasks, ct, stepProgress);
-
+                // Step 4: Process points based on ordering. If dome is involved, it is the point with the least minimum azimuth range or the largest maximum azimuth range, based on E/W ordering and whether MinimizeDomeMovement is enabled
+                await ProcessPoints(state, ct, overallProgress, stepProgress);
                 ct.ThrowIfCancellationRequested();
+
+                // Step 5: Wait for remaining pending processing tasks
+                await WaitForProcessing(state.PendingTasks, ct, stepProgress);
+                ct.ThrowIfCancellationRequested();
+
                 var numPendingFailures = state.PendingTasks.Select(pt => pt.Result).Count(x => !x);
                 Logger.Info($"{numPendingFailures} failures during post-capture processing");
                 state.FailedPoints += numPendingFailures;
@@ -355,11 +344,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var longitude = Angle.ByDegree(longitudeDegrees);
             var domeRadius = profileService.ActiveProfile.DomeSettings.DomeRadius_mm;
             var domeThreshold = Angle.ByDegree(profileService.ActiveProfile.DomeSettings.AzimuthTolerance_degrees);
+            var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
             foreach (var modelPoint in state.ValidPoints.Where(IsPointEligibleForBuild).ToList()) {
                 // Use celestial coordinates that have not been adjusted for refraction to calculate dome azimuth. This ensures we get a logical RA/Dec that points to the physical location, especially if refraction correction is on
                 var celestialCoordinates = modelPoint.ToTopocentric().Transform(Epoch.JNOW);
-                var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
-                var sideOfPier = ExpectedSideOfPier(modelPoint);
+                var sideOfPier = MeridianFlip.ExpectedPierSide(celestialCoordinates, Angle.ByHours(lst));
                 var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
                 var domeAzimuth = targetDomeCoordinates.Azimuth;
                 Angle minAzimuth, maxAzimuth;
@@ -370,21 +359,21 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     maxAzimuth = domeAzimuth + domeThreshold;
                 }
 
-                Logger.Debug($"Point at Alt={modelPoint.Altitude}, Az={modelPoint.Azimuth} requires dome azimuth between [{AstroUtil.EuclidianModulus(minAzimuth.Degree, 360.0d)}, {AstroUtil.EuclidianModulus(maxAzimuth.Degree, 360.0d)}]");
+                Logger.Info($"Point at Alt={modelPoint.Altitude}, Az={modelPoint.Azimuth} requires dome azimuth between [{AstroUtil.EuclidianModulus(minAzimuth.Degree, 360.0d)}, {AstroUtil.EuclidianModulus(maxAzimuth.Degree, 360.0d)}]");
                 modelPoint.MinDomeAzimuth = minAzimuth.Degree;
                 modelPoint.MaxDomeAzimuth = maxAzimuth.Degree;
+                modelPoint.DomeAzimuth = domeAzimuth.Degree;
             }
         }
 
-        private async Task ProcessSideOfPierPoints(
+        private async Task ProcessPoints(
             ModelBuilderState state,
-            PierSide sideOfPier,
             CancellationToken ct,
             IProgress<ApplicationStatus> overallProgress,
             IProgress<ApplicationStatus> stepProgress) {
-            var sideOfPierPoints = state.ValidPoints.Where(p => IsOnSideOfPier(p, sideOfPier) && IsPointEligibleForBuild(p)).ToList();
+            var sideOfPierPoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
             var nextPoint = sideOfPierPoints.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
-            Logger.Info($"Processing {sideOfPierPoints.Count} points on {sideOfPier}. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
+            Logger.Info($"Processing {sideOfPierPoints.Count} points. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
             if (state.UseDome) {
                 _ = SlewDomeIfNecessary(state, sideOfPierPoints, ct);
             }
@@ -401,13 +390,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     // TODO: Move this to a utility method
                     if (!await this.telescopeMediator.SlewToCoordinatesAsync(nextPointCoordinates, ct)) {
                         Logger.Error($"Failed to slew to {nextPoint}. Continuing to the next point");
+                        nextPoint.ModelPointState = ModelPointStateEnum.Failed;
+                        ++state.FailedPoints;
                     } else {
                         using (MyStopWatch.Measure("Waiting on ProcessingSemaphore")) {
                             await state.ProcessingSemaphore.WaitAsync(ct);
                         }
 
                         try {
-                            // Successfully slewed to point. Take an exposure
                             if (state.UseDome) {
                                 var localDomeSlewTask = state.DomeSlewTask;
                                 if (localDomeSlewTask != null) {
@@ -416,6 +406,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                 }
                             }
 
+                            // Successfully slewed to point. Take an exposure
                             var exposureData = await CaptureImage(nextPoint, stepProgress, ct);
                             ct.ThrowIfCancellationRequested();
                             if (exposureData == null) {
@@ -455,6 +446,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 // TODO: Add execution timer, including remaining estimate
                 // TODO: Add line for "next point dome azimuth"
                 // TODO: Split download from exposure in NINA core
+                // TODO: Update plugin description to represent what is supported
+                // TODO: Disable/Re-enable dome following
+                // TODO: Slew to AltAz instead of using transformations
+                // TODO: Add option to save failed points and plate solve image
                 if (state.UseDome) {
                     var nextCandidates = sideOfPierPoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
@@ -475,7 +470,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 if (nextPoint == null) {
-                    Logger.Info($"No points remaining on {sideOfPier}");
+                    Logger.Info("No points remaining");
                 }
             }
         }
@@ -492,9 +487,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 return true;
             }
 
-            double domeSlewAzimuth = state.Options.WestToEastSorting ? nextAzimuthSlewPoint.MinDomeAzimuth : nextAzimuthSlewPoint.MaxDomeAzimuth;
+            double domeSlewAzimuth;
+            if (state.Options.MinimizeDomeMovement) {
+                domeSlewAzimuth = state.Options.WestToEastSorting ? nextAzimuthSlewPoint.MinDomeAzimuth : nextAzimuthSlewPoint.MaxDomeAzimuth;
+            } else {
+                domeSlewAzimuth = nextAzimuthSlewPoint.DomeAzimuth;
+            }
             domeSlewAzimuth = AstroUtil.EuclidianModulus(domeSlewAzimuth, 360.0d);
             try {
+                Logger.Info($"Next dome slew to {domeSlewAzimuth} based on point at Alt={nextAzimuthSlewPoint.Altitude:0.###}, Az={nextAzimuthSlewPoint.Azimuth:0.###}");
                 state.DomeSlewTask = domeMediator.SlewToAzimuth(domeSlewAzimuth, ct);
                 if (!await state.DomeSlewTask) {
                     Logger.Error("Dome slew failed");
@@ -542,7 +543,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     });
                 }
             } finally {
-                stepProgress?.Report(new ApplicationStatus() { Status = "" });
+                stepProgress?.Report(new ApplicationStatus() { });
             }
         }
 
@@ -670,22 +671,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 state.ProcessingSemaphore.Release();
             }
             return success;
-        }
-
-        private static bool IsOnSideOfPier(ModelPoint point, PierSide sideOfPier) {
-            if (sideOfPier == PierSide.pierEast) {
-                return point.Azimuth >= 0 && point.Azimuth < 180;
-            } else {
-                return point.Azimuth >= 180.0 && point.Azimuth < 360.0;
-            }
-        }
-
-        private static PierSide ExpectedSideOfPier(ModelPoint point) {
-            if (point.Azimuth >= 0 && point.Azimuth < 180) {
-                return PierSide.pierEast;
-            } else {
-                return PierSide.pierWest;
-            }
         }
     }
 }

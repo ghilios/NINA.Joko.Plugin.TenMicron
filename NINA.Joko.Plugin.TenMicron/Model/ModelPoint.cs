@@ -104,6 +104,18 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             }
         }
 
+        private double domeAzimuth = double.NaN;
+
+        public double DomeAzimuth {
+            get => domeAzimuth;
+            set {
+                if (domeAzimuth != value) {
+                    domeAzimuth = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         private double maxDomeAzimuth = double.NaN;
 
         public double MaxDomeAzimuth {

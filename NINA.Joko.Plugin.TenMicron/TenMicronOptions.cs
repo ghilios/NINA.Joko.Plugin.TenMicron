@@ -130,7 +130,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             get => domeShutterWidth_mm;
             set {
                 if (domeShutterWidth_mm != value) {
-                    if (value <= 0) {
+                    if (value < 0) {
                         throw new ArgumentException("DomeShutterWidth_mm must be non-negative", "DomeShutterWidth_mm");
                     }
                     domeShutterWidth_mm = value;

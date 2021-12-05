@@ -35,7 +35,7 @@ namespace NINA.Joko.Plugin.TenMicron.Converters {
                 if (s == "disabled") {
                     return 0;
                 }
-                return int.Parse(s);
+                return Math.Max(0, int.Parse(s));
             }
             throw new ArgumentException("Invalid Type for Converter");
         }

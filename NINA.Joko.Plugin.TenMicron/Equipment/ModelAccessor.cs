@@ -61,7 +61,12 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                     alignmentModel.RightAscensionAltitude = alignmentModelInfo.RightAscensionAltitude;
                     alignmentModel.PolarAlignErrorDegrees = alignmentModelInfo.PolarAlignErrorDegrees;
                     alignmentModel.PAErrorAltitudeDegrees = alignmentModelInfo.RightAscensionAltitude - (decimal)telescopeInfo.SiteLatitude;
-                    alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)360.0d;
+                    if ((double)alignmentModelInfo.RightAscensionAzimuth < 180.0d) {
+                        alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth;
+                    } else {
+                        alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)360.0d;
+                    }
+
                     alignmentModel.RightAscensionPolarPositionAngleDegrees = alignmentModelInfo.RightAscensionPolarPositionAngleDegrees;
                     alignmentModel.OrthogonalityErrorDegrees = alignmentModelInfo.OrthogonalityErrorDegrees;
                     alignmentModel.AzimuthAdjustmentTurns = alignmentModelInfo.AzimuthAdjustmentTurns;

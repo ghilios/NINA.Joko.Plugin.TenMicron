@@ -76,13 +76,13 @@ using System.Runtime.InteropServices;
 * View and save loaded alignment models
 * Load and Delete existing alignment models
 * Remove the worst alignment star from a loaded alignment model
+* Retry individual points that have high RMS
+* Retry model build failures using only the failed points, unless a maximum number of failures is exceeded
 
 # Coming Soon #
 
 * Advanced Sequencer items to build models as part of a sequence
 * Sidereal Path model point generation that creates points along the sidereal path of a DSO
-* Retry individual points that have high RMS
-* Retry model build failures using only the failed points
 
 # Getting Help #
 

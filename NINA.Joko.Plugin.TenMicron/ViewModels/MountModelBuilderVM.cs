@@ -119,7 +119,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         private void ModelBuilder_PointNextUp(object sender, PointNextUpEventArgs e) {
-            if (e.Point == null) {
+            if (e.Point == null || double.IsNaN(e.Point.DomeAzimuth)) {
                 this.NextUpDomeAzimuthPosition = new DataPoint();
                 this.ShowNextUpDomeAzimuthPosition = false;
             } else {
@@ -332,12 +332,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 var options = new ModelBuilderOptions() {
                     WestToEastSorting = WestToEastSorting,
                     NumRetries = BuilderNumRetries,
-                    MaxPointRMS = MaxPointRMS,
+                    MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
                     MinimizeDomeMovement = MinimizeDomeMovementEnabled,
                     SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
                     AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
                     MaxConcurrency = modelBuilderOptions.MaxConcurrency,
-                    DomeShutterWidth_mm = DomeShutterWidth_mm
+                    DomeShutterWidth_mm = DomeShutterWidth_mm,
+                    MaxFailedPoints = MaxFailedPoints
                 };
                 var modelPoints = ModelPoints.ToList();
                 modelBuildTask = modelBuilder.Build(modelPoints, options, modelBuildCts.Token, modelBuildStopCts.Token, progress, stepProgress);
@@ -841,6 +842,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             set {
                 if (this.modelBuilderOptions.BuilderNumRetries != value) {
                     this.modelBuilderOptions.BuilderNumRetries = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        public int MaxFailedPoints {
+            get => this.modelBuilderOptions.MaxFailedPoints;
+            set {
+                if (this.modelBuilderOptions.MaxFailedPoints != value) {
+                    this.modelBuilderOptions.MaxFailedPoints = value;
                     RaisePropertyChanged();
                 }
             }

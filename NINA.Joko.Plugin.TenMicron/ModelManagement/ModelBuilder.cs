@@ -117,8 +117,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             public double Wavelength { get; private set; }
             public Task<bool> DomeSlewTask { get; set; }
             public int BuildAttempt { get; set; }
+            public int PriorSuccessfulPointsProcessed { get; set; }
             public int PointsProcessed { get; set; }
             public int FailedPoints { get; set; }
+            public bool IsComplete { get; set; } = false;
 
             private static IComparer<ModelPoint> GetPointComparer(bool useDome, ModelBuilderOptions options) {
                 if (useDome && options.MinimizeDomeMovement) {
@@ -168,16 +170,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 reenableDomeFollower = true;
             }
 
+            // TODO: Check for dome slew toggle. Disable + re-enable that too
+
             var innerCts = new CancellationTokenSource();
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, innerCts.Token);
             try {
                 return await DoBuild(state, linkedCts.Token, stopToken, overallProgress, stepProgress);
             } finally {
-                overallProgress?.Report(new ApplicationStatus() {
-                    Status = "",
-                    Status2 = ""
-                });
-                stepProgress?.Report(new ApplicationStatus() { });
+                state.IsComplete = true;
                 PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = null });
                 if (startedAtPark) {
                     Notification.ShowInformation("Re-parking telescope after 10u model build");
@@ -186,7 +186,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     Notification.ShowInformation("Restoring telescope position after 10u model build");
                     await telescopeMediator.SlewToCoordinatesAsync(startCoordinates, innerCts.Token);
                 }
-
                 if (oldFilter != null) {
                     Logger.Info($"Restoring filter to {oldFilter} after 10u model build");
                     await filterWheelMediator.ChangeFilter(oldFilter, progress: stepProgress);
@@ -198,6 +197,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         Notification.ShowWarning("Failed to re-enable dome follower after 10u model build");
                     }
                 }
+
+                overallProgress?.Report(new ApplicationStatus() { });
+                stepProgress?.Report(new ApplicationStatus() { });
                 state.ProcessingSemaphore?.Dispose();
                 // Make sure any remaining tasks are cancelled, just in case an exception left some remaining work in progress
                 innerCts.Cancel();
@@ -220,7 +222,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private void StartProgressReporter(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> overallProgress) {
             _ = Task.Run(async () => {
-                while (!ct.IsCancellationRequested) {
+                while (!ct.IsCancellationRequested && !state.IsComplete) {
                     ReportOverallProgress(state, overallProgress);
                     await Task.Delay(TimeSpan.FromSeconds(1), ct);
                 }
@@ -254,6 +256,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             LoadedAlignmentModel builtModel = null;
             try {
                 while (retryCount++ < options.NumRetries) {
+                    state.PriorSuccessfulPointsProcessed = 0;
                     state.FailedPoints = 0;
                     state.PointsProcessed = 0;
                     state.BuildAttempt = retryCount + 1;
@@ -274,22 +277,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         throw new ModelBuildException("Failed to start new alignment spec");
                     }
 
-                    // Step 3: Add all successful points, which is applicable for retries
-                    {
-                        var existingSuccessfulPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.AddedToModel).ToList();
-                        if (existingSuccessfulPoints.Count > 0) {
-                            Logger.Info($"Adding {existingSuccessfulPoints.Count} previously successful points to the new alignment spec");
-                            foreach (var point in existingSuccessfulPoints) {
-                                ct.ThrowIfCancellationRequested();
-                                if (!AddModelPointToAlignmentSpec(point)) {
-                                    Logger.Error($"Failed to add point {point} during retry. Changing to failed state");
-                                    ++state.FailedPoints;
-                                    point.ModelPointState = ModelPointStateEnum.Failed;
-                                }
-                                ++state.PointsProcessed;
-                            }
-                        }
-                    }
+                    // Step 3: Add all successful points and clear failed points, which are applicable for retries
+                    Step3_PrepareRetryPoints(state, ct);
 
                     // From here on we can abort with either stop or cancel
                     stopOrCancelCt.ThrowIfCancellationRequested();
@@ -308,12 +297,24 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     // Now that we're through with the work, we only abort on cancellation (not stop)
                     builtModel = await FinishAlignment(state, ct);
-
                     if (state.FailedPoints == 0) {
                         Logger.Info($"No failed points remaining after build iteration {state.BuildAttempt}");
                         break;
+                    } else if (state.Options.MaxFailedPoints > 0 && state.FailedPoints > state.Options.MaxFailedPoints) {
+                        var retryRemaining = retryCount < options.NumRetries;
+                        if (retryRemaining) {
+                            Logger.Info($"{state.FailedPoints} failed point exceeds limit of {state.Options.MaxFailedPoints}. Resetting all points to Generated to force retrying all points");
+                            Notification.ShowWarning($"{state.FailedPoints} failed points exceeds limit. Retrying all points");
+                            foreach (var point in state.ValidPoints) {
+                                point.ModelPointState = ModelPointStateEnum.Generated;
+                            }
+                        } else {
+                            Logger.Warning($"{state.FailedPoints} failed point exceeds limit of {state.Options.MaxFailedPoints}. No retries remaining, so moving on");
+                            Notification.ShowWarning($"{state.FailedPoints} failed points with no retries remaining");
+                        }
                     } else {
                         Logger.Info($"{state.FailedPoints} failed points during model build iteration {state.BuildAttempt}. {options.NumRetries - state.BuildAttempt + 1} retries remaining");
+                        Notification.ShowInformation($"Retrying 10u model build for {state.FailedPoints} points");
                     }
                 }
             } catch (OperationCanceledException) {
@@ -342,19 +343,17 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var modelAlignmentStars = builtModel.AlignmentStars.ToArray();
                 foreach (var point in state.ValidPoints) {
                     if (point.ModelPointState == ModelPointStateEnum.AddedToModel) {
-                        var successfulPoint = false;
                         if (point.ModelIndex > 0 && point.ModelIndex <= modelAlignmentStars.Length) {
                             point.RMSError = modelAlignmentStars[point.ModelIndex - 1].ErrorArcsec;
-                            // TODO: Add check for max RMS error to fail the star
-                            successfulPoint = true;
+                            if (!double.IsNaN(state.Options.MaxPointRMS) && point.RMSError > state.Options.MaxPointRMS) {
+                                Logger.Info($"Point {point} exceeds limit of {state.Options.MaxPointRMS}. This point will be reattempted if there are remaining retries");
+                                point.ModelPointState = ModelPointStateEnum.FailedRMS;
+                                ++state.FailedPoints;
+                            }
                         } else {
                             Logger.Error($"Point {point} has invalid model index {point.ModelIndex}. There are {modelAlignmentStars.Length} alignment stars in the model");
-                        }
-
-                        if (!successfulPoint) {
                             point.ModelPointState = ModelPointStateEnum.Failed;
                             ++state.FailedPoints;
-                            --completedPoints;
                         }
                     }
                 }
@@ -463,6 +462,31 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
+        private void Step3_PrepareRetryPoints(ModelBuilderState state, CancellationToken ct) {
+            var validPoints = state.ValidPoints;
+            var existingFailedPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.Failed || p.ModelPointState == ModelPointStateEnum.FailedRMS).ToList();
+            if (existingFailedPoints.Count > 0) {
+                Logger.Info($"Resetting {existingFailedPoints.Count} previously failed points to Generated so they can be reattempted");
+                foreach (var point in existingFailedPoints) {
+                    point.ModelPointState = ModelPointStateEnum.Generated;
+                }
+            }
+
+            var existingSuccessfulPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.AddedToModel).ToList();
+            if (existingSuccessfulPoints.Count > 0) {
+                Logger.Info($"Adding {existingSuccessfulPoints.Count} previously successful points to the new alignment spec");
+                foreach (var point in existingSuccessfulPoints) {
+                    ct.ThrowIfCancellationRequested();
+                    if (!AddModelPointToAlignmentSpec(point)) {
+                        Logger.Error($"Failed to add point {point} during retry. Changing to failed state");
+                        ++state.FailedPoints;
+                        point.ModelPointState = ModelPointStateEnum.Failed;
+                    }
+                    ++state.PriorSuccessfulPointsProcessed;
+                }
+            }
+        }
+
         private async Task<bool> SlewTelescopeToPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct) {
             // Instead of issuing an AltAz slew directly (which requires direct communication with the mount), calculate refraction-adjusted RA/Dec coordinates and slew there instead
             var nextPointCoordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
@@ -492,7 +516,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
             while (nextPoint != null) {
                 ct.ThrowIfCancellationRequested();
-                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = nextPoint });
                 nextPoint.ModelPointState = ModelPointStateEnum.UpNext;
 
                 bool success = false;
@@ -567,6 +590,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                 }
 
+                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = nextPoint });
                 if (nextPoint == null) {
                     Logger.Info("No points remaining");
                 }
@@ -663,14 +687,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var elapsedTime = DateTime.Now - state.IterationStartTime;
             var elapsedTimeSecondsRounded = TimeSpan.FromSeconds((int)elapsedTime.TotalSeconds);
             var completedPoints = state.PointsProcessed + state.FailedPoints;
+            var totalPoints = state.ValidPoints.Count - state.PriorSuccessfulPointsProcessed;
             TimeSpan totalEstimatedTime;
             string elapsedProgressStatus;
             if (completedPoints >= 2) {
-                var totalEstimatedTimeSeconds = elapsedTime.TotalSeconds * state.ValidPoints.Count / completedPoints;
+                var totalEstimatedTimeSeconds = elapsedTime.TotalSeconds * totalPoints / completedPoints;
                 totalEstimatedTime = TimeSpan.FromSeconds((int)totalEstimatedTimeSeconds);
-                elapsedProgressStatus = $"{elapsedTimeSecondsRounded.ToString("g")} / {totalEstimatedTime.ToString("g")}";
+                elapsedProgressStatus = $"{elapsedTimeSecondsRounded:g} / {totalEstimatedTime:g}";
             } else {
-                elapsedProgressStatus = $"{elapsedTimeSecondsRounded.ToString("g")} / -";
+                elapsedProgressStatus = $"{elapsedTimeSecondsRounded:g} / -";
             }
 
             overallProgress?.Report(new ApplicationStatus() {
@@ -681,7 +706,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 Status2 = $"Elapsed {elapsedProgressStatus}",
                 ProgressType2 = ApplicationStatus.StatusProgressType.ValueOfMaxValue,
                 Progress2 = completedPoints,
-                MaxProgress2 = state.ValidPoints.Count
+                MaxProgress2 = totalPoints
             });
         }
 

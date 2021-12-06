@@ -83,7 +83,7 @@
                                 <TextBlock Margin="2,0,0,0" Text="seconds" />
                             </StackPanel>
                         </UniformGrid>
-                        <UniformGrid Columns="2" Visibility="{Binding MountInfo.SlewSettleTimeSeconds, Converter={StaticResource DoubleZeroToVisibilityConverter}}">
+                        <UniformGrid Columns="2" Visibility="{Binding MountInfo.SlewSettleTimeSeconds, Converter={StaticResource TM_DoubleZeroToVisibilityConverter}}">
                             <Button
                                 Margin="5,0,0,0"
                                 HorizontalAlignment="Left"

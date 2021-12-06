@@ -50,6 +50,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             minPointAltitude = optionsAccessor.GetValueInt32("MinPointAltitude", 0);
             maxPointAltitude = optionsAccessor.GetValueInt32("MaxPointAltitude", 90);
             showRemovedPoints = optionsAccessor.GetValueBoolean("ShowRemovedPoints", true);
+            maxFailedPoints = optionsAccessor.GetValueInt32("MaxFailedPoints", 0);
         }
 
         public void ResetDefaults() {
@@ -70,6 +71,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MinPointAltitude = 0;
             MaxPointAltitude = 90;
             ShowRemovedPoints = true;
+            MaxFailedPoints = 0;
         }
 
         private int minPointAltitude;
@@ -313,6 +315,22 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (showRemovedPoints != value) {
                     showRemovedPoints = value;
                     optionsAccessor.SetValueBoolean("ShowRemovedPoints", showRemovedPoints);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int maxFailedPoints;
+
+        public int MaxFailedPoints {
+            get => maxFailedPoints;
+            set {
+                if (maxFailedPoints != value) {
+                    if (maxFailedPoints < 0) {
+                        throw new ArgumentException("MaxFailedPoints must be non-negative", "MaxFailedPoints");
+                    }
+                    maxFailedPoints = value;
+                    optionsAccessor.SetValueInt32("MaxFailedPoints", maxFailedPoints);
                     RaisePropertyChanged();
                 }
             }

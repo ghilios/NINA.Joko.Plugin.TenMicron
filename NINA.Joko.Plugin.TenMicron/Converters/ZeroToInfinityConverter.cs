@@ -25,6 +25,12 @@ namespace NINA.Joko.Plugin.TenMicron.Converters {
                     return "unlimited";
                 }
                 return d.ToString();
+            } else if (value is double) {
+                var d = (double)value;
+                if (d <= 0.0d || double.IsNaN(d)) {
+                    return "unlimited";
+                }
+                return d.ToString();
             }
             throw new ArgumentException("Invalid Type for Converter");
         }
@@ -32,10 +38,17 @@ namespace NINA.Joko.Plugin.TenMicron.Converters {
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
             if (value is string) {
                 var s = (string)value;
-                if (s == "unlimited") {
-                    return 0;
+                if (targetType == typeof(int)) {
+                    if (s == "unlimited") {
+                        return 0;
+                    }
+                    return int.Parse(s);
+                } else if (targetType == typeof(double)) {
+                    if (s == "unlimited") {
+                        return 0.0d;
+                    }
+                    return double.Parse(s);
                 }
-                return int.Parse(s);
             }
             throw new ArgumentException("Invalid Type for Converter");
         }

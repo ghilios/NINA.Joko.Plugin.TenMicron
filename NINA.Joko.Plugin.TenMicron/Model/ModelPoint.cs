@@ -42,7 +42,10 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
         AddedToModel = 4,
 
         [Description("Failed")]
-        Failed = 98,
+        Failed = 97,
+
+        [Description("High RMS")]
+        FailedRMS = 98,
 
         [Description("Outside Altitude Bounds")]
         OutsideAltitudeBounds = 99,

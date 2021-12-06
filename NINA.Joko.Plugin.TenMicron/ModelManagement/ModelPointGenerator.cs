@@ -13,6 +13,7 @@
 using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Core.Utility;
+using NINA.Core.Utility.Notification;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
@@ -98,6 +99,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     minViableNumPoints = currentNumPoints;
                     var nextNumPoints = Math.Min(maxViableNumPoints, currentNumPoints + (numPoints - validPoints));
                     if (nextNumPoints == currentNumPoints) {
+                        if (validPoints < numPoints) {
+                            Notification.ShowInformation($"Only {validPoints} could be generated. Continuing");
+                            Logger.Warning($"Only {validPoints} could be generated. Continuing");
+                        }
                         return points;
                     }
                     currentNumPoints = nextNumPoints;

@@ -35,9 +35,8 @@ namespace NINA.Joko.Plugin.TenMicron {
     ///  4. Option to save failed points and images used to plate solve
     ///
     /// Short term TODO list:
-    ///  1. Retries, including max RMS
-    ///  2. Sidereal track
-    ///  3. Plugins to trigger model build
+    ///  1. Sidereal track
+    ///  2. Plugins to trigger model build
     /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {

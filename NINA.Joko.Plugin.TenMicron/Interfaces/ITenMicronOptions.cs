@@ -32,6 +32,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         int BuilderNumRetries { get; set; }
 
+        int MaxFailedPoints { get; set; }
+
         double MaxPointRMS { get; set; }
 
         bool LogCommands { get; set; }

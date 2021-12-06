@@ -28,6 +28,8 @@
         <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
         <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
         <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
+        <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
+        <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry." />
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Visibility="{Binding MountInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
@@ -75,7 +77,7 @@
                             SelectedItem="{Binding ModelPointGenerationType}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={StaticResource EnumStaticDescriptionValueConverter}}" />
+                                    <TextBlock Text="{Binding Converter={StaticResource TM_EnumStaticDescriptionValueConverter}}" />
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
@@ -103,7 +105,7 @@
                                 Command="{Binding ClearPointsCommand}">
                                 <Button.IsEnabled>
                                     <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                        <Binding Path="ModelPoints" Converter="{StaticResource CollectionContainsItemsToBooleanConverterNoCheck}" />
+                                        <Binding Path="ModelPoints" Converter="{StaticResource TM_CollectionContainsItemsToBooleanConverterNoCheck}" />
                                         <Binding Path="BuildInProgress" Converter="{StaticResource InverseBooleanConverter}" />
                                     </MultiBinding>
                                 </Button.IsEnabled>
@@ -293,7 +295,7 @@
                             VerticalAlignment="Center"
                             Unit="mm"
                             ToolTip="{StaticResource DomeShutterWidth_Tooltip}">
-                            <Binding Path="DomeShutterWidth_mm" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
+                            <Binding Path="DomeShutterWidth_mm" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToDisabledConverter}">
                                 <Binding.ValidationRules>
                                     <rules:GreaterZeroRule />
                                 </Binding.ValidationRules>
@@ -311,6 +313,16 @@
                         </Grid>
                     </GroupBox.Header>
                     <Grid>
+                        <Grid.Resources>
+                            <Style x:Key="HideOnNoRetries" TargetType="{x:Type RowDefinition}">
+                                <Setter Property="Height" Value="Auto" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding BuilderNumRetries}" Value="0">
+                                        <Setter Property="Height" Value="0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Resources>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
@@ -318,7 +330,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
-                            <RowDefinition />
+                            <RowDefinition Style="{StaticResource HideOnNoRetries}" />
+                            <RowDefinition Style="{StaticResource HideOnNoRetries}" />
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <TextBlock
@@ -341,7 +354,6 @@
                             VerticalAlignment="Center"
                             Text="Retries"
                             ToolTip="{StaticResource BuilderRetries_Tooltip}" />
-                        <!-- Restore this after it works -->
                         <ninactrl:UnitTextBox
                             Grid.Row="1" Grid.Column="1"
                             MinWidth="80"
@@ -349,15 +361,56 @@
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="retries"
-                            ToolTip="{StaticResource BuilderRetries_Tooltip}"
-                            IsEnabled="False">
-                            <Binding Path="BuilderNumRetries" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToDisabledConverter}">
+                            ToolTip="{StaticResource BuilderRetries_Tooltip}">
+                            <Binding Path="BuilderNumRetries" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToDisabledConverter}">
                                 <Binding.ValidationRules>
                                     <rules:GreaterZeroRule />
                                 </Binding.ValidationRules>
                             </Binding>
                         </ninactrl:UnitTextBox>
-                        <UniformGrid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
+                        <TextBlock
+                            Grid.Row="2" Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="Max Failed Points"
+                            ToolTip="{StaticResource MaxFailedPoints_Tooltip}" />
+                        <ninactrl:UnitTextBox
+                            Grid.Row="2" Grid.Column="1"
+                            MinWidth="80"
+                            Margin="10,5,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Unit="points"
+                            IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
+                            ToolTip="{StaticResource MaxFailedPoints_Tooltip}">
+                            <Binding Path="MaxFailedPoints" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
+                                <Binding.ValidationRules>
+                                    <rules:GreaterZeroRule />
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox>
+                        <TextBlock
+                            Grid.Row="3" Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="Point Max RMS"
+                            ToolTip="{StaticResource MaxPointRMS_Tooltip}" />
+                        <ninactrl:UnitTextBox
+                            Grid.Row="3" Grid.Column="1"
+                            MinWidth="80"
+                            Margin="10,5,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Unit="arcsec"
+                            IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
+                            ToolTip="{StaticResource MaxPointRMS_Tooltip}">
+                            <Binding Path="MaxPointRMS" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
+                                <Binding.ValidationRules>
+                                    <rules:GreaterZeroRule />
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </ninactrl:UnitTextBox>
+                        <UniformGrid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
                             <ninactrl:CancellableButton
                                 Height="30"
                                 Margin="10,10,5,10"
@@ -406,7 +459,7 @@
                     MinWidth="300"
                     MinHeight="150"
                     Width="Auto"
-                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}, Converter={StaticResource NumericToHalfConverter}}"
+                    Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}, Converter={StaticResource TM_NumericToHalfConverter}}"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top"
                     Background="{StaticResource BackgroundBrush}"

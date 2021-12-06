@@ -6,7 +6,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="Resources/OptionsDataTemplates.xaml" />
     </ResourceDictionary.MergedDictionaries>
-    <DataTemplate x:Key="10 Micron Utilities_Options">
+    <DataTemplate x:Key="10 Micron Tools_Options">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />

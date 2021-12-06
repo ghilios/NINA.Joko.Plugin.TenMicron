@@ -66,7 +66,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionAltitude, Converter={StaticResource DecimalMinToDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionAltitude, Converter={StaticResource TM_DecimalMinToDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="°" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -82,7 +82,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.RMSError, Converter={StaticResource DecimalMinToDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.RMSError, Converter={StaticResource TM_DecimalMinToDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="arcsec" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -98,7 +98,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionAzimuth, Converter={StaticResource DecimalMinToDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionAzimuth, Converter={StaticResource TM_DecimalMinToDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="°" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -127,7 +127,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.OrthogonalityErrorDegrees, StringFormat=\{0:.##\}, Converter={StaticResource DecimalDegreesToArcsecDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.OrthogonalityErrorDegrees, StringFormat=\{0:.##\}, Converter={StaticResource TM_DecimalDegreesToArcsecDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="arcsec" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -143,7 +143,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionPolarPositionAngleDegrees, Converter={StaticResource DecimalMinToDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.RightAscensionPolarPositionAngleDegrees, Converter={StaticResource TM_DecimalMinToDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="°" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -159,7 +159,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.PolarAlignErrorDegrees, StringFormat=\{0:.##\}, Converter={StaticResource DecimalDegreesToArcsecDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.PolarAlignErrorDegrees, StringFormat=\{0:.##\}, Converter={StaticResource TM_DecimalDegreesToArcsecDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="arcsec" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -175,7 +175,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.PAErrorAltitudeDegrees, StringFormat=\{0:.##\}, Converter={StaticResource DecimalDegreesToArcsecDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.PAErrorAltitudeDegrees, StringFormat=\{0:.##\}, Converter={StaticResource TM_DecimalDegreesToArcsecDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="arcsec" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -191,7 +191,7 @@
                                     HorizontalAlignment="Left"
                                     Orientation="Horizontal"
                                     Margin="5,0,0,0">
-                                    <TextBlock Text="{Binding LoadedAlignmentModel.PAErrorAzimuthDegrees, StringFormat=\{0:.##\}, Converter={StaticResource DecimalDegreesToArcsecDoubleDashConverter}}" />
+                                    <TextBlock Text="{Binding LoadedAlignmentModel.PAErrorAzimuthDegrees, StringFormat=\{0:.##\}, Converter={StaticResource TM_DecimalDegreesToArcsecDoubleDashConverter}}" />
                                     <TextBlock Margin="1,0,0,0" Text="arcsec" Opacity="0.4" />
                                 </StackPanel>
                             </UniformGrid>
@@ -311,7 +311,7 @@
                             Command="{Binding DeleteWorstStarCommand}">
                             <Button.IsEnabled>
                                 <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                    <Binding Path="LoadedAlignmentModel.AlignmentStarCount" Converter="{StaticResource PositiveToBooleanConverter}" />
+                                    <Binding Path="LoadedAlignmentModel.AlignmentStarCount" Converter="{StaticResource TM_PositiveToBooleanConverter}" />
                                     <Binding Path="ModelLoaded" />
                                 </MultiBinding>
                             </Button.IsEnabled>
@@ -363,7 +363,7 @@
                             Command="{Binding DeleteSelectedModelCommand}">
                             <Button.IsEnabled>
                                 <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource PositiveToBooleanConverter}" />
+                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource TM_PositiveToBooleanConverter}" />
                                     <Binding Path="ModelNamesLoaded" />
                                 </MultiBinding>
                             </Button.IsEnabled>
@@ -376,7 +376,7 @@
                             Command="{Binding LoadSelectedModelCommand}">
                             <Button.IsEnabled>
                                 <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource PositiveToBooleanConverter}" />
+                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource TM_PositiveToBooleanConverter}" />
                                     <Binding Path="ModelNamesLoaded" />
                                 </MultiBinding>
                             </Button.IsEnabled>
@@ -389,7 +389,7 @@
                             Command="{Binding SaveSelectedModelCommand}">
                             <Button.IsEnabled>
                                 <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource PositiveToBooleanConverter}" />
+                                    <Binding Path="SelectedIndex" ElementName="ModelName_List" Converter="{StaticResource TM_PositiveToBooleanConverter}" />
                                     <Binding Path="ModelLoaded" />
                                 </MultiBinding>
                             </Button.IsEnabled>

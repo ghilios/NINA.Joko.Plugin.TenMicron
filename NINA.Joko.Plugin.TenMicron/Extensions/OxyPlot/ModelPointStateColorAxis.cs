@@ -29,6 +29,7 @@ namespace NINA.Joko.Plugin.TenMicron.Extensions.OxyPlot {
                     return OxyColors.Brown;
 
                 case ModelPointStateEnum.Failed:
+                case ModelPointStateEnum.FailedRMS:
                     return OxyColors.Red;
 
                 case ModelPointStateEnum.UpNext:

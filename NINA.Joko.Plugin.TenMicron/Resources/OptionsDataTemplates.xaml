@@ -7,24 +7,24 @@
     xmlns:local="clr-namespace:NINA.Joko.Plugin.TenMicron"
     xmlns:interfaces="clr-namespace:NINA.Joko.Plugin.TenMicron.Interfaces"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:jgconverters="clr-namespace:NINA.Joko.Plugin.TenMicron.Converters"
+    xmlns:tmconverters="clr-namespace:NINA.Joko.Plugin.TenMicron.Converters"
     xmlns:tmrules="clr-namespace:NINA.Joko.Plugin.TenMicron.ValidationRules"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
     xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
     mc:Ignorable="d">
-    <jgconverters:DoubleZeroToVisibilityConverter x:Key="DoubleZeroToVisibilityConverter" />
-    <jgconverters:IntNegativeToVisibilityConverter x:Key="IntNegativeToVisibilityConverter" />
-    <jgconverters:InverseDoubleZeroToVisibilityConverter x:Key="InverseDoubleZeroToVisibilityConverter" />
-    <jgconverters:ZeroToInfinityConverter x:Key="ZeroToInfinityConverter" />
-    <jgconverters:DecimalMinToDoubleDashConverter x:Key="DecimalMinToDoubleDashConverter" />
-    <jgconverters:DecimalDegreesToArcsecDoubleDashConverter x:Key="DecimalDegreesToArcsecDoubleDashConverter" />
-    <jgconverters:PositiveToBooleanConverter x:Key="PositiveToBooleanConverter" />
-    <jgconverters:EnumStaticDescriptionValueConverter x:Key="EnumStaticDescriptionValueConverter" />
-    <jgconverters:ZeroToDisabledConverter x:Key="ZeroToDisabledConverter" />
-    <jgconverters:NumericToHalfConverter x:Key="NumericToHalfConverter" />
-    <jgconverters:ModelPointStateToColorConverter x:Key="ModelPointStateToColorConverter" />
-    <jgconverters:CollectionContainsItemsToBooleanConverterNoCheck x:Key="CollectionContainsItemsToBooleanConverterNoCheck" />
+    <tmconverters:DoubleZeroToVisibilityConverter x:Key="TM_DoubleZeroToVisibilityConverter" />
+    <tmconverters:IntNegativeToVisibilityConverter x:Key="TM_IntNegativeToVisibilityConverter" />
+    <tmconverters:InverseDoubleZeroToVisibilityConverter x:Key="TM_InverseDoubleZeroToVisibilityConverter" />
+    <tmconverters:ZeroToInfinityConverter x:Key="TM_ZeroToInfinityConverter" />
+    <tmconverters:DecimalMinToDoubleDashConverter x:Key="TM_DecimalMinToDoubleDashConverter" />
+    <tmconverters:DecimalDegreesToArcsecDoubleDashConverter x:Key="TM_DecimalDegreesToArcsecDoubleDashConverter" />
+    <tmconverters:PositiveToBooleanConverter x:Key="TM_PositiveToBooleanConverter" />
+    <tmconverters:EnumStaticDescriptionValueConverter x:Key="TM_EnumStaticDescriptionValueConverter" />
+    <tmconverters:ZeroToDisabledConverter x:Key="TM_ZeroToDisabledConverter" />
+    <tmconverters:NumericToHalfConverter x:Key="TM_NumericToHalfConverter" />
+    <tmconverters:ModelPointStateToColorConverter x:Key="TM_ModelPointStateToColorConverter" />
+    <tmconverters:CollectionContainsItemsToBooleanConverterNoCheck x:Key="TM_CollectionContainsItemsToBooleanConverterNoCheck" />
     <TextBlock x:Key="Placeholder_Tooltip" Text="Placeholder text" />
     <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
         <Grid d:DataContext="{d:DesignInstance local:TenMicronOptions, IsDesignTimeCreatable=False}">
@@ -75,7 +75,7 @@
                 HorizontalAlignment="Left"
                 ToolTip="{StaticResource MaxConcurrency_Tooltip}"
                 Unit="plate solves">
-                <Binding Path="MaxConcurrency" UpdateSourceTrigger="LostFocus" Converter="{StaticResource ZeroToInfinityConverter}">
+                <Binding Path="MaxConcurrency" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
                     <Binding.ValidationRules>
                         <tmrules:PositiveIntegerOrInfiniteRule />
                     </Binding.ValidationRules>

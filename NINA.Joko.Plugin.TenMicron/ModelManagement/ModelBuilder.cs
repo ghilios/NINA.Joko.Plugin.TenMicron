@@ -452,7 +452,19 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var firstPointSlews = new List<Task<bool>>();
 
                 if (state.UseDome) {
-                    firstPointSlews.Add(domeMediator.SlewToAzimuth(firstPoint.DomeAzimuth, ct));
+                    var celestialCoordinates = firstPoint.ToTopocentric().Transform(Epoch.JNOW);
+                    if (state.SyncSeparation != null) {
+                        celestialCoordinates -= state.SyncSeparation;
+                    }
+
+                    // Dome azimuths are not yet cached, so we need to compute this directly
+                    var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
+                    var longitudeDegrees = profileService.ActiveProfile.AstrometrySettings.Longitude;
+                    var longitude = Angle.ByDegree(longitudeDegrees);
+                    var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
+                    var sideOfPier = MeridianFlip.ExpectedPierSide(celestialCoordinates, Angle.ByHours(lst));
+                    var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
+                    firstPointSlews.Add(domeMediator.SlewToAzimuth(targetDomeCoordinates.Azimuth.Degree, ct));
                 }
                 firstPointSlews.Add(SlewTelescopeToPoint(state, firstPoint, ct));
 

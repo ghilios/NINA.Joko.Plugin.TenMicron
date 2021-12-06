@@ -147,6 +147,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             ct.ThrowIfCancellationRequested();
             PreFlightChecks(modelPoints);
 
+            var innerCts = new CancellationTokenSource();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, innerCts.Token);
             var telescopeInfo = telescopeMediator.GetInfo();
             var startedAtPark = telescopeInfo.AtPark;
             var startCoordinates = telescopeInfo.Coordinates;
@@ -166,14 +168,23 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var reenableDomeFollower = false;
             var state = new ModelBuilderState(options, modelPoints, mount, domeMediator, weatherDataMediator);
             if (state.UseDome && domeMediator.IsFollowingScope) {
-                Notification.ShowInformation("Stopping dome follower to build 10u model. It will be turned back on after completion");
+                if (!await domeMediator.DisableFollowing(ct)) {
+                    Logger.Warning("Failed to disable dome follower after 10u model build");
+                    Notification.ShowWarning("Failed to disable dome follower after 10u model build");
+                }
                 reenableDomeFollower = true;
             }
 
-            // TODO: Check for dome slew toggle. Disable + re-enable that too
+            bool reenableDomeSyncSlew = false;
+            if (state.UseDome && profileService.ActiveProfile.DomeSettings.SyncSlewDomeWhenMountSlews) {
+                profileService.ActiveProfile.DomeSettings.SyncSlewDomeWhenMountSlews = false;
+                reenableDomeSyncSlew = true;
+            }
 
-            var innerCts = new CancellationTokenSource();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, innerCts.Token);
+            if (reenableDomeFollower || reenableDomeSyncSlew) {
+                Notification.ShowInformation("Stopping dome follower to build 10u model. It will be turned back on after completion");
+            }
+
             try {
                 return await DoBuild(state, linkedCts.Token, stopToken, overallProgress, stepProgress);
             } finally {
@@ -195,7 +206,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     if (!await domeMediator.EnableFollowing(innerCts.Token)) {
                         Logger.Warning("Failed to re-enable dome follower after 10u model build");
                         Notification.ShowWarning("Failed to re-enable dome follower after 10u model build");
+                    } else {
+                        Logger.Info("Re-enabled dome follower after 10u model build");
                     }
+                }
+
+                if (reenableDomeSyncSlew) {
+                    profileService.ActiveProfile.DomeSettings.SyncSlewDomeWhenMountSlews = true; ;
+                    Logger.Info("Re-enabled dome sync slew after 10u model build");
                 }
 
                 overallProgress?.Report(new ApplicationStatus() { });

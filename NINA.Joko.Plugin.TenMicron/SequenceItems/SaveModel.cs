@@ -18,34 +18,33 @@ using NINA.Sequencer.Validations;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
 
-    [ExportMetadata("Name", "Load Model")]
-    [ExportMetadata("Description", "Loads a pointing model already saved to the mount")]
-    [ExportMetadata("Icon", "LoadSVG")]
+    [ExportMetadata("Name", "Save Model")]
+    [ExportMetadata("Description", "Saves the pointing model currently loaded on the mount")]
+    [ExportMetadata("Icon", "SaveSVG")]
     [ExportMetadata("Category", "10 Micron")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class LoadModel : SequenceItem, IValidatable {
+    public class SaveModel : SequenceItem, IValidatable {
 
         [ImportingConstructor]
-        public LoadModel() : this(TenMicronPlugin.MountModelMediator) {
+        public SaveModel() : this(TenMicronPlugin.MountModelMediator) {
         }
 
-        public LoadModel(IMountModelMediator mountModelMediator) {
+        public SaveModel(IMountModelMediator mountModelMediator) {
             this.mountModelMediator = mountModelMediator;
         }
 
-        private LoadModel(LoadModel cloneMe) : this(cloneMe.mountModelMediator) {
+        private SaveModel(SaveModel cloneMe) : this(cloneMe.mountModelMediator) {
             CopyMetaData(cloneMe);
         }
 
         public override object Clone() {
-            return new LoadModel(this) {
+            return new SaveModel(this) {
                 ModelName = ModelName
             };
         }
@@ -73,8 +72,8 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
         }
 
         public override Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            if (!mountModelMediator.LoadModel(ModelName)) {
-                throw new Exception($"Failed to load 10u model {ModelName}");
+            if (!mountModelMediator.SaveModel(ModelName)) {
+                throw new Exception($"Failed to save 10u model {ModelName}");
             }
             return Task.CompletedTask;
         }
@@ -83,12 +82,6 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
             var i = new List<string>();
             if (!mountModelMediator.GetInfo().Connected) {
                 i.Add("10u mount not connected");
-            } else {
-                var modelNames = mountModelMediator.GetModelNames();
-                var modelName = string.IsNullOrWhiteSpace(ModelName) ? "(not set)" : ModelName;
-                if (!modelNames.Contains(modelName)) {
-                    i.Add($"10u model {modelName} not found");
-                }
             }
 
             Issues = i;
@@ -100,7 +93,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(LoadModel)}, ModelName: {ModelName}";
+            return $"Category: {Category}, Item: {nameof(SaveModel)}, ModelName: {ModelName}";
         }
     }
 }

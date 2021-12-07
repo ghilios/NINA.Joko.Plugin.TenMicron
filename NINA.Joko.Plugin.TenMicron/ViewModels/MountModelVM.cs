@@ -166,10 +166,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Saving model as {selectedModelName}");
-                if (!this.DeleteModel(selectedModelName)) {
-                    Logger.Warning($"Failed to delete existing model {selectedModelName} before saving. Moving forward anyways");
-                }
-
                 if (this.SaveModel(selectedModelName)) {
                     Notification.ShowInformation($"Saved {selectedModelName}");
                     return Task.FromResult(true);
@@ -501,6 +497,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public bool SaveModel(string name) {
             if (Connected) {
+                if (this.DeleteModel(selectedModelName)) {
+                    Logger.Info($"Deleted existing model {name} prior to saving");
+                }
                 return mount.SaveModel(name);
             }
             return false;

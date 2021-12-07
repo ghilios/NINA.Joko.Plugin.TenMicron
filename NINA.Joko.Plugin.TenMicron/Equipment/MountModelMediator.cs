@@ -57,6 +57,10 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             return handler.GetModelName(modelIndex);
         }
 
+        public string[] GetModelNames() {
+            return handler.GetModelNames();
+        }
+
         public bool LoadModel(string name) {
             return handler.LoadModel(name);
         }

@@ -370,7 +370,7 @@
                             DisplayMemberPath="Name"
                             ItemsSource="{Binding SiderealPathStartDateTimeProviders}"
                             SelectedItem="{Binding SelectedSiderealPathStartDateTimeProvider}"
-                            ToolTip="{Binding SiderealTrackStartTimeOffset_Tooltip}" />
+                            ToolTip="{StaticResource SiderealTrackStartTimeOffset_Tooltip}" />
                         <ninactrl:UnitTextBox
                             Grid.Row="3" Grid.Column="2"
                             MinWidth="60"

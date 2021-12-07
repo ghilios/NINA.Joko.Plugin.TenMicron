@@ -440,6 +440,10 @@
     <Compile Include="Interfaces\IMountVM.cs" />
     <Compile Include="Equipment\AscomMountCommander.cs" />
     <Compile Include="Equipment\ModelAccessor.cs" />
+    <Compile Include="SequenceItems\DataTemplates.xaml.cs">
+      <DependentUpon>DataTemplates.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SequenceItems\LoadModel.cs" />
     <Compile Include="Utility\DomeUtility.cs" />
     <Compile Include="Utility\NowDateTimeProvider.cs" />
     <Compile Include="ValidationRules\PositiveIntegerOrInfiniteRule.cs" />
@@ -542,6 +546,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Resources\SVGDataTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SequenceItems\DataTemplates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

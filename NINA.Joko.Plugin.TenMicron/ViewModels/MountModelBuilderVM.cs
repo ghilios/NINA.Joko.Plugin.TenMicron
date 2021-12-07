@@ -87,7 +87,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IModelBuilder modelBuilder,
             INighttimeCalculator nighttimeCalculator) : base(profileService) {
             this.Title = "10u Model Builder";
-            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
+
+            var dict = new ResourceDictionary();
+            dict.Source = new Uri("NINA.Joko.Plugin.TenMicron;component/Resources/SVGDataTemplates.xaml", UriKind.RelativeOrAbsolute);
+            ImageGeometry = (System.Windows.Media.GeometryGroup)dict["TenMicronSVG"];
+            ImageGeometry.Freeze();
 
             this.modelBuilderOptions = modelBuilderOptions;
             this.applicationStatusMediator = applicationStatusMediator;

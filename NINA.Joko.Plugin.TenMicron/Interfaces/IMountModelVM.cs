@@ -25,6 +25,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         int GetModelCount();
 
+        string[] GetModelNames();
+
         bool LoadModel(string name);
 
         bool SaveModel(string name);

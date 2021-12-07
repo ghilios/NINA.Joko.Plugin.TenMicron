@@ -52,7 +52,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IMount mount,
             IMountMediator mountMediator) : base(profileService) {
             this.Title = "10u Mount Info";
-            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
+
+            var dict = new ResourceDictionary();
+            dict.Source = new Uri("NINA.Joko.Plugin.TenMicron;component/Resources/SVGDataTemplates.xaml", UriKind.RelativeOrAbsolute);
+            ImageGeometry = (System.Windows.Media.GeometryGroup)dict["TenMicronSVG"];
+            ImageGeometry.Freeze();
 
             this.mount = mount;
             this.telescopeMediator = telescopeMediator;

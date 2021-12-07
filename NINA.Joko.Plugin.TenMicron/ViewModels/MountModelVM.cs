@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using NINA.Core.Enum;
 using System.Windows;
+using System.Linq;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -66,7 +67,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IMountMediator mountMediator,
             IModelAccessor modelAccessor) : base(profileService) {
             this.Title = "10u Model";
-            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
+
+            var dict = new ResourceDictionary();
+            dict.Source = new Uri("NINA.Joko.Plugin.TenMicron;component/Resources/SVGDataTemplates.xaml", UriKind.RelativeOrAbsolute);
+            ImageGeometry = (System.Windows.Media.GeometryGroup)dict["TenMicronSVG"];
+            ImageGeometry.Freeze();
 
             this.applicationStatusMediator = applicationStatusMediator;
             this.mount = mount;
@@ -474,6 +479,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 return mount.GetModelCount();
             }
             return 0;
+        }
+
+        public string[] GetModelNames() {
+            if (Connected) {
+                return this.ModelNames.ToArray();
+            }
+            return new string[0];
         }
 
         public bool LoadModel(string name) {

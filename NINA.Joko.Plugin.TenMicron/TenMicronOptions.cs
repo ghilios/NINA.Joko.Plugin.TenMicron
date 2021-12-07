@@ -34,8 +34,8 @@ namespace NINA.Joko.Plugin.TenMicron {
 
         private void InitializeOptions() {
             goldenSpiralStarCount = optionsAccessor.GetValueInt32("GoldenSpiralStarCount", 9);
-            siderealTrackStartOffsetSeconds = optionsAccessor.GetValueInt32("SiderealTrackStartOffsetSeconds", 0);
-            siderealTrackEndOffsetSeconds = optionsAccessor.GetValueInt32("SiderealTrackEndOffsetSeconds", 0);
+            siderealTrackStartOffsetMinutes = optionsAccessor.GetValueInt32("SiderealTrackStartOffsetMinutes", 0);
+            siderealTrackEndOffsetMinutes = optionsAccessor.GetValueInt32("SiderealTrackEndOffsetMinutes", 0);
             siderealTrackRADeltaDegrees = optionsAccessor.GetValueDouble("SiderealTrackRADeltaDegrees", 1.5d);
             domeShutterWidth_mm = optionsAccessor.GetValueInt32("DomeShutterWidth_mm", 0);
             minimizeDomeMovementEnabled = optionsAccessor.GetValueBoolean("MinimizeDomeMovementEnabled", true);
@@ -51,12 +51,14 @@ namespace NINA.Joko.Plugin.TenMicron {
             maxPointAltitude = optionsAccessor.GetValueInt32("MaxPointAltitude", 90);
             showRemovedPoints = optionsAccessor.GetValueBoolean("ShowRemovedPoints", true);
             maxFailedPoints = optionsAccessor.GetValueInt32("MaxFailedPoints", 0);
+            siderealTrackStartTimeProvider = optionsAccessor.GetValueString("SiderealTrackStartTimeProvider", "Now");
+            siderealTrackEndTimeProvider = optionsAccessor.GetValueString("SiderealTrackEndTimeProvider", "Now");
         }
 
         public void ResetDefaults() {
             GoldenSpiralStarCount = 9;
-            SiderealTrackStartOffsetSeconds = 0;
-            SiderealTrackEndOffsetSeconds = 0;
+            SiderealTrackStartOffsetMinutes = 0;
+            SiderealTrackEndOffsetMinutes = 0;
             SiderealTrackRADeltaDegrees = 1.5d;
             DomeShutterWidth_mm = 0;
             MinimizeDomeMovementEnabled = true;
@@ -72,6 +74,8 @@ namespace NINA.Joko.Plugin.TenMicron {
             MaxPointAltitude = 90;
             ShowRemovedPoints = true;
             MaxFailedPoints = 0;
+            SiderealTrackStartTimeProvider = "Now";
+            SiderealTrackEndTimeProvider = "Now";
         }
 
         private int minPointAltitude;
@@ -122,27 +126,27 @@ namespace NINA.Joko.Plugin.TenMicron {
             }
         }
 
-        private int siderealTrackStartOffsetSeconds;
+        private int siderealTrackStartOffsetMinutes;
 
-        public int SiderealTrackStartOffsetSeconds {
-            get => siderealTrackStartOffsetSeconds;
+        public int SiderealTrackStartOffsetMinutes {
+            get => siderealTrackStartOffsetMinutes;
             set {
-                if (siderealTrackStartOffsetSeconds != value) {
-                    siderealTrackStartOffsetSeconds = value;
-                    optionsAccessor.SetValueInt32("SiderealTrackStartOffsetSeconds", siderealTrackStartOffsetSeconds);
+                if (siderealTrackStartOffsetMinutes != value) {
+                    siderealTrackStartOffsetMinutes = value;
+                    optionsAccessor.SetValueInt32("SiderealTrackStartOffsetMinutes", siderealTrackStartOffsetMinutes);
                     RaisePropertyChanged();
                 }
             }
         }
 
-        private int siderealTrackEndOffsetSeconds;
+        private int siderealTrackEndOffsetMinutes;
 
-        public int SiderealTrackEndOffsetSeconds {
-            get => siderealTrackEndOffsetSeconds;
+        public int SiderealTrackEndOffsetMinutes {
+            get => siderealTrackEndOffsetMinutes;
             set {
-                if (siderealTrackEndOffsetSeconds != value) {
-                    siderealTrackEndOffsetSeconds = value;
-                    optionsAccessor.SetValueInt32("SiderealTrackEndOffsetSeconds", siderealTrackEndOffsetSeconds);
+                if (siderealTrackEndOffsetMinutes != value) {
+                    siderealTrackEndOffsetMinutes = value;
+                    optionsAccessor.SetValueInt32("SiderealTrackEndOffsetMinutes", siderealTrackEndOffsetMinutes);
                     RaisePropertyChanged();
                 }
             }
@@ -331,6 +335,32 @@ namespace NINA.Joko.Plugin.TenMicron {
                     }
                     maxFailedPoints = value;
                     optionsAccessor.SetValueInt32("MaxFailedPoints", maxFailedPoints);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string siderealTrackStartTimeProvider;
+
+        public string SiderealTrackStartTimeProvider {
+            get => siderealTrackStartTimeProvider;
+            set {
+                if (siderealTrackStartTimeProvider != value) {
+                    siderealTrackStartTimeProvider = value;
+                    optionsAccessor.SetValueString("SiderealTrackStartTimeProvider", siderealTrackStartTimeProvider);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string siderealTrackEndTimeProvider;
+
+        public string SiderealTrackEndTimeProvider {
+            get => siderealTrackEndTimeProvider;
+            set {
+                if (siderealTrackEndTimeProvider != value) {
+                    siderealTrackEndTimeProvider = value;
+                    optionsAccessor.SetValueString("SiderealTrackEndTimeProvider", siderealTrackEndTimeProvider);
                     RaisePropertyChanged();
                 }
             }

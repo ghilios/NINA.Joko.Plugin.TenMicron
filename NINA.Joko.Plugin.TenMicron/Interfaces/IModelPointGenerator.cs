@@ -10,8 +10,10 @@
 
 #endregion "copyright"
 
+using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Joko.Plugin.TenMicron.Model;
+using System;
 using System.Collections.Generic;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
@@ -19,5 +21,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
     public interface IModelPointGenerator {
 
         List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon);
+
+        List<ModelPoint> GenerateSiderealPath(Coordinates coordinates, Angle raDelta, DateTime startTime, DateTime endTime, CustomHorizon horizon);
     }
 }

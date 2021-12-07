@@ -35,8 +35,7 @@ namespace NINA.Joko.Plugin.TenMicron {
     ///  4. Option to save failed points and images used to plate solve
     ///
     /// Short term TODO list:
-    ///  1. Sidereal track
-    ///  2. Plugins to trigger model build
+    ///  1. Plugins to trigger model build
     /// </summary>
     [Export(typeof(IPluginManifest))]
     public class TenMicronPlugin : PluginBase {
@@ -63,7 +62,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MountModelMediator = new MountModelMediator();
             DateTime = new SystemDateTime();
             ModelAccessor = new ModelAccessor(telescopeMediator, MountModelMediator, DateTime);
-            ModelPointGenerator = new ModelPointGenerator(DateTime, telescopeMediator, TenMicronOptions);
+            ModelPointGenerator = new ModelPointGenerator(profileService, DateTime, telescopeMediator, weatherDataMediator, TenMicronOptions);
             ModelBuilder = new ModelBuilder(profileService, MountModelMediator, Mount, telescopeMediator, domeMediator, cameraMediator, domeSynchronization, plateSolverFactory, imagingMediator, filterWheelMediator, weatherDataMediator);
         }
 

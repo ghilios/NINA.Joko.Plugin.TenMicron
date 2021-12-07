@@ -441,6 +441,7 @@
     <Compile Include="Equipment\AscomMountCommander.cs" />
     <Compile Include="Equipment\ModelAccessor.cs" />
     <Compile Include="Utility\DomeUtility.cs" />
+    <Compile Include="Utility\NowDateTimeProvider.cs" />
     <Compile Include="ValidationRules\PositiveIntegerOrInfiniteRule.cs" />
     <Compile Include="TenMicronOptions.cs" />
     <Compile Include="Model\ModelPoint.cs" />

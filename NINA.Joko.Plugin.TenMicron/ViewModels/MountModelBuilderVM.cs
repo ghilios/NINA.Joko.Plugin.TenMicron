@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using NINA.Astrometry;
+using NINA.Astrometry.Interfaces;
 using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
@@ -25,7 +26,9 @@ using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Profile.Interfaces;
+using NINA.Sequencer.Utility.DateTimeProvider;
 using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.WPF.Base.ViewModel;
 using OxyPlot;
 using System;
@@ -50,6 +53,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private readonly IDomeMediator domeMediator;
         private readonly IModelPointGenerator modelPointGenerator;
         private readonly IModelBuilder modelBuilder;
+        private readonly IFramingAssistantVM framingAssistant;
 
         private readonly ITenMicronOptions modelBuilderOptions;
         private IProgress<ApplicationStatus> progress;
@@ -58,15 +62,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private CancellationTokenSource disconnectCts;
 
         [ImportingConstructor]
-        public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator) :
+        public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator, IFramingAssistantVM framingAssistant, INighttimeCalculator nighttimeCalculator) :
             this(profileService,
                 TenMicronPlugin.TenMicronOptions,
                 telescopeMediator,
                 domeMediator,
+                framingAssistant,
                 applicationStatusMediator,
                 TenMicronPlugin.MountMediator,
                 TenMicronPlugin.ModelPointGenerator,
-                TenMicronPlugin.ModelBuilder) {
+                TenMicronPlugin.ModelBuilder,
+                nighttimeCalculator) {
         }
 
         public MountModelBuilderVM(
@@ -74,20 +80,36 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             ITenMicronOptions modelBuilderOptions,
             ITelescopeMediator telescopeMediator,
             IDomeMediator domeMediator,
+            IFramingAssistantVM framingAssistant,
             IApplicationStatusMediator applicationStatusMediator,
             IMountMediator mountMediator,
             IModelPointGenerator modelPointGenerator,
-            IModelBuilder modelBuilder) : base(profileService) {
+            IModelBuilder modelBuilder,
+            INighttimeCalculator nighttimeCalculator) : base(profileService) {
             this.Title = "10u Model Builder";
             this.modelBuilderOptions = modelBuilderOptions;
             this.applicationStatusMediator = applicationStatusMediator;
             this.mountMediator = mountMediator;
             this.telescopeMediator = telescopeMediator;
             this.domeMediator = domeMediator;
+            this.framingAssistant = framingAssistant;
             this.modelPointGenerator = modelPointGenerator;
             this.modelBuilder = modelBuilder;
             this.modelBuilder.PointNextUp += ModelBuilder_PointNextUp;
             this.modelBuilderOptions.PropertyChanged += ModelBuilderOptions_PropertyChanged;
+
+            this.SiderealPathStartDateTimeProviders = ImmutableList.Create<IDateTimeProvider>(
+                new NowDateTimeProvider(new SystemDateTime()),
+                new NauticalDuskProvider(nighttimeCalculator),
+                new SunsetProvider(nighttimeCalculator),
+                new DuskProvider(nighttimeCalculator));
+            this.SelectedSiderealPathStartDateTimeProvider = this.SiderealPathStartDateTimeProviders.FirstOrDefault(p => p.Name == modelBuilderOptions.SiderealTrackStartTimeProvider);
+            this.SiderealPathEndDateTimeProviders = ImmutableList.Create<IDateTimeProvider>(
+                new NowDateTimeProvider(new SystemDateTime()),
+                new NauticalDawnProvider(nighttimeCalculator),
+                new SunriseProvider(nighttimeCalculator),
+                new DawnProvider(nighttimeCalculator));
+            this.SelectedSiderealPathEndDateTimeProvider = this.SiderealPathEndDateTimeProviders.FirstOrDefault(p => p.Name == modelBuilderOptions.SiderealTrackEndTimeProvider);
 
             this.disconnectCts = new CancellationTokenSource();
 
@@ -105,6 +127,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.BuildCommand = new AsyncCommand<bool>(BuildModel);
             this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
             this.StopBuildCommand = new AsyncCommand<bool>(StopBuildModel);
+            this.CoordsFromFramingCommand = new AsyncCommand<bool>(CoordsFromFraming);
+            this.CoordsFromScopeCommand = new AsyncCommand<bool>(CoordsFromScope);
         }
 
         private void ModelBuilderOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -120,11 +144,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private void ModelBuilder_PointNextUp(object sender, PointNextUpEventArgs e) {
             if (e.Point == null || double.IsNaN(e.Point.DomeAzimuth)) {
-                this.NextUpDomeAzimuthPosition = new DataPoint();
-                this.ShowNextUpDomeAzimuthPosition = false;
+                this.NextUpDomePosition = new DataPoint();
+                this.ShowNextUpDomePosition = false;
             } else {
-                this.NextUpDomeAzimuthPosition = new DataPoint(e.Point.DomeAzimuth, e.Point.Altitude);
-                this.ShowNextUpDomeAzimuthPosition = true;
+                this.NextUpDomePosition = new DataPoint(e.Point.DomeAzimuth, e.Point.DomeAltitude);
+                this.ShowNextUpDomePosition = true;
             }
         }
 
@@ -307,13 +331,48 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             if (!this.modelBuilderOptions.ShowRemovedPoints) {
                 localModelPoints = localModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated).ToList();
             }
+            var numPoints = localModelPoints.Count(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
+            Notification.ShowInformation($"Generated {numPoints} points");
             this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
             return true;
         }
 
         private bool GenerateSiderealPath() {
-            Notification.ShowError("Sidereal Path not yet implemented");
-            return false;
+            if (SiderealPathObjectCoordinates == null) {
+                Notification.ShowError("No object selected");
+                return false;
+            }
+            if (SelectedSiderealPathStartDateTimeProvider == null) {
+                Notification.ShowError("No start time provider selected");
+                return false;
+            }
+            if (SelectedSiderealPathEndDateTimeProvider == null) {
+                Notification.ShowError("No start time provider selected");
+                return false;
+            }
+
+            var startTime = SelectedSiderealPathStartDateTimeProvider.GetDateTime(null) + TimeSpan.FromMinutes(SiderealTrackStartOffsetMinutes);
+            var endTime = SelectedSiderealPathEndDateTimeProvider.GetDateTime(null) + TimeSpan.FromMinutes(SiderealTrackEndOffsetMinutes);
+            if (endTime < startTime) {
+                endTime += TimeSpan.FromDays(1);
+            }
+            Logger.Info($"Generating sidereal path. Coordinates={SiderealPathObjectCoordinates.Coordinates}, RADelta={SiderealTrackRADeltaDegrees}, StartTime={startTime}, EndTime={endTime}");
+            try {
+                var localModelPoints = this.modelPointGenerator.GenerateSiderealPath(SiderealPathObjectCoordinates.Coordinates, Angle.ByDegree(SiderealTrackRADeltaDegrees), startTime, endTime, CustomHorizon);
+                this.ModelPoints = ImmutableList.ToImmutableList(localModelPoints);
+                if (!this.modelBuilderOptions.ShowRemovedPoints) {
+                    localModelPoints = localModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated).ToList();
+                }
+                var numPoints = localModelPoints.Count(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
+                Notification.ShowInformation($"Generated {numPoints} points");
+
+                this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
+                return true;
+            } catch (Exception e) {
+                Notification.ShowError($"Failed to generate sidereal path. {e.Message}");
+                Logger.Error($"Failed to generate sidereal path. Coordinates={SiderealPathObjectCoordinates?.Coordinates}, RADelta={SiderealTrackRADeltaDegrees}, StartTime={startTime}, EndTime={endTime}", e);
+                return false;
+            }
         }
 
         private CancellationTokenSource modelBuildCts;
@@ -330,14 +389,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 modelBuildCts = new CancellationTokenSource();
                 modelBuildStopCts = new CancellationTokenSource();
                 var options = new ModelBuilderOptions() {
-                    WestToEastSorting = WestToEastSorting,
+                    WestToEastSorting = modelBuilderOptions.WestToEastSorting,
                     NumRetries = BuilderNumRetries,
                     MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
-                    MinimizeDomeMovement = MinimizeDomeMovementEnabled,
+                    MinimizeDomeMovement = modelBuilderOptions.MinimizeDomeMovementEnabled,
                     SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
                     AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
                     MaxConcurrency = modelBuilderOptions.MaxConcurrency,
-                    DomeShutterWidth_mm = DomeShutterWidth_mm,
+                    DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,
                     MaxFailedPoints = MaxFailedPoints
                 };
                 var modelPoints = ModelPoints.ToList();
@@ -395,6 +454,25 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
+        private Task<bool> CoordsFromFraming(object o) {
+            try {
+                this.SiderealPathObjectCoordinates = new InputCoordinates(framingAssistant.DSO.Coordinates);
+                return Task.FromResult(true);
+            } catch (Exception) {
+                return Task.FromResult(false);
+            }
+        }
+
+        private Task<bool> CoordsFromScope(object o) {
+            try {
+                var telescopeInfo = telescopeMediator.GetInfo();
+                this.SiderealPathObjectCoordinates = new InputCoordinates(telescopeInfo.Coordinates);
+                return Task.FromResult(true);
+            } catch (Exception) {
+                return Task.FromResult(false);
+            }
+        }
+
         private static CustomHorizon GetEmptyHorizon() {
             var horizonDefinition = $"0 0" + Environment.NewLine + "360 0";
             using (var sr = new StringReader(horizonDefinition)) {
@@ -412,7 +490,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             calculateDomeShutterOpeningTask = Task.Run(() => {
                 var azimuth = DomeInfo.Azimuth;
-                if (DomeShutterWidth_mm <= 0.0) {
+                if (modelBuilderOptions.DomeShutterWidth_mm <= 0.0) {
                     CalculateFixedThresholdDomeShutterOpening(azimuth, ct);
                 } else {
                     CalculateAzimuthAwareDomeShutterOpening(azimuth, ct);
@@ -487,7 +565,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             for (double altitude = 0.0; altitude <= 90.0; altitude += altitudeDelta) {
                 ct.ThrowIfCancellationRequested();
                 var altitudeAngle = Angle.ByDegree(altitude);
-                (var leftAzimuthBoundary, var rightAzimuthBoundary) = DomeUtility.CalculateDomeAzimuthRange(altitudeAngle: altitudeAngle, azimuthAngle: azimuthAngle, domeRadius: domeRadius, domeShutterWidthMm: DomeShutterWidth_mm);
+                (var leftAzimuthBoundary, var rightAzimuthBoundary) = DomeUtility.CalculateDomeAzimuthRange(altitudeAngle: altitudeAngle, azimuthAngle: azimuthAngle, domeRadius: domeRadius, domeShutterWidthMm: modelBuilderOptions.DomeShutterWidth_mm);
                 if (leftAzimuthBoundary.Degree < 0.0) {
                     var addDegrees = AstroUtil.EuclidianModulus(leftAzimuthBoundary.Degree, 360.0d) - leftAzimuthBoundary.Degree;
                     leftAzimuthBoundary += Angle.ByDegree(addDegrees);
@@ -665,21 +743,21 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        public int SiderealTrackStartOffsetSeconds {
-            get => this.modelBuilderOptions.SiderealTrackStartOffsetSeconds;
+        public int SiderealTrackStartOffsetMinutes {
+            get => this.modelBuilderOptions.SiderealTrackStartOffsetMinutes;
             set {
-                if (this.modelBuilderOptions.SiderealTrackStartOffsetSeconds != value) {
-                    this.modelBuilderOptions.SiderealTrackStartOffsetSeconds = value;
+                if (this.modelBuilderOptions.SiderealTrackStartOffsetMinutes != value) {
+                    this.modelBuilderOptions.SiderealTrackStartOffsetMinutes = value;
                     RaisePropertyChanged();
                 }
             }
         }
 
-        public int SiderealTrackEndOffsetSeconds {
-            get => this.modelBuilderOptions.SiderealTrackEndOffsetSeconds;
+        public int SiderealTrackEndOffsetMinutes {
+            get => this.modelBuilderOptions.SiderealTrackEndOffsetMinutes;
             set {
-                if (this.modelBuilderOptions.SiderealTrackEndOffsetSeconds != value) {
-                    this.modelBuilderOptions.SiderealTrackEndOffsetSeconds = value;
+                if (this.modelBuilderOptions.SiderealTrackEndOffsetMinutes != value) {
+                    this.modelBuilderOptions.SiderealTrackEndOffsetMinutes = value;
                     RaisePropertyChanged();
                 }
             }
@@ -707,27 +785,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        public bool MinimizeDomeMovementEnabled {
-            get => this.modelBuilderOptions.MinimizeDomeMovementEnabled;
-            set {
-                if (this.modelBuilderOptions.MinimizeDomeMovementEnabled != value) {
-                    this.modelBuilderOptions.MinimizeDomeMovementEnabled = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public int DomeShutterWidth_mm {
-            get => this.modelBuilderOptions.DomeShutterWidth_mm;
-            set {
-                if (this.modelBuilderOptions.DomeShutterWidth_mm != value) {
-                    this.modelBuilderOptions.DomeShutterWidth_mm = value;
-                    RaisePropertyChanged();
-                    _ = CalculateDomeShutterOpening(disconnectCts.Token);
-                }
-            }
-        }
-
         private DataPoint scopePosition;
 
         public DataPoint ScopePosition {
@@ -738,24 +795,24 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private bool showNextUpDomeAzimuthPosition = false;
+        private bool showNextUpDomePosition = false;
 
-        public bool ShowNextUpDomeAzimuthPosition {
-            get => showNextUpDomeAzimuthPosition;
+        public bool ShowNextUpDomePosition {
+            get => showNextUpDomePosition;
             set {
-                if (showNextUpDomeAzimuthPosition != value) {
-                    showNextUpDomeAzimuthPosition = value;
+                if (showNextUpDomePosition != value) {
+                    showNextUpDomePosition = value;
                     RaisePropertyChanged();
                 }
             }
         }
 
-        private DataPoint nextUpDomeAzimuthPosition;
+        private DataPoint nextUpDomePosition;
 
-        public DataPoint NextUpDomeAzimuthPosition {
-            get => nextUpDomeAzimuthPosition;
+        public DataPoint NextUpDomePosition {
+            get => nextUpDomePosition;
             set {
-                nextUpDomeAzimuthPosition = value;
+                nextUpDomePosition = value;
                 RaisePropertyChanged();
             }
         }
@@ -827,16 +884,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        public bool WestToEastSorting {
-            get => this.modelBuilderOptions.WestToEastSorting;
-            set {
-                if (this.modelBuilderOptions.WestToEastSorting != value) {
-                    this.modelBuilderOptions.WestToEastSorting = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
         public int BuilderNumRetries {
             get => this.modelBuilderOptions.BuilderNumRetries;
             set {
@@ -879,10 +926,74 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
+        private InputCoordinates siderealPathObjectCoordinates;
+
+        public InputCoordinates SiderealPathObjectCoordinates {
+            get => siderealPathObjectCoordinates;
+            private set {
+                siderealPathObjectCoordinates = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private IList<IDateTimeProvider> siderealPathStartDateTimeProviders;
+
+        public IList<IDateTimeProvider> SiderealPathStartDateTimeProviders {
+            get => siderealPathStartDateTimeProviders;
+            private set {
+                siderealPathStartDateTimeProviders = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private IDateTimeProvider selectedSiderealPathStartDateTimeProvider;
+
+        public IDateTimeProvider SelectedSiderealPathStartDateTimeProvider {
+            get => selectedSiderealPathStartDateTimeProvider;
+            set {
+                if (value != null) {
+                    modelBuilderOptions.SiderealTrackStartTimeProvider = value.Name;
+                }
+
+                selectedSiderealPathStartDateTimeProvider = value;
+                if (selectedSiderealPathStartDateTimeProvider != null) {
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private IList<IDateTimeProvider> siderealPathEndDateTimeProviders;
+
+        public IList<IDateTimeProvider> SiderealPathEndDateTimeProviders {
+            get => siderealPathEndDateTimeProviders;
+            private set {
+                siderealPathEndDateTimeProviders = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private IDateTimeProvider selectedSiderealPathEndDateTimeProvider;
+
+        public IDateTimeProvider SelectedSiderealPathEndDateTimeProvider {
+            get => selectedSiderealPathEndDateTimeProvider;
+            set {
+                if (value != null) {
+                    modelBuilderOptions.SiderealTrackEndTimeProvider = value.Name;
+                }
+
+                selectedSiderealPathEndDateTimeProvider = value;
+                if (selectedSiderealPathEndDateTimeProvider != null) {
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         public ICommand ClearPointsCommand { get; private set; }
         public ICommand GeneratePointsCommand { get; private set; }
         public ICommand BuildCommand { get; private set; }
         public ICommand CancelBuildCommand { get; private set; }
         public ICommand StopBuildCommand { get; private set; }
+        public ICommand CoordsFromFramingCommand { get; private set; }
+        public ICommand CoordsFromScopeCommand { get; private set; }
     }
 }

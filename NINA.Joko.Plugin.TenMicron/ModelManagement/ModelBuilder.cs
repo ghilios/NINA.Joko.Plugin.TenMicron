@@ -441,6 +441,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 modelPoint.MinDomeAzimuth = minAzimuth.Degree;
                 modelPoint.MaxDomeAzimuth = maxAzimuth.Degree;
                 modelPoint.DomeAzimuth = domeAzimuth.Degree;
+                modelPoint.DomeAltitude = targetDomeCoordinates.Altitude.Degree;
             }
         }
 
@@ -566,6 +567,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                     Logger.Info("Waiting for dome slew before starting image capture");
                                     await localDomeSlewTask;
                                 }
+
+                                // TODO: Validate that the dome is not slewing, and that the point is within the calculated dome range
                             }
 
                             // Successfully slewed to point. Take an exposure

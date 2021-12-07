@@ -21,12 +21,11 @@
     <UserControl.Resources>
         <TextBlock x:Key="Stars_Tooltip" Text="Number of stars to include in the model" />
         <TextBlock x:Key="PointGenerator_Tooltip" Text="The algorithm used to generate points for an alignment model. Golden Spiral is used for a full sky model, and Sidereal Path generates points along the sidereal path of an RA/DEC coordinate" />
-        <TextBlock x:Key="DomeShutterWidth_Tooltip" Text="The width of the dome shutter, in mm. If set, this is used to determine if the scope is pointing out of the shutter instead of the Threshold setting from Dome Options" />
-        <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
-        <TextBlock x:Key="SiderealTrackStartOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dusk to start point generation for the target object" />
-        <TextBlock x:Key="SiderealTrackEndOffsetSeconds_Tooltip" Text="Offset, in seconds, relative to Astronomical Dawn to end point generation for the target object" />
+        <TextBlock x:Key="SiderealTrackStartTime_Tooltip" Text="The object's location at this time is used as the first point. Points are added along the way over the RA Delta interval until the end time." />
+        <TextBlock x:Key="SiderealTrackEndTime_Tooltip" Text="The object's location at this time is used as the last point. Points are added along the way over the RA Delta interval" />
+        <TextBlock x:Key="SiderealTrackStartTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to start point generation for the target object" />
+        <TextBlock x:Key="SiderealTrackEndTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to end point generation for the target object" />
         <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
-        <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
         <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
         <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
         <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry." />
@@ -56,6 +55,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol2" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition />
@@ -68,7 +68,7 @@
                             Text="Generator"
                             ToolTip="{StaticResource PointGenerator_Tooltip}" />
                         <ComboBox
-                            Grid.Row="0" Grid.Column="1"
+                            Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
                             Margin="10,5,0,0"
                             Name="PART_ModelPointGenerationTypeList"
                             MinWidth="120"
@@ -81,7 +81,7 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <UniformGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
+                        <UniformGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Rows="1" Columns="2">
                             <Button
                                 Height="30"
                                 Margin="10,10,5,10"
@@ -138,6 +138,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol2" />
                         </Grid.ColumnDefinitions>
                         <TextBlock
                             Grid.Row="0" Grid.Column="0"
@@ -146,7 +147,7 @@
                             Text="Stars"
                             ToolTip="{StaticResource Stars_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="0" Grid.Column="1"
+                            Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
                             MinWidth="80"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
@@ -189,52 +190,230 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol2" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
                         </Grid.RowDefinitions>
+                        <StackPanel
+                            Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                            Margin="5,0,0,0"
+                            Orientation="Horizontal">
+                            <Button
+                                Width="25"
+                                Height="25"
+                                Margin="5,0,5,0"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Right"
+                                Command="{Binding CoordsFromFramingCommand}"
+                                Style="{StaticResource TertiaryBackgroundButton}">
+                                <Button.ToolTip>
+                                    <ToolTip ToolTipService.ShowOnDisabled="False">
+                                        <TextBlock Text="Import coordinates from the framing wizard" />
+                                    </ToolTip>
+                                </Button.ToolTip>
+                                <Grid>
+                                    <Path
+                                        Margin="5"
+                                        Data="{StaticResource FocusAssistantSVG}"
+                                        Fill="{StaticResource ButtonForegroundBrush}"
+                                        Stretch="Uniform" />
+                                </Grid>
+                            </Button>
+                            <Button
+                                Width="25"
+                                Height="25"
+                                Margin="5,0,5,0"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Right"
+                                Command="{Binding CoordsFromScopeCommand}"
+                                Style="{StaticResource TertiaryBackgroundButton}">
+                                <Button.ToolTip>
+                                    <ToolTip ToolTipService.ShowOnDisabled="False">
+                                        <TextBlock Text="Import coordinates from the scope's current position" />
+                                    </ToolTip>
+                                </Button.ToolTip>
+                                <Grid>
+                                    <Path
+                                        Margin="5"
+                                        Data="{StaticResource TelescopeSVG}"
+                                        Fill="{StaticResource ButtonForegroundBrush}"
+                                        Stretch="Uniform" />
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                            Margin="0,5,0,0"
+                            DataContext="{Binding SiderealPathObjectCoordinates}"
+                            Orientation="Horizontal">
+                            <TextBlock
+                                Width="50"
+                                VerticalAlignment="Center"
+                                Text="{ns:Loc LblRA}" />
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <Binding Path="RAHours" UpdateSourceTrigger="LostFocus">
+                                        <Binding.ValidationRules>
+                                            <rules:HoursRule />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">h</TextBlock>
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <Binding Path="RAMinutes" UpdateSourceTrigger="LostFocus">
+                                        <Binding.ValidationRules>
+                                            <rules:MinutesRule />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">m</TextBlock>
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <Binding Path="RASeconds" UpdateSourceTrigger="LostFocus">
+                                        <Binding.ValidationRules>
+                                            <rules:SecondsRule />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">s</TextBlock>
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                            Margin="0,5,0,0"
+                            VerticalAlignment="Center"
+                            DataContext="{Binding SiderealPathObjectCoordinates}"
+                            Orientation="Horizontal">
+                            <TextBlock
+                                Width="50"
+                                VerticalAlignment="Center"
+                                Text="{ns:Loc LblDec}" />
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <MultiBinding Converter="{StaticResource DecDegreeConverter}" UpdateSourceTrigger="LostFocus">
+                                        <Binding Path="NegativeDec" />
+                                        <Binding Path="DecDegrees">
+                                            <Binding.ValidationRules>
+                                                <rules:DegreesRule />
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </MultiBinding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">d</TextBlock>
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <Binding Path="DecMinutes" UpdateSourceTrigger="LostFocus">
+                                        <Binding.ValidationRules>
+                                            <rules:MinutesRule />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">m</TextBlock>
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                TextAlignment="Right">
+                                <TextBox.Text>
+                                    <Binding Path="DecSeconds" UpdateSourceTrigger="LostFocus">
+                                        <Binding.ValidationRules>
+                                            <rules:SecondsRule />
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock VerticalAlignment="Center">s</TextBlock>
+                        </StackPanel>
                         <TextBlock
-                            Grid.Row="0" Grid.Column="0"
+                            Grid.Row="3" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="Start Offset"
-                            ToolTip="{StaticResource SiderealTrackStartOffsetSeconds_Tooltip}" />
+                            Text="Start Time"
+                            ToolTip="{StaticResource SiderealTrackStartTime_Tooltip}" />
+                        <ComboBox
+                            Margin="5,0,0,0"
+                            Grid.Row="3" Grid.Column="1"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            DisplayMemberPath="Name"
+                            ItemsSource="{Binding SiderealPathStartDateTimeProviders}"
+                            SelectedItem="{Binding SelectedSiderealPathStartDateTimeProvider}"
+                            ToolTip="{Binding SiderealTrackStartTimeOffset_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="0" Grid.Column="1"
-                            MinWidth="80"
+                            Grid.Row="3" Grid.Column="2"
+                            MinWidth="60"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Unit="seconds"
-                            ToolTip="{StaticResource SiderealTrackStartOffsetSeconds_Tooltip}">
-                            <Binding Path="SiderealTrackStartOffsetSeconds" UpdateSourceTrigger="LostFocus" />
+                            Unit="minutes"
+                            ToolTip="{StaticResource SiderealTrackStartTimeOffset_Tooltip}">
+                            <Binding Path="SiderealTrackStartOffsetMinutes" UpdateSourceTrigger="LostFocus" />
                         </ninactrl:UnitTextBox>
                         <TextBlock
-                            Grid.Row="1" Grid.Column="0"
+                            Grid.Row="4" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="End Offset"
-                            ToolTip="{StaticResource SiderealTrackEndOffsetSeconds_Tooltip}" />
+                            Text="End Time"
+                            ToolTip="{StaticResource SiderealTrackEndTime_Tooltip}" />
+                        <ComboBox
+                            Margin="5,0,0,0"
+                            Grid.Row="4" Grid.Column="1"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            DisplayMemberPath="Name"
+                            ItemsSource="{Binding SiderealPathEndDateTimeProviders}"
+                            SelectedItem="{Binding SelectedSiderealPathEndDateTimeProvider}"
+                            ToolTip="{StaticResource SiderealTrackEndTimeOffset_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="1" Grid.Column="1"
-                            MinWidth="80"
+                            Grid.Row="4" Grid.Column="2"
+                            MinWidth="60"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Unit="seconds"
-                            ToolTip="{StaticResource SiderealTrackEndOffsetSeconds_Tooltip}">
-                            <Binding Path="SiderealTrackEndOffsetSeconds" UpdateSourceTrigger="LostFocus" />
+                            Unit="minutes"
+                            ToolTip="{StaticResource SiderealTrackEndTimeOffset_Tooltip}">
+                            <Binding Path="SiderealTrackEndOffsetMinutes" UpdateSourceTrigger="LostFocus" />
                         </ninactrl:UnitTextBox>
                         <TextBlock
-                            Grid.Row="2" Grid.Column="0"
+                            Grid.Row="5" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Text="RA Interval"
                             ToolTip="{StaticResource SiderealTrackRADeltaDegrees_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="2" Grid.Column="1"
+                            Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
                             MinWidth="80"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
@@ -244,60 +423,6 @@
                             <Binding Path="SiderealTrackRADeltaDegrees" UpdateSourceTrigger="LostFocus">
                                 <Binding.ValidationRules>
                                     <rules:GreaterThanZeroRule />
-                                </Binding.ValidationRules>
-                            </Binding>
-                        </ninactrl:UnitTextBox>
-                    </Grid>
-                </GroupBox>
-                <GroupBox Visibility="{Binding DomeInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
-                    <GroupBox.Header>
-                        <Grid Height="36" Margin="5">
-                            <TextBlock
-                                VerticalAlignment="Center"
-                                FontSize="18"
-                                Text="Dome" />
-                        </Grid>
-                    </GroupBox.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition />
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
-                        <TextBlock
-                            Grid.Row="0" Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="Optimize"
-                            ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}" />
-                        <CheckBox
-                            Grid.Row="0" Grid.Column="1"
-                            MinWidth="80"
-                            Margin="10,5,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}"
-                            IsChecked="{Binding MinimizeDomeMovementEnabled}" />
-                        <TextBlock
-                            Grid.Row="1" Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="Shutter Width"
-                            ToolTip="{StaticResource DomeShutterWidth_Tooltip}" />
-                        <ninactrl:UnitTextBox
-                            Grid.Row="1" Grid.Column="1"
-                            MinWidth="80"
-                            Margin="10,5,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Unit="mm"
-                            ToolTip="{StaticResource DomeShutterWidth_Tooltip}">
-                            <Binding Path="DomeShutterWidth_mm" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToDisabledConverter}">
-                                <Binding.ValidationRules>
-                                    <rules:GreaterZeroRule />
                                 </Binding.ValidationRules>
                             </Binding>
                         </ninactrl:UnitTextBox>
@@ -326,9 +451,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol0" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol1" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsCol2" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition />
                             <RowDefinition />
                             <RowDefinition Style="{StaticResource HideOnNoRetries}" />
                             <RowDefinition Style="{StaticResource HideOnNoRetries}" />
@@ -338,24 +463,10 @@
                             Grid.Row="0" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="West to East"
-                            ToolTip="{StaticResource WestToEast_Tooltip}" />
-                        <CheckBox
-                            Grid.Row="0" Grid.Column="1"
-                            MinWidth="80"
-                            Margin="10,5,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            ToolTip="{StaticResource WestToEast_Tooltip}"
-                            IsChecked="{Binding WestToEastSorting}" />
-                        <TextBlock
-                            Grid.Row="1" Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
                             Text="Retries"
                             ToolTip="{StaticResource BuilderRetries_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="1" Grid.Column="1"
+                            Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
                             MinWidth="80"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
@@ -369,13 +480,13 @@
                             </Binding>
                         </ninactrl:UnitTextBox>
                         <TextBlock
-                            Grid.Row="2" Grid.Column="0"
+                            Grid.Row="1" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Text="Max Failed Points"
                             ToolTip="{StaticResource MaxFailedPoints_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="2" Grid.Column="1"
+                            Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
                             MinWidth="80"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
@@ -390,13 +501,13 @@
                             </Binding>
                         </ninactrl:UnitTextBox>
                         <TextBlock
-                            Grid.Row="3" Grid.Column="0"
+                            Grid.Row="2" Grid.Column="0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Text="Point Max RMS"
                             ToolTip="{StaticResource MaxPointRMS_Tooltip}" />
                         <ninactrl:UnitTextBox
-                            Grid.Row="3" Grid.Column="1"
+                            Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
                             MinWidth="80"
                             Margin="10,5,0,0"
                             HorizontalAlignment="Left"
@@ -410,7 +521,7 @@
                                 </Binding.ValidationRules>
                             </Binding>
                         </ninactrl:UnitTextBox>
-                        <UniformGrid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Rows="1" Columns="2">
+                        <UniformGrid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Rows="1" Columns="2">
                             <ninactrl:CancellableButton
                                 Height="30"
                                 Margin="10,10,5,10"
@@ -582,9 +693,9 @@
                             Opacity="0.6"
                             Text="Dome Target"
                             TextColor="{StaticResource NextUpDomeAzimuthColor}"
-                            X="{Binding NextUpDomeAzimuthPosition.X}"
-                            Y="{Binding NextUpDomeAzimuthPosition.Y}"
-                            Visibility="{Binding ShowNextUpDomeAzimuthPosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
+                            X="{Binding NextUpDomePosition.X}"
+                            Y="{Binding NextUpDomePosition.Y}"
+                            Visibility="{Binding ShowNextUpDomePosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
                     </oxy:Plot.Annotations>
                 </oxy:Plot>
             </Grid>

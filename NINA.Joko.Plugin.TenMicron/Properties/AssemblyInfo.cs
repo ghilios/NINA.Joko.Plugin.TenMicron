@@ -70,6 +70,7 @@ using System.Runtime.InteropServices;
 # Features #
 
 * Build full sky models using Golden Spiral in an Imaging tab dock
+* Sidereal Path model point generation that creates points along the sidereal path of a DSO
 * MW4 and NINA horizons supported. Load the horizon file in NINA Options -> General
 * Dome optimization to reduce dome slews during model build
 * Altitude-aware dome shutter calculations. By setting a dome shutter width in the model builder settings, a wider dome slit clearance will be used for higher altitudes to further reduce the number of dome slews
@@ -82,7 +83,6 @@ using System.Runtime.InteropServices;
 # Coming Soon #
 
 * Advanced Sequencer items to build models as part of a sequence
-* Sidereal Path model point generation that creates points along the sidereal path of a DSO
 
 # Getting Help #
 

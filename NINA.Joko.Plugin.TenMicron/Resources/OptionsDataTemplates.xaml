@@ -31,8 +31,12 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
@@ -49,6 +53,9 @@
                 <TextBlock x:Key="MinPointAltitude_Tooltip" Text="The minimum altitude allowed for point generation" />
                 <TextBlock x:Key="MaxPointAltitude_Tooltip" Text="The maximum altitude allowed for point generation" />
                 <TextBlock x:Key="ShowRemovedPoints_Tooltip" Text="Whether to show points that were rejected for being outside of the altitude bounds or below the defined horizon" />
+                <TextBlock x:Key="DomeShutterWidth_Tooltip" Text="The width of the dome shutter, in mm. If set, this is used to determine if the scope is pointing out of the shutter instead of the Threshold setting from Dome Options" />
+                <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
+                <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -164,6 +171,59 @@
                 VerticalAlignment="Center"
                 IsChecked="{Binding ShowRemovedPoints}"
                 ToolTip="{StaticResource ShowRemovedPoints_Tooltip}" />
+            <TextBlock
+                Grid.Row="7" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Optimize Dome"
+                ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}" />
+            <CheckBox
+                Grid.Row="7" Grid.Column="1"
+                MinWidth="80"
+                Margin="10,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}"
+                IsChecked="{Binding MinimizeDomeMovementEnabled}" />
+            <TextBlock
+                Grid.Row="8" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Dome Shutter Width"
+                ToolTip="{StaticResource DomeShutterWidth_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="8" Grid.Column="1"
+                MinWidth="80"
+                Margin="10,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Unit="mm"
+                ToolTip="{StaticResource DomeShutterWidth_Tooltip}">
+                <Binding Path="DomeShutterWidth_mm" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToDisabledConverter}">
+                    <Binding.ValidationRules>
+                        <rules:GreaterZeroRule />
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
+            <TextBlock
+                Grid.Row="8" Grid.Column="2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="TIP: Make this less than the actual shutter width to give extra clearance and account for dome imperfections" />
+            <TextBlock
+                Grid.Row="9" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="West to East"
+                ToolTip="{StaticResource WestToEast_Tooltip}" />
+            <CheckBox
+                Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="80"
+                Margin="10,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource WestToEast_Tooltip}"
+                IsChecked="{Binding WestToEastSorting}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

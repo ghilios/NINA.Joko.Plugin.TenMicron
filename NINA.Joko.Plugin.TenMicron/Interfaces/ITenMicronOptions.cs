@@ -18,9 +18,13 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
     public interface ITenMicronOptions : INotifyPropertyChanged {
         int GoldenSpiralStarCount { get; set; }
 
-        int SiderealTrackStartOffsetSeconds { get; set; }
+        string SiderealTrackStartTimeProvider { get; set; }
 
-        int SiderealTrackEndOffsetSeconds { get; set; }
+        string SiderealTrackEndTimeProvider { get; set; }
+
+        int SiderealTrackStartOffsetMinutes { get; set; }
+
+        int SiderealTrackEndOffsetMinutes { get; set; }
 
         double SiderealTrackRADeltaDegrees { get; set; }
 

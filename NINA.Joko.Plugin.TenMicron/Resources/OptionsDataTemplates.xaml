@@ -209,6 +209,7 @@
                 Grid.Row="8" Grid.Column="2"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
+                Margin="10,5,0,0"
                 Text="TIP: Make this less than the actual shutter width to give extra clearance and account for dome imperfections" />
             <TextBlock
                 Grid.Row="9" Grid.Column="0"

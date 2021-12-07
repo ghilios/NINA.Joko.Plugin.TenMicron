@@ -31,6 +31,7 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using NINA.Core.Enum;
+using System.Windows;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -65,6 +66,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IMountMediator mountMediator,
             IModelAccessor modelAccessor) : base(profileService) {
             this.Title = "10u Model";
+            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
 
             this.applicationStatusMediator = applicationStatusMediator;
             this.mount = mount;

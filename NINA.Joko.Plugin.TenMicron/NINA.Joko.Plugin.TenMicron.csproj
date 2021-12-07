@@ -471,6 +471,9 @@
     <Compile Include="Resources\OptionsDataTemplates.xaml.cs">
       <DependentUpon>OptionsDataTemplates.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Resources\SVGDataTemplates.xaml.cs">
+      <DependentUpon>SVGDataTemplates.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TenMicronPlugin.cs" />
     <Compile Include="Utility\ConstantDateTime.cs" />
     <Compile Include="Utility\MountUtility.cs" />
@@ -535,6 +538,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Resources\OptionsDataTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\SVGDataTemplates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

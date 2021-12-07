@@ -27,6 +27,7 @@ using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using NINA.Joko.Plugin.TenMicron.Model;
+using System.Windows;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -51,6 +52,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IMount mount,
             IMountMediator mountMediator) : base(profileService) {
             this.Title = "10u Mount Info";
+            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
+
             this.mount = mount;
             this.telescopeMediator = telescopeMediator;
             this.mountMediator = mountMediator;

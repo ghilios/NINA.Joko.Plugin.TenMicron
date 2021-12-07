@@ -18,7 +18,6 @@ using NINA.Core.Utility.Notification;
 using NINA.Equipment.Equipment;
 using NINA.Equipment.Equipment.MyDome;
 using NINA.Equipment.Equipment.MyTelescope;
-using NINA.Equipment.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Joko.Plugin.TenMicron.Equipment;
@@ -40,6 +39,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
@@ -87,6 +87,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             IModelBuilder modelBuilder,
             INighttimeCalculator nighttimeCalculator) : base(profileService) {
             this.Title = "10u Model Builder";
+            ImageGeometry = (System.Windows.Media.GeometryGroup)Application.Current?.Resources["TenMicronSVG"];
+
             this.modelBuilderOptions = modelBuilderOptions;
             this.applicationStatusMediator = applicationStatusMediator;
             this.mountMediator = mountMediator;

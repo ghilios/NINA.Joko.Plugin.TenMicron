@@ -25,6 +25,7 @@ using System.Collections.Generic;
 namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
     public class ModelPointGenerator : IModelPointGenerator {
+        public const int MAX_POINTS = 100;
 
         // Epsilon to optimize average nearest neighbor distance
         private const double EPSILON = 0.36d;
@@ -46,6 +47,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         }
 
         public List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon) {
+            if (numPoints > MAX_POINTS) {
+                throw new Exception($"10u mounts do not support more than {MAX_POINTS} points");
+            } else if (numPoints < 3) {
+                throw new Exception("At least 3 points required for a viable model");
+            }
+
             // http://extremelearning.com.au/how-to-evenly-distribute-points-on-a-sphere-more-effectively-than-the-canonical-fibonacci-lattice/
             var points = new List<ModelPoint>();
 
@@ -154,9 +161,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             if (endTime > (startTime + TimeSpan.FromDays(1))) {
                 throw new Exception($"End time ({endTime}) is more than 1 day beyond start time ({startTime})");
             }
+            if (TimeSpan.FromHours(raDelta.Hours) <= TimeSpan.FromSeconds(1)) {
+                throw new Exception($"RA delta ({raDelta}) cannot be less than 1 arc second");
+            }
 
             var points = new List<ModelPoint>();
-            const int MAX_POINTS = 90;
             while (true) {
                 points.Clear();
                 int validPoints = 0;

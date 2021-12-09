@@ -59,21 +59,21 @@ using System.Runtime.InteropServices;
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
 [assembly: AssemblyMetadata("FeaturedImageURL", "https://github.com/ghilios/NINA.Joko.Plugin.TenMicron/releases/download/resources/GM1000HPS.jpg")]
 //[Optional] A url to an example screenshot of your plugin in action
-[assembly: AssemblyMetadata("ScreenshotURL", "")]
+[assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/ghilios/NINA.Joko.Plugin.TenMicron/releases/download/resources/TenMicronToolsScreenshot.JPG")]
 //[Optional] An additional url to an example example screenshot of your plugin in action
-[assembly: AssemblyMetadata("AltScreenshotURL", "")]
+[assembly: AssemblyMetadata("AltScreenshotURL", "https://github.com/ghilios/NINA.Joko.Plugin.TenMicron/releases/download/resources/TenMicronToolsAltScreenshot.JPG")]
 //[Optional] An in-depth description of your plugin
 [assembly: AssemblyMetadata("LongDescription", @"This plugin provides tools for 10 micron mounts, such as building pointing models.
 
-* NOTE: This plugin is still in early development *
+* NOTE: This plugin is still in active development *
 
 # Features #
 
 * Build full sky models using Golden Spiral in an Imaging tab dock
 * Sidereal Path model point generation that creates points along the sidereal path of a DSO
+* Advanced Sequencer items to build, load, and save models as part of a sequence
 * MW4 and NINA horizons supported. Load the horizon file in NINA Options -> General
 * Dome optimization to reduce dome slews during model build
-* Altitude-aware dome shutter calculations. By setting a dome shutter width in the model builder settings, a wider dome slit clearance will be used for higher altitudes to further reduce the number of dome slews
 * View and save loaded alignment models
 * Load and Delete existing alignment models
 * Remove the worst alignment star from a loaded alignment model
@@ -82,7 +82,9 @@ using System.Runtime.InteropServices;
 
 # Coming Soon #
 
-* Advanced Sequencer items to build models as part of a sequence
+* Altitude-aware dome shutter calculations. By setting a dome shutter width in the model builder settings, a wider dome slit clearance will be used for higher altitudes to further reduce the number of dome slews
+* Advanced Sequencer item to build full-sky models
+* Advanced Sequencer item to set tracking rates not exposed by the ASCOM driver
 
 # Getting Help #
 

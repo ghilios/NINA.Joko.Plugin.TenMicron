@@ -45,7 +45,7 @@ using System.Windows.Input;
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
     [Export(typeof(IDockableVM))]
-    public class MountModelBuilderVM : DockableVM, ITelescopeConsumer, IMountConsumer, IDomeConsumer {
+    public class MountModelBuilderVM : DockableVM, IMountModelBuilderVM, ITelescopeConsumer, IMountConsumer, IDomeConsumer {
         private static readonly CustomHorizon EMPTY_HORIZON = GetEmptyHorizon();
         private readonly IMountMediator mountMediator;
         private readonly IApplicationStatusMediator applicationStatusMediator;
@@ -64,6 +64,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         [ImportingConstructor]
         public MountModelBuilderVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator, IDomeMediator domeMediator, IFramingAssistantVM framingAssistant, INighttimeCalculator nighttimeCalculator) :
             this(profileService,
+                TenMicronPlugin.MountModelBuilderMediator,
                 TenMicronPlugin.TenMicronOptions,
                 telescopeMediator,
                 domeMediator,
@@ -77,6 +78,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public MountModelBuilderVM(
             IProfileService profileService,
+            IMountModelBuilderMediator mountModelBuilderMediator,
             ITenMicronOptions modelBuilderOptions,
             ITelescopeMediator telescopeMediator,
             IDomeMediator domeMediator,
@@ -92,6 +94,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             dict.Source = new Uri("NINA.Joko.Plugin.TenMicron;component/Resources/SVGDataTemplates.xaml", UriKind.RelativeOrAbsolute);
             ImageGeometry = (System.Windows.Media.GeometryGroup)dict["TenMicronSVG"];
             ImageGeometry.Freeze();
+
+            mountModelBuilderMediator.RegisterHandler(this);
 
             this.modelBuilderOptions = modelBuilderOptions;
             this.applicationStatusMediator = applicationStatusMediator;
@@ -139,12 +143,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private void ModelBuilderOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
             if (e.PropertyName == nameof(modelBuilderOptions.ShowRemovedPoints)) {
-                if (!this.modelBuilderOptions.ShowRemovedPoints) {
-                    var localModelPoints = this.ModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
-                    this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
-                } else {
-                    this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(this.ModelPoints);
-                }
+                UpdateDisplayModelPoints();
+            }
+        }
+
+        private void UpdateDisplayModelPoints() {
+            if (!this.modelBuilderOptions.ShowRemovedPoints) {
+                var localModelPoints = this.ModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
+                this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
+            } else {
+                this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(this.ModelPoints);
             }
         }
 
@@ -356,12 +364,18 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 Notification.ShowError("No start time provider selected");
                 return false;
             }
-
-            var startTime = SelectedSiderealPathStartDateTimeProvider.GetDateTime(null) + TimeSpan.FromMinutes(SiderealTrackStartOffsetMinutes);
-            var endTime = SelectedSiderealPathEndDateTimeProvider.GetDateTime(null) + TimeSpan.FromMinutes(SiderealTrackEndOffsetMinutes);
+            var startTime = SelectedSiderealPathStartDateTimeProvider.GetDateTime(null);
+            var endTime = SelectedSiderealPathEndDateTimeProvider.GetDateTime(null);
             if (endTime < startTime) {
                 endTime += TimeSpan.FromDays(1);
             }
+
+            startTime += TimeSpan.FromMinutes(SiderealTrackStartOffsetMinutes);
+            endTime += TimeSpan.FromMinutes(SiderealTrackEndOffsetMinutes);
+            if (endTime < startTime) {
+                endTime += TimeSpan.FromDays(1);
+            }
+
             Logger.Info($"Generating sidereal path. Coordinates={SiderealPathObjectCoordinates.Coordinates}, RADelta={SiderealTrackRADeltaDegrees}, StartTime={startTime}, EndTime={endTime}");
             try {
                 var localModelPoints = this.modelPointGenerator.GenerateSiderealPath(SiderealPathObjectCoordinates.Coordinates, Angle.ByDegree(SiderealTrackRADeltaDegrees), startTime, endTime, CustomHorizon);
@@ -385,7 +399,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private CancellationTokenSource modelBuildStopCts;
         private Task<LoadedAlignmentModel> modelBuildTask;
 
-        private async Task<bool> BuildModel(object o) {
+        public Task<bool> BuildModel(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct) {
+            if (modelBuildCts != null) {
+                throw new Exception("Model build already in progress");
+            }
+
+            this.ModelPoints = ImmutableList.ToImmutableList(modelPoints);
+            UpdateDisplayModelPoints();
+            return DoBuildModel(modelPoints, options, ct);
+        }
+
+        private async Task<bool> DoBuildModel(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct) {
             try {
                 if (modelBuildCts != null) {
                     throw new Exception("Model build already in progress");
@@ -394,19 +418,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 BuildInProgress = true;
                 modelBuildCts = new CancellationTokenSource();
                 modelBuildStopCts = new CancellationTokenSource();
-                var options = new ModelBuilderOptions() {
-                    WestToEastSorting = modelBuilderOptions.WestToEastSorting,
-                    NumRetries = BuilderNumRetries,
-                    MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
-                    MinimizeDomeMovement = modelBuilderOptions.MinimizeDomeMovementEnabled,
-                    SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
-                    AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
-                    MaxConcurrency = modelBuilderOptions.MaxConcurrency,
-                    DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,
-                    MaxFailedPoints = MaxFailedPoints
-                };
-                var modelPoints = ModelPoints.ToList();
-                modelBuildTask = modelBuilder.Build(modelPoints, options, modelBuildCts.Token, modelBuildStopCts.Token, progress, stepProgress);
+                var cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct, modelBuildCts.Token);
+                modelBuildTask = modelBuilder.Build(modelPoints, options, cancelTokenSource.Token, modelBuildStopCts.Token, progress, stepProgress);
                 var builtModel = await modelBuildTask;
                 modelBuildTask = null;
                 modelBuildCts = null;
@@ -432,6 +445,26 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 modelBuildStopCts = null;
                 BuildInProgress = false;
             }
+        }
+
+        private Task<bool> BuildModel(object o) {
+            if (modelBuildCts != null) {
+                throw new Exception("Model build already in progress");
+            }
+
+            var options = new ModelBuilderOptions() {
+                WestToEastSorting = modelBuilderOptions.WestToEastSorting,
+                NumRetries = BuilderNumRetries,
+                MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
+                MinimizeDomeMovement = modelBuilderOptions.MinimizeDomeMovementEnabled,
+                SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
+                AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
+                MaxConcurrency = modelBuilderOptions.MaxConcurrency,
+                DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,
+                MaxFailedPoints = MaxFailedPoints
+            };
+            var modelPoints = ModelPoints.ToList();
+            return DoBuildModel(modelPoints, options, CancellationToken.None);
         }
 
         private async Task<bool> CancelBuildModel(object o) {

@@ -73,7 +73,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private class ModelBuilderState {
 
-            public ModelBuilderState(ModelBuilderOptions options, List<ModelPoint> modelPoints, IMount mount, IDomeMediator domeMediator, IWeatherDataMediator weatherDataMediator) {
+            public ModelBuilderState(ModelBuilderOptions options, IList<ModelPoint> modelPoints, IMount mount, IDomeMediator domeMediator, IWeatherDataMediator weatherDataMediator) {
                 this.Options = options;
                 var maxConcurrent = options.MaxConcurrency > 0 ? options.MaxConcurrency : int.MaxValue;
                 this.ProcessingSemaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
@@ -143,7 +143,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        public async Task<LoadedAlignmentModel> Build(List<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, CancellationToken stopToken = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null) {
+        public async Task<LoadedAlignmentModel> Build(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, CancellationToken stopToken = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null) {
             ct.ThrowIfCancellationRequested();
             PreFlightChecks(modelPoints);
 
@@ -224,7 +224,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private void PreFlightChecks(List<ModelPoint> modelPoints) {
+        private void PreFlightChecks(IList<ModelPoint> modelPoints) {
             var telescopeInfo = telescopeMediator.GetInfo();
             if (!telescopeInfo.Connected) {
                 throw new Exception("No telescope connected");
@@ -705,13 +705,17 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private void ValidateRequest(List<ModelPoint> modelPoints) {
+        private void ValidateRequest(IList<ModelPoint> modelPoints) {
             foreach (var modelPoint in modelPoints) {
                 if (modelPoint.Azimuth < 0 || modelPoint.Azimuth >= 360) {
                     throw new Exception($"Model point azimuth {modelPoint.Azimuth} must be within [0, 360)");
                 }
-                if (modelPoint.Altitude < 0 || modelPoint.Altitude > 90) {
-                    throw new Exception($"Model point altitude {modelPoint.Altitude} must be within [0, 90]");
+
+                if (modelPoint.ModelPointState == ModelPointStateEnum.Generated) {
+                    // Only validate points deemed not below the horizon
+                    if (modelPoint.Altitude < 0 || modelPoint.Altitude > 90) {
+                        throw new Exception($"Model point altitude {modelPoint.Altitude} must be within [0, 90]");
+                    }
                 }
             }
         }

@@ -26,6 +26,16 @@
     <tmconverters:ModelPointStateToColorConverter x:Key="TM_ModelPointStateToColorConverter" />
     <tmconverters:CollectionContainsItemsToBooleanConverterNoCheck x:Key="TM_CollectionContainsItemsToBooleanConverterNoCheck" />
     <TextBlock x:Key="Placeholder_Tooltip" Text="Placeholder text" />
+    <TextBlock x:Key="Stars_Tooltip" Text="Number of stars to include in the model. Must be at least 3, and no more than 100" />
+    <TextBlock x:Key="PointGenerator_Tooltip" Text="The algorithm used to generate points for an alignment model. Golden Spiral is used for a full sky model, and Sidereal Path generates points along the sidereal path of an RA/DEC coordinate" />
+    <TextBlock x:Key="SiderealTrackStartTime_Tooltip" Text="The object's location at this time is used as the first point. Points are added along the way over the RA Delta interval until the end time" />
+    <TextBlock x:Key="SiderealTrackEndTime_Tooltip" Text="The object's location at this time is used as the last point. Points are added along the way over the RA Delta interval" />
+    <TextBlock x:Key="SiderealTrackStartTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to start point generation for the target object" />
+    <TextBlock x:Key="SiderealTrackEndTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to end point generation for the target object" />
+    <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
+    <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
+    <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
+    <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry" />
     <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
         <Grid d:DataContext="{d:DesignInstance local:TenMicronOptions, IsDesignTimeCreatable=False}">
             <Grid.ColumnDefinitions>
@@ -42,7 +52,8 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
-                <RowDefinition />
+                <!-- Hidden until this works -->
+                <RowDefinition Height="0" />
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
@@ -180,7 +191,7 @@
             <CheckBox
                 Grid.Row="7" Grid.Column="1"
                 MinWidth="80"
-                Margin="10,5,0,0"
+                Margin="5,5,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}"
@@ -194,7 +205,7 @@
             <ninactrl:UnitTextBox
                 Grid.Row="8" Grid.Column="1"
                 MinWidth="80"
-                Margin="10,5,0,0"
+                Margin="5,5,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Unit="mm"
@@ -209,8 +220,8 @@
                 Grid.Row="8" Grid.Column="2"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Margin="10,5,0,0"
-                Text="TIP: Make this less than the actual shutter width to give extra clearance and account for dome imperfections" />
+                Margin="5,5,0,0"
+                Text="TIP: Make this less than the actual shutter width to give extra clearance and to account for dome imperfections" />
             <TextBlock
                 Grid.Row="9" Grid.Column="0"
                 HorizontalAlignment="Left"
@@ -220,7 +231,7 @@
             <CheckBox
                 Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="80"
-                Margin="10,5,0,0"
+                Margin="5,5,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource WestToEast_Tooltip}"

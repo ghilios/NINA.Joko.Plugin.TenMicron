@@ -37,7 +37,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
     public interface IModelBuilder {
 
-        Task<LoadedAlignmentModel> Build(List<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, CancellationToken stopToken = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null);
+        Task<LoadedAlignmentModel> Build(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct = default, CancellationToken stopToken = default, IProgress<ApplicationStatus> overallProgress = null, IProgress<ApplicationStatus> stepProgress = null);
 
         event EventHandler<PointNextUpEventArgs> PointNextUp;
     }

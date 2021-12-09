@@ -18,18 +18,6 @@
     d:DataContext="{d:DesignInstance localvm:MountModelBuilderVM, IsDesignTimeCreatable=False}"
     x:Name="UC"
     mc:Ignorable="d">
-    <UserControl.Resources>
-        <TextBlock x:Key="Stars_Tooltip" Text="Number of stars to include in the model" />
-        <TextBlock x:Key="PointGenerator_Tooltip" Text="The algorithm used to generate points for an alignment model. Golden Spiral is used for a full sky model, and Sidereal Path generates points along the sidereal path of an RA/DEC coordinate" />
-        <TextBlock x:Key="SiderealTrackStartTime_Tooltip" Text="The object's location at this time is used as the first point. Points are added along the way over the RA Delta interval until the end time." />
-        <TextBlock x:Key="SiderealTrackEndTime_Tooltip" Text="The object's location at this time is used as the last point. Points are added along the way over the RA Delta interval" />
-        <TextBlock x:Key="SiderealTrackStartTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to start point generation for the target object" />
-        <TextBlock x:Key="SiderealTrackEndTimeOffset_Tooltip" Text="Offset, in minutes, relative to the selected time provider to end point generation for the target object" />
-        <TextBlock x:Key="SiderealTrackRADeltaDegrees_Tooltip" Text="Interval, in degrees, to place points along the target's sidereal track. If this is too small, an interval is chosen that will produce 90 points" />
-        <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
-        <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
-        <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry." />
-    </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Visibility="{Binding MountInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
             <Grid.ColumnDefinitions>
@@ -158,7 +146,7 @@
                                 <Binding.ValidationRules>
                                     <rules:IntRangeRule>
                                         <rules:IntRangeRule.ValidRange>
-                                            <rules:IntRangeChecker Maximum="90" Minimum="3" />
+                                            <rules:IntRangeChecker Maximum="100" Minimum="3" />
                                         </rules:IntRangeRule.ValidRange>
                                     </rules:IntRangeRule>
                                 </Binding.ValidationRules>

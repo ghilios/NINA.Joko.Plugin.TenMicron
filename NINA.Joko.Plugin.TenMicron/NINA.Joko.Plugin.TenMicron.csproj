@@ -388,7 +388,9 @@
     <Compile Include="Converters\PositiveToBooleanConverter.cs" />
     <Compile Include="Converters\ZeroToDisabledConverter.cs" />
     <Compile Include="Converters\ZeroToInfinityConverter.cs" />
+    <Compile Include="Equipment\Mediator.cs" />
     <Compile Include="Equipment\MountInfo.cs" />
+    <Compile Include="Equipment\MountModelBuilderMediator.cs" />
     <Compile Include="Equipment\MountModelInfo.cs" />
     <Compile Include="Equipment\MountModelMediator.cs" />
     <Compile Include="Exceptions\CommandFailedException.cs" />
@@ -428,8 +430,10 @@
     </Compile>
     <Compile Include="Interfaces\IModelAccessor.cs" />
     <Compile Include="Interfaces\IModelBuilder.cs" />
+    <Compile Include="Interfaces\IMountModelBuilderMediator.cs" />
     <Compile Include="Interfaces\IMountModelConsumer.cs" />
     <Compile Include="Interfaces\IMountModelMediator.cs" />
+    <Compile Include="Interfaces\IMountModelBuilderVM.cs" />
     <Compile Include="Interfaces\IMountModelVM.cs" />
     <Compile Include="Interfaces\ITenMicronOptions.cs" />
     <Compile Include="Interfaces\IModelPointGenerator.cs" />
@@ -443,6 +447,7 @@
     <Compile Include="SequenceItems\DataTemplates.xaml.cs">
       <DependentUpon>DataTemplates.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SequenceItems\BuildSiderealPathModel.cs" />
     <Compile Include="SequenceItems\SaveModel.cs" />
     <Compile Include="SequenceItems\LoadModel.cs" />
     <Compile Include="Utility\DomeUtility.cs" />

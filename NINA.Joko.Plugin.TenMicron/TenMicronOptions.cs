@@ -13,6 +13,7 @@
 using NINA.Core.Utility;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Joko.Plugin.TenMicron.ModelManagement;
 using NINA.Profile;
 using NINA.Profile.Interfaces;
 using System;
@@ -116,8 +117,8 @@ namespace NINA.Joko.Plugin.TenMicron {
             get => goldenSpiralStarCount;
             set {
                 if (goldenSpiralStarCount != value) {
-                    if (value < 3 || value > 90) {
-                        throw new ArgumentException("GoldenSpiralStarCount must be between 3 and 90, inclusive", "GoldenSpiralStarCount");
+                    if (value < 3 || value > ModelPointGenerator.MAX_POINTS) {
+                        throw new ArgumentException($"GoldenSpiralStarCount must be between 3 and {ModelPointGenerator.MAX_POINTS}, inclusive", "GoldenSpiralStarCount");
                     }
                     goldenSpiralStarCount = value;
                     optionsAccessor.SetValueInt32("GoldenSpiralStarCount", goldenSpiralStarCount);
@@ -170,8 +171,9 @@ namespace NINA.Joko.Plugin.TenMicron {
 
         private int domeShutterWidth_mm;
 
+        // TODO: Restore after this works properly
         public int DomeShutterWidth_mm {
-            get => domeShutterWidth_mm;
+            get => 0; // domeShutterWidth_mm;
             set {
                 if (domeShutterWidth_mm != value) {
                     if (value < 0) {

@@ -46,6 +46,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private IProgress<ApplicationStatus> progress;
         private bool disposed = false;
         private CancellationTokenSource disconnectCts;
+        private readonly object alignmentModelLoadLock = new object();
 
         [ImportingConstructor]
         public MountModelVM(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, ITelescopeMediator telescopeMediator) :
@@ -292,32 +293,37 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             Connected = false;
         }
 
-        private Task alignmentModelLoadTask;
+        private volatile Task alignmentModelLoadTask;
 
         private async Task LoadAlignmentModel(CancellationToken ct) {
-            if (alignmentModelLoadTask != null) {
-                await alignmentModelLoadTask;
+            Task loadTask = null;
+            lock (alignmentModelLoadLock) {
+                loadTask = alignmentModelLoadTask;
+                if (loadTask == null) {
+                    loadTask = Task.Run(() => {
+                        try {
+                            ModelLoaded = false;
+                            modelAccessor.LoadActiveModelInto(LoadedAlignmentModel, progress: this.progress, ct: ct);
+                            if (LoadedAlignmentModel.AlignmentStarCount <= 0) {
+                                Notification.ShowWarning("No alignment stars in loaded model");
+                                Logger.Warning("No alignment stars in loaded model");
+                            }
+
+                            ModelLoaded = true;
+                        } catch (OperationCanceledException) {
+                        } catch (Exception ex) {
+                            Notification.ShowError("Failed to get 10u alignment model");
+                            Logger.Error("Failed to get alignment model", ex);
+                        }
+                    }, ct);
+                    this.alignmentModelLoadTask = loadTask;
+                }
             }
 
-            this.alignmentModelLoadTask = Task.Run(() => {
-                try {
-                    ModelLoaded = false;
-                    modelAccessor.LoadActiveModelInto(LoadedAlignmentModel, progress: this.progress, ct: ct);
-                    if (LoadedAlignmentModel.AlignmentStarCount <= 0) {
-                        Notification.ShowWarning("No alignment stars in loaded model");
-                        Logger.Warning("No alignment stars in loaded model");
-                    }
-
-                    ModelLoaded = true;
-                } catch (OperationCanceledException) {
-                } catch (Exception ex) {
-                    Notification.ShowError("Failed to get 10u alignment model");
-                    Logger.Error("Failed to get alignment model", ex);
-                }
-            }, ct);
-
-            await this.alignmentModelLoadTask;
-            this.alignmentModelLoadTask = null;
+            await loadTask;
+            lock (alignmentModelLoadLock) {
+                this.alignmentModelLoadTask = null;
+            }
         }
 
         public async Task<LoadedAlignmentModel> GetLoadedAlignmentModel(CancellationToken ct) {

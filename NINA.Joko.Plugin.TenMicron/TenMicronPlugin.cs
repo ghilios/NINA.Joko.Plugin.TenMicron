@@ -62,7 +62,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MountModelMediator = new MountModelMediator();
             DateTime = new SystemDateTime();
             ModelAccessor = new ModelAccessor(telescopeMediator, MountModelMediator, DateTime);
-            ModelPointGenerator = new ModelPointGenerator(profileService, DateTime, telescopeMediator, weatherDataMediator, TenMicronOptions);
+            ModelPointGenerator = new ModelPointGenerator(profileService, DateTime, telescopeMediator, weatherDataMediator, TenMicronOptions, MountMediator);
             ModelBuilder = new ModelBuilder(profileService, MountModelMediator, Mount, telescopeMediator, domeMediator, cameraMediator, domeSynchronization, plateSolverFactory, imagingMediator, filterWheelMediator, weatherDataMediator);
             MountModelBuilderMediator = new MountModelBuilderMediator();
         }

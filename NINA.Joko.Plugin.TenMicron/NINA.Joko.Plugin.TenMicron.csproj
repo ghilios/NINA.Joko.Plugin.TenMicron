@@ -587,17 +587,21 @@
       echo "Creating $(PlatformName) Plugins folder"
       mkdir  "%25localappdata%25\NINA\Plugins"
       )
-      if not exist "%25localappdata%25\NINA\Plugin\$(TargetName)" (
-      echo "Creating $(PlatformName) Plugins $(TargetName) folder"
-      mkdir  "%25localappdata%25\NINA\Plugins\$(TargetName)"
+      if not exist "%25localappdata%25\NINA\Plugin\10 Micron Tools" (
+      echo "Creating $(PlatformName) Plugins 10 Micron Tools folder"
+      mkdir  "%25localappdata%25\NINA\Plugins\10 Micron Tools"
+      )
+      if not exist "%25localappdata%25\NINA\Plugin\10 Micron Tools\$(TargetName)" (
+      echo "Creating $(PlatformName) Plugins 10 Micron Tools\$(TargetName) folder"
+      mkdir  "%25localappdata%25\NINA\Plugins\10 Micron Tools\$(TargetName)"
       )
 
       echo "Copying $(PlatformName) $(TargetFileName)"
-      xcopy "$(TargetPath)" "%25localappdata%25\NINA\Plugins\$(TargetName)" /h/k/r/y
+      xcopy "$(TargetPath)" "%25localappdata%25\NINA\Plugins\10 Micron Tools\$(TargetName)" /h/k/r/y
+      xcopy "$(TargetDir)$(TargetName).pdb" "%25localappdata%25\NINA\Plugins\10 Micron Tools\$(TargetName)" /h/k/r/y
 
       echo "Copying $(PlatformName) $(TargetFileName) Dependencies"
-      xcopy "$(TargetDir)NINA.Joko.Plugin.Common.dll" "%25localappdata%25\NINA\Plugins\$(TargetName)" /h/k/r/y
-      xcopy "$(TargetDir)Antlr4.Runtime.dll" "%25localappdata%25\NINA\Plugins\$(TargetName)" /h/k/r/y</PostBuildEvent>
+      xcopy "$(TargetDir)Antlr4.Runtime.dll" "%25localappdata%25\NINA\Plugins\10 Micron Tools\$(TargetName)" /h/k/r/y</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

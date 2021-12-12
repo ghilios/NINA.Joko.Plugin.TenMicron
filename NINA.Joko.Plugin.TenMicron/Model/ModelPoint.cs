@@ -55,11 +55,9 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
     }
 
     public class ModelPoint : BaseINPC {
-        private readonly ICustomDateTime dateTime;
         private readonly ITelescopeMediator telescopeMediator;
 
-        public ModelPoint(ICustomDateTime dateTime, ITelescopeMediator telescopeMediator) {
-            this.dateTime = dateTime;
+        public ModelPoint(ITelescopeMediator telescopeMediator) {
             this.telescopeMediator = telescopeMediator;
         }
 
@@ -70,6 +68,18 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             set {
                 if (modelIndex != value) {
                     modelIndex = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private PierSide expectedDomeSideOfPier = PierSide.pierUnknown;
+
+        public PierSide ExpectedDomeSideOfPier {
+            get => expectedDomeSideOfPier;
+            set {
+                if (expectedDomeSideOfPier != value) {
+                    expectedDomeSideOfPier = value;
                     RaisePropertyChanged();
                 }
             }
@@ -144,16 +154,6 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
                     maxDomeAzimuth = value;
                     RaisePropertyChanged();
                 }
-            }
-        }
-
-        private Coordinates coordinates;
-
-        public Coordinates Coordinates {
-            get => coordinates;
-            set {
-                coordinates = value;
-                RaisePropertyChanged();
             }
         }
 
@@ -284,7 +284,7 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             }
         }
 
-        public TopocentricCoordinates ToTopocentric() {
+        public TopocentricCoordinates ToTopocentric(ICustomDateTime dateTime) {
             var telescopeInfo = telescopeMediator.GetInfo();
             return new TopocentricCoordinates(
                 azimuth: Angle.ByDegree(azimuth),
@@ -295,12 +295,12 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
                 dateTime: dateTime);
         }
 
-        public Coordinates ToCelestial(double pressurehPa, double tempCelcius, double relativeHumidity, double wavelength) {
-            return ToTopocentric().Transform(Epoch.JNOW, pressurehPa: pressurehPa, tempCelcius: tempCelcius, relativeHumidity: relativeHumidity, wavelength: wavelength);
+        public Coordinates ToCelestial(double pressurehPa, double tempCelcius, double relativeHumidity, double wavelength, ICustomDateTime dateTime) {
+            return ToTopocentric(dateTime).Transform(Epoch.JNOW, pressurehPa: pressurehPa, tempCelcius: tempCelcius, relativeHumidity: relativeHumidity, wavelength: wavelength);
         }
 
         public override string ToString() {
-            return $"Alt={Altitude}, Az={Azimuth}, State={ModelPointState}, RMSError={RMSError}, ModelIndex={ModelIndex}, Coordinates={Coordinates}, MountRA={MountReportedRightAscension}, MountDEC={MountReportedDeclination}, MountLST={MountReportedLocalSiderealTime}, MountPier={MountReportedSideOfPier}, SolvedCoordinates={PlateSolvedCoordinates}, CaptureTime={CaptureTime}";
+            return $"Alt={Altitude}, Az={Azimuth}, State={ModelPointState}, RMSError={RMSError}, ModelIndex={ModelIndex}, MountRA={MountReportedRightAscension}, MountDEC={MountReportedDeclination}, MountLST={MountReportedLocalSiderealTime}, MountPier={MountReportedSideOfPier}, SolvedCoordinates={PlateSolvedCoordinates}, CaptureTime={CaptureTime}, ExpectedDomeSideOfPier={ExpectedDomeSideOfPier}";
         }
     }
 }

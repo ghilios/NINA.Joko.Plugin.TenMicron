@@ -50,6 +50,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private readonly IProfileService profileService;
         private readonly IPlateSolverFactory plateSolverFactory;
         private readonly IFilterWheelMediator filterWheelMediator;
+        private readonly ICustomDateTime nowProvider = new SystemDateTime();
         private volatile int processingInProgressCount;
 
         public event EventHandler<PointNextUpEventArgs> PointNextUp;
@@ -262,11 +263,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             // Pre-Step 2: Sync the first point, if configured to do so
             await PreStep2_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
 
-            // Pre-Step 3: Calculate refraction-correction adjusted RA/DEC for selected Alt/Az points
-            PreStep3_CacheCelestialCoordinates(state, stopOrCancelCt);
-
-            // Pre-Step 4: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
-            PreStep4_CacheDomeAzimuthRanges(state);
+            // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
+            PreStep3_CacheDomeAzimuthRanges(state);
 
             StartProgressReporter(state, stopOrCancelCt, overallProgress);
 
@@ -386,7 +384,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private void PreStep1_ClearState(ModelBuilderState state) {
             foreach (var point in state.ValidPoints) {
                 point.ModelIndex = -1;
-                point.Coordinates = null;
                 point.ModelPointState = ModelPointStateEnum.Generated;
                 point.MountReportedDeclination = CoordinateAngle.ZERO;
                 point.MountReportedRightAscension = AstrometricTime.ZERO;
@@ -398,6 +395,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
+        /*
         private void PreStep3_CacheCelestialCoordinates(ModelBuilderState state, CancellationToken ct) {
             Logger.Info($"Refraction correction={state.RefractionCorrectionEnabled}. Using pressure={state.PressurehPa}, temperature={state.Temperature}, relative humidity={state.Humidity}, wavelength={state.Wavelength}");
             Logger.Info("Caching celestial coordinates for proximity sorting");
@@ -406,8 +404,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 point.Coordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
             }
         }
+        */
 
-        private void PreStep4_CacheDomeAzimuthRanges(ModelBuilderState state) {
+        private void PreStep3_CacheDomeAzimuthRanges(ModelBuilderState state) {
             if (!state.UseDome) {
                 return;
             }
@@ -421,7 +420,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
             foreach (var modelPoint in state.ValidPoints.Where(IsPointEligibleForBuild).ToList()) {
                 // Use celestial coordinates that have not been adjusted for refraction to calculate dome azimuth. This ensures we get a logical RA/Dec that points to the physical location, especially if refraction correction is on
-                var celestialCoordinates = modelPoint.ToTopocentric().Transform(Epoch.JNOW);
+                var celestialCoordinates = modelPoint.ToTopocentric(nowProvider).Transform(Epoch.JNOW);
                 if (state.SyncSeparation != null) {
                     celestialCoordinates -= state.SyncSeparation;
                 }
@@ -437,11 +436,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     maxAzimuth = domeAzimuth + domeThreshold;
                 }
 
-                Logger.Info($"Point at Alt={modelPoint.Altitude}, Az={modelPoint.Azimuth} requires dome azimuth between [{AstroUtil.EuclidianModulus(minAzimuth.Degree, 360.0d)}, {AstroUtil.EuclidianModulus(maxAzimuth.Degree, 360.0d)}]");
+                Logger.Info($"Point at Alt={modelPoint.Altitude}, Az={modelPoint.Azimuth} expects side of pier {sideOfPier} and requires dome azimuth between [{AstroUtil.EuclidianModulus(minAzimuth.Degree, 360.0d)}, {AstroUtil.EuclidianModulus(maxAzimuth.Degree, 360.0d)}]");
                 modelPoint.MinDomeAzimuth = minAzimuth.Degree;
                 modelPoint.MaxDomeAzimuth = maxAzimuth.Degree;
                 modelPoint.DomeAzimuth = domeAzimuth.Degree;
                 modelPoint.DomeAltitude = targetDomeCoordinates.Altitude.Degree;
+                modelPoint.ExpectedDomeSideOfPier = sideOfPier;
             }
         }
 
@@ -453,7 +453,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var firstPointSlews = new List<Task<bool>>();
 
                 if (state.UseDome) {
-                    var celestialCoordinates = firstPoint.ToTopocentric().Transform(Epoch.JNOW);
+                    var celestialCoordinates = firstPoint.ToTopocentric(new SystemDateTime()).Transform(Epoch.JNOW);
                     if (state.SyncSeparation != null) {
                         celestialCoordinates -= state.SyncSeparation;
                     }
@@ -520,7 +520,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private async Task<bool> SlewTelescopeToPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct) {
             // Instead of issuing an AltAz slew directly (which requires direct communication with the mount), calculate refraction-adjusted RA/Dec coordinates and slew there instead
-            var nextPointCoordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
+            var nextPointCoordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength, dateTime: nowProvider);
             if (state.SyncSeparation != null) {
                 var nextPointCoordinatesAdjusted = nextPointCoordinates - state.SyncSeparation;
                 Logger.Info($"Adjusted {nextPointCoordinates} to {nextPointCoordinatesAdjusted}");
@@ -560,10 +560,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                             await state.ProcessingSemaphore.WaitAsync(ct);
                         }
 
-                        // TODO: Confirm side of pier matches what we used for the dome calculations. If it doesn't, update the dome calculations for hte other side of pier,
-                        // reset the point state, and move onto the next point (defer it for the end)
-                        // TODO: Do the above as a fallback if forcing the side of pier doesn't work
-
                         try {
                             if (state.UseDome) {
                                 var localDomeSlewTask = state.DomeSlewTask;
@@ -572,7 +568,22 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                     await localDomeSlewTask;
                                 }
 
-                                // TODO: Validate that the dome is not slewing, and that the point is within the calculated dome range
+                                var mountReportedSideOfPier = mount.GetSideOfPier();
+                                if (mountReportedSideOfPier != nextPoint.ExpectedDomeSideOfPier) {
+                                    Notification.ShowWarning($"Mount pier is on {mountReportedSideOfPier}, but the dome calculation expected {nextPoint.ExpectedDomeSideOfPier}. Point will likely fail. Please report this issue");
+                                    Logger.Warning($"Mount pier is on {mountReportedSideOfPier}, but the dome calculation expected {nextPoint.ExpectedDomeSideOfPier}");
+                                }
+
+                                var domeInfo = domeMediator.GetInfo();
+                                if (domeInfo.Slewing) {
+                                    Notification.ShowWarning("Dome is still slewing after we expected it to be complete. Check that other systems aren't interfering with the dome");
+                                    Logger.Warning("Dome is still slewing after we expected it to be complete");
+                                }
+
+                                if (!IsPointVisibleThroughDome(nextPoint, 1.0d)) {
+                                    Notification.ShowWarning("Next point isn't expected to be visible through the dome. Point will likely fail.");
+                                    Logger.Warning("Next point isn't expected to be visible through the dome. Point will likely fail.");
+                                }
                             }
 
                             // Successfully slewed to point. Take an exposure
@@ -609,7 +620,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 if (state.UseDome) {
-                    var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p));
+                    var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p, 0.0d));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                     if (nextPoint == null) {
                         // No points remaining visible through the slit. Widen the search to all eligible points on this side of the pier and slew the dome
@@ -678,14 +689,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             return point.ModelPointState == ModelPointStateEnum.Generated;
         }
 
-        private bool IsPointVisibleThroughDome(ModelPoint point) {
+        private bool IsPointVisibleThroughDome(ModelPoint point, double tolerance) {
             var domeAzimuth = domeMediator.GetInfo().Azimuth;
-            var minDomeAzimuth = AstroUtil.EuclidianModulus(point.MinDomeAzimuth, 360.0d);
-            var maxDomeAzimuth = AstroUtil.EuclidianModulus(point.MaxDomeAzimuth, 360.0d);
+            var minDomeAzimuth = AstroUtil.EuclidianModulus(point.MinDomeAzimuth - tolerance, 360.0d);
+            var maxDomeAzimuth = AstroUtil.EuclidianModulus(point.MaxDomeAzimuth + tolerance, 360.0d);
             if (maxDomeAzimuth < minDomeAzimuth) {
-                return domeAzimuth > minDomeAzimuth || domeAzimuth < maxDomeAzimuth;
+                return domeAzimuth >= minDomeAzimuth || domeAzimuth <= maxDomeAzimuth;
             } else {
-                return domeAzimuth > minDomeAzimuth && domeAzimuth < maxDomeAzimuth;
+                return domeAzimuth >= minDomeAzimuth && domeAzimuth <= maxDomeAzimuth;
             }
         }
 

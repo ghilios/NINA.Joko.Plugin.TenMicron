@@ -37,13 +37,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private readonly ITelescopeMediator telescopeMediator;
         private readonly ITenMicronOptions options;
         private readonly IWeatherDataMediator weatherDataMediator;
+        private readonly IMountMediator mountMediator;
 
-        public ModelPointGenerator(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator, IWeatherDataMediator weatherDataMediator, ITenMicronOptions options) {
+        public ModelPointGenerator(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator, IWeatherDataMediator weatherDataMediator, ITenMicronOptions options, IMountMediator mountMediator) {
             this.profileService = profileService;
             this.dateTime = dateTime;
             this.telescopeMediator = telescopeMediator;
             this.weatherDataMediator = weatherDataMediator;
             this.options = options;
+            this.mountMediator = mountMediator;
         }
 
         public List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon) {
@@ -59,6 +61,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             int minViableNumPoints = 0;
             int maxViableNumPoints = int.MaxValue;
             int currentNumPoints = numPoints;
+
+            var meridianLimitDegrees = mountMediator.GetInfo().MeridianLimitDegrees;
+            Logger.Info($"Using meridian limit {meridianLimitDegrees:0.##}°");
+            var meridianUpperLimit = meridianLimitDegrees + 0.1d;
+            var meridianLowerLimit = 360.0d - meridianLimitDegrees - 0.1d;
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -75,9 +82,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     }
 
                     var azimuthDegrees = AstroUtil.EuclidianModulus(azimuth.Degree, 360.0);
-                    if (azimuthDegrees < 0.1d) {
-                        // Make sure no point is exactly at 0 or 360
-                        azimuthDegrees = 0.1d;
+                    // Make sure no point is within the meridian limits
+                    if (azimuthDegrees < meridianUpperLimit) {
+                        azimuthDegrees = meridianUpperLimit;
+                    }
+                    if (azimuthDegrees > meridianLowerLimit) {
+                        azimuthDegrees = meridianLowerLimit;
                     }
                     if (altitudeDegrees < 0.1d) {
                         altitudeDegrees = 0.1d;
@@ -97,7 +107,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         creationState = ModelPointStateEnum.BelowHorizon;
                     }
                     points.Add(
-                        new ModelPoint(dateTime, telescopeMediator) {
+                        new ModelPoint(telescopeMediator) {
                             Altitude = altitudeDegrees,
                             Azimuth = azimuthDegrees,
                             ModelPointState = creationState
@@ -165,6 +175,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 throw new Exception($"RA delta ({raDelta}) cannot be less than 1 arc second");
             }
 
+            var meridianLimitDegrees = mountMediator.GetInfo().MeridianLimitDegrees;
+            Logger.Info($"Using meridian limit {meridianLimitDegrees:0.##}°");
+            var meridianUpperLimit = meridianLimitDegrees + 0.1d;
+            var meridianLowerLimit = 360.0d - meridianLimitDegrees - 0.1d;
             var points = new List<ModelPoint>();
             while (true) {
                 points.Clear();
@@ -176,6 +190,16 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     var pointCoordinates = ToTopocentric(coordinates, currentTime);
                     var azimuthDegrees = pointCoordinates.Azimuth.Degree;
                     var altitudeDegrees = pointCoordinates.Altitude.Degree;
+
+                    // Make sure no point is within the meridian limits
+                    if (azimuthDegrees < meridianUpperLimit) {
+                        Logger.Info($"Point Alt={altitudeDegrees:0.##}, Az={azimuthDegrees:0.##} within meridian limit. Adjusting azimuth to {meridianUpperLimit:0.##}");
+                        azimuthDegrees = meridianUpperLimit;
+                    }
+                    if (azimuthDegrees > meridianLowerLimit) {
+                        Logger.Info($"Point Alt={altitudeDegrees:0.##}, Az={azimuthDegrees:0.##} within meridian limit. Adjusting azimuth to {meridianLowerLimit:0.##}");
+                        azimuthDegrees = meridianLowerLimit;
+                    }
 
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
@@ -189,7 +213,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     }
 
                     points.Add(
-                        new ModelPoint(dateTime, telescopeMediator) {
+                        new ModelPoint(telescopeMediator) {
                             Altitude = altitudeDegrees,
                             Azimuth = azimuthDegrees,
                             ModelPointState = creationState

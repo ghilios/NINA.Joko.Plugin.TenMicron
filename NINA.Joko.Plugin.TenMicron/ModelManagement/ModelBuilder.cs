@@ -560,6 +560,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                             await state.ProcessingSemaphore.WaitAsync(ct);
                         }
 
+                        // TODO: Confirm side of pier matches what we used for the dome calculations. If it doesn't, update the dome calculations for hte other side of pier,
+                        // reset the point state, and move onto the next point (defer it for the end)
+                        // TODO: Do the above as a fallback if forcing the side of pier doesn't work
+
                         try {
                             if (state.UseDome) {
                                 var localDomeSlewTask = state.DomeSlewTask;

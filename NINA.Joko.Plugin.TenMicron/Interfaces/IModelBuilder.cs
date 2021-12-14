@@ -29,6 +29,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public int MaxConcurrency { get; set; } = 3;
         public int DomeShutterWidth_mm { get; set; } = 0;
         public int MaxFailedPoints { get; set; } = 0;
+        public bool RemoveHighRMSPointsAfterBuild { get; set; } = true;
     }
 
     public class PointNextUpEventArgs : EventArgs {

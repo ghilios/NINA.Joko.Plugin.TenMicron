@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using ASCOM.DriverAccess;
 using Accord.Math;
 using NINA.Astrometry;
 using NINA.Joko.Plugin.TenMicron.Equipment;
@@ -17,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,7 +27,37 @@ namespace TestApp {
 
     internal class Program {
 
+        public static Func<object[], T> AnonymousInstantiator<T>(T example) {
+            var ctor = typeof(T).GetConstructors().First();
+            var paramExpr = Expression.Parameter(typeof(object[]));
+            return Expression.Lambda<Func<object[], T>>
+            (
+                Expression.New
+                (
+                    ctor,
+                    ctor.GetParameters().Select
+                    (
+                        (x, i) => Expression.Convert
+                        (
+                            Expression.ArrayIndex(paramExpr, Expression.Constant(i)),
+                            x.ParameterType
+                        )
+                    )
+                ), paramExpr).Compile();
+        }
+
+        private static void Foo(Type t) {
+            var allProperties = t.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+            var allMethods = t.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public).Where(m => !m.IsSpecialName).ToList();
+            var allMethodParameters = allMethods.Select(m => m.GetParameters()).ToList();
+
+            var allMethodParametersStrings = allMethodParameters.Select(pl => string.Join(", ", pl.Select(p => $"{p.ParameterType.FullName} {p.Name}"))).ToList();
+            Console.WriteLine();
+        }
+
         private static void Main(string[] args) {
+            Foo(typeof(ASCOM.DriverAccess.Focuser));
+
             /*
             string id = ASCOM.DriverAccess.Telescope.Choose("");
             if (string.IsNullOrEmpty(id))
@@ -56,6 +88,7 @@ namespace TestApp {
             // Make flat plane out of 4 corners, project scope vector onto it, then calculate if the point is within the rectangle
             // https://math.stackexchange.com/questions/100439/determine-where-a-vector-will-intersect-a-plane
 
+            /*
             var domeRadius = 1000.0d;
             var shutterWidth = 600.0d;
             var distancePastZenith = 200.0d;
@@ -69,6 +102,7 @@ namespace TestApp {
             Console.WriteLine($"Is in shutter: {IsInShutter(domeRadius, shutterWidth, distancePastZenith, domeAzimuth + Angle.ByRadians(shutterOpenAngle.Radians / 1.9d), scopeAzimuth, scopeAltitude)}");
             Console.WriteLine($"Is in shutter: {IsInShutter(domeRadius, shutterWidth, distancePastZenith, domeAzimuth + Angle.ByRadians(shutterOpenAngle.Radians / 2.0d), scopeAzimuth, scopeAltitude)}");
             Console.WriteLine($"Is in shutter: {IsInShutter(domeRadius, shutterWidth, distancePastZenith, domeAzimuth + Angle.ByRadians(shutterOpenAngle.Radians / 2.1d), scopeAzimuth, scopeAltitude)}");
+            */
             // Console.WriteLine($"Is in shutter: {IsInShutter(domeRadius, shutterWidth, distancePastZenith, domeAzimuth, scopeAzimuth, scopeAltitude)}");
         }
 

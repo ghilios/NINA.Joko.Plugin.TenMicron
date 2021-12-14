@@ -305,6 +305,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.DomeShutterOpeningDataPoints.Clear();
             this.DomeShutterOpeningDataPoints2.Clear();
             this.BuildInProgress = false;
+            this.TelescopeInfo = telescopeMediator.GetInfo();
             Connected = true;
         }
 
@@ -455,13 +456,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             var options = new ModelBuilderOptions() {
                 WestToEastSorting = modelBuilderOptions.WestToEastSorting,
                 NumRetries = BuilderNumRetries,
-                MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
+                MaxPointRMS = MaxPointRMS,
                 MinimizeDomeMovement = modelBuilderOptions.MinimizeDomeMovementEnabled,
                 SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
                 AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
                 MaxConcurrency = modelBuilderOptions.MaxConcurrency,
                 DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,
-                MaxFailedPoints = MaxFailedPoints
+                MaxFailedPoints = MaxFailedPoints,
+                RemoveHighRMSPointsAfterBuild = modelBuilderOptions.RemoveHighRMSPointsAfterBuild
             };
             var modelPoints = ModelPoints.ToList();
             return DoBuildModel(modelPoints, options, CancellationToken.None);

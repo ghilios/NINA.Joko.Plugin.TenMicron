@@ -25,6 +25,8 @@
     <tmconverters:NumericToHalfConverter x:Key="TM_NumericToHalfConverter" />
     <tmconverters:ModelPointStateToColorConverter x:Key="TM_ModelPointStateToColorConverter" />
     <tmconverters:CollectionContainsItemsToBooleanConverterNoCheck x:Key="TM_CollectionContainsItemsToBooleanConverterNoCheck" />
+    <tmconverters:ColorAndBooleanToTransparentMultiBinding x:Key="TM_ColorAndBooleanToTransparentMultiBinding" />
+    <tmconverters:IntZeroBooleanMultiConverter x:Key="TM_IntZeroBooleanMultiConverter" />
     <TextBlock x:Key="Placeholder_Tooltip" Text="Placeholder text" />
     <TextBlock x:Key="Stars_Tooltip" Text="Number of stars to include in the model. Must be at least 3, and no more than 100" />
     <TextBlock x:Key="PointGenerator_Tooltip" Text="The algorithm used to generate points for an alignment model. Golden Spiral is used for a full sky model, and Sidereal Path generates points along the sidereal path of an RA/DEC coordinate" />
@@ -36,6 +38,7 @@
     <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
     <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
     <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry" />
+    <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
     <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
         <Grid d:DataContext="{d:DesignInstance local:TenMicronOptions, IsDesignTimeCreatable=False}">
             <Grid.ColumnDefinitions>
@@ -54,6 +57,7 @@
                 <RowDefinition />
                 <!-- Hidden until this works -->
                 <RowDefinition Height="0" />
+                <RowDefinition />
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
@@ -236,6 +240,20 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource WestToEast_Tooltip}"
                 IsChecked="{Binding WestToEastSorting}" />
+            <TextBlock
+                Grid.Row="10" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Remove High RMS Points"
+                ToolTip="{StaticResource RemoveHighRMSPointsAfterBuild_Tooltip}" />
+            <CheckBox
+                Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource RemoveHighRMSPointsAfterBuild_Tooltip}"
+                IsChecked="{Binding RemoveHighRMSPointsAfterBuild}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

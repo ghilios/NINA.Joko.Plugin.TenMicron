@@ -56,6 +56,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool ShowRemovedPoints { get; set; }
 
+        bool RemoveHighRMSPointsAfterBuild { get; set; }
+
         void ResetDefaults();
     }
 }

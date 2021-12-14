@@ -313,12 +313,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     // Now that we're through with the work, we only abort on cancellation (not stop)
                     builtModel = await FinishAlignment(state, ct);
+                    var retriesRemaining = options.NumRetries - state.BuildAttempt + 1;
                     if (state.FailedPoints == 0) {
                         Logger.Info($"No failed points remaining after build iteration {state.BuildAttempt}");
                         break;
                     } else if (state.Options.MaxFailedPoints > 0 && state.FailedPoints > state.Options.MaxFailedPoints) {
-                        var retryRemaining = retryCount < options.NumRetries;
-                        if (retryRemaining) {
+                        if (retriesRemaining > 0) {
                             Logger.Info($"{state.FailedPoints} failed point exceeds limit of {state.Options.MaxFailedPoints}. Resetting all points to Generated to force retrying all points");
                             Notification.ShowWarning($"{state.FailedPoints} failed points exceeds limit. Retrying all points");
                             foreach (var point in state.ValidPoints) {
@@ -326,11 +326,34 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                             }
                         } else {
                             Logger.Warning($"{state.FailedPoints} failed point exceeds limit of {state.Options.MaxFailedPoints}. No retries remaining, so moving on");
-                            Notification.ShowWarning($"{state.FailedPoints} failed points with no retries remaining");
+                            Notification.ShowWarning($"{state.FailedPoints} failed points with no retries remaining. Keeping all points and moving on.");
                         }
                     } else {
-                        Logger.Info($"{state.FailedPoints} failed points during model build iteration {state.BuildAttempt}. {options.NumRetries - state.BuildAttempt + 1} retries remaining");
-                        Notification.ShowInformation($"Retrying 10u model build for {state.FailedPoints} points");
+                        var numFailedRMSPoints = state.ValidPoints.Count(p => p.ModelPointState == ModelPointStateEnum.FailedRMS);
+                        Logger.Info($"{state.FailedPoints} failed points ({numFailedRMSPoints} with high RMS) during model build iteration {state.BuildAttempt}. {retriesRemaining} retries remaining");
+                        if (retriesRemaining > 0) {
+                            Notification.ShowInformation($"Retrying 10u model build for {state.FailedPoints} points");
+                        } else if (options.RemoveHighRMSPointsAfterBuild && numFailedRMSPoints > 0) {
+                            Notification.ShowInformation($"Removing {numFailedRMSPoints} points with RMS > {options.MaxPointRMS}");
+
+                            foreach (var point in state.ValidPoints) {
+                                // Reset model indexes in preparation for recreating model from existing points
+                                point.ModelIndex = -1;
+                            }
+
+                            Logger.Info("Deleting current alignment model to recreate it with remaining points");
+                            this.mountModelMediator.DeleteAlignment();
+
+                            Logger.Info("Starting new alignment spec to recreate it with remaining points");
+                            if (!this.mountModelMediator.StartNewAlignmentSpec()) {
+                                throw new ModelBuildException("Failed to start new alignment spec");
+                            }
+
+                            Logger.Info("Adding remaining points back to model");
+                            AddSuccessfulPointsToModel(state, ct);
+
+                            builtModel = await FinishAlignment(state, ct, overrideMaxPointRMS: int.MaxValue);
+                        }
                     }
                 }
             } catch (OperationCanceledException) {
@@ -345,7 +368,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             return builtModel;
         }
 
-        private async Task<LoadedAlignmentModel> FinishAlignment(ModelBuilderState state, CancellationToken ct) {
+        private async Task<LoadedAlignmentModel> FinishAlignment(ModelBuilderState state, CancellationToken ct, int? overrideMaxPointRMS = null) {
             var completedPoints = state.ValidPoints.Count - state.FailedPoints;
             if (completedPoints > 2) {
                 Logger.Info("Completing alignment spec");
@@ -354,6 +377,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     return null;
                 }
 
+                var maxPointRMS = overrideMaxPointRMS ?? state.Options.MaxPointRMS;
                 var builtModel = await mountModelMediator.GetLoadedAlignmentModel(ct);
                 ct.ThrowIfCancellationRequested();
                 var modelAlignmentStars = builtModel.AlignmentStars.ToArray();
@@ -361,7 +385,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     if (point.ModelPointState == ModelPointStateEnum.AddedToModel) {
                         if (point.ModelIndex > 0 && point.ModelIndex <= modelAlignmentStars.Length) {
                             point.RMSError = modelAlignmentStars[point.ModelIndex - 1].ErrorArcsec;
-                            if (!double.IsNaN(state.Options.MaxPointRMS) && point.RMSError > state.Options.MaxPointRMS) {
+                            if (!double.IsNaN(state.Options.MaxPointRMS) && point.RMSError > maxPointRMS) {
                                 Logger.Info($"Point {point} exceeds limit of {state.Options.MaxPointRMS}. This point will be reattempted if there are remaining retries");
                                 point.ModelPointState = ModelPointStateEnum.FailedRMS;
                                 ++state.FailedPoints;
@@ -394,17 +418,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 point.PlateSolvedRightAscension = AstrometricTime.ZERO;
             }
         }
-
-        /*
-        private void PreStep3_CacheCelestialCoordinates(ModelBuilderState state, CancellationToken ct) {
-            Logger.Info($"Refraction correction={state.RefractionCorrectionEnabled}. Using pressure={state.PressurehPa}, temperature={state.Temperature}, relative humidity={state.Humidity}, wavelength={state.Wavelength}");
-            Logger.Info("Caching celestial coordinates for proximity sorting");
-            foreach (var point in state.ValidPoints) {
-                ct.ThrowIfCancellationRequested();
-                point.Coordinates = point.ToCelestial(pressurehPa: state.PressurehPa, tempCelcius: state.Temperature, relativeHumidity: state.Humidity, wavelength: state.Wavelength);
-            }
-        }
-        */
 
         private void PreStep3_CacheDomeAzimuthRanges(ModelBuilderState state) {
             if (!state.UseDome) {
@@ -480,6 +493,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var exposureData = await CaptureImage(firstPoint, stepProgress, ct);
                 ct.ThrowIfCancellationRequested();
 
+                // Restore point state so it can be used when actual building begins
+                firstPoint.ModelPointState = ModelPointStateEnum.Generated;
+
                 var solveResult = await SolveImage(state.Options, exposureData, ct);
                 ct.ThrowIfCancellationRequested();
 
@@ -503,6 +519,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
             }
 
+            AddSuccessfulPointsToModel(state, ct);
+        }
+
+        private void AddSuccessfulPointsToModel(ModelBuilderState state, CancellationToken ct) {
+            var validPoints = state.ValidPoints;
             var existingSuccessfulPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.AddedToModel).ToList();
             if (existingSuccessfulPoints.Count > 0) {
                 Logger.Info($"Adding {existingSuccessfulPoints.Count} previously successful points to the new alignment spec");
@@ -795,14 +816,21 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
                 1
             );
-            point.ModelPointState = ModelPointStateEnum.Exposing;
-            var exposureData = await this.imagingMediator.CaptureImage(seq, ct, stepProgress);
-            // Fire and forget to prepare image, which will put the latest captured image in the imaging tab view
-            _ = Task.Run(async () => {
-                var imageData = await exposureData.ToImageData();
-                _ = this.imagingMediator.PrepareImage(imageData, new PrepareImageParameters(autoStretch: true, detectStars: false), ct);
-            });
-            return exposureData;
+
+            try {
+                point.ModelPointState = ModelPointStateEnum.Exposing;
+                var exposureData = await this.imagingMediator.CaptureImage(seq, ct, stepProgress);
+                // Fire and forget to prepare image, which will put the latest captured image in the imaging tab view
+                _ = Task.Run(async () => {
+                    var imageData = await exposureData.ToImageData();
+                    _ = this.imagingMediator.PrepareImage(imageData, new PrepareImageParameters(autoStretch: true, detectStars: false), ct);
+                });
+                return exposureData;
+            } catch (Exception e) {
+                Logger.Error($"Exception while capturing image for {point}", e);
+                point.ModelPointState = ModelPointStateEnum.Failed;
+                throw;
+            }
         }
 
         private async Task<PlateSolveResult> SolveImage(ModelBuilderOptions options, IExposureData exposureData, CancellationToken ct) {

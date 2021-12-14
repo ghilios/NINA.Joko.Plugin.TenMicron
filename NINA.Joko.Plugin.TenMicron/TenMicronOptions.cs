@@ -54,6 +54,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             maxFailedPoints = optionsAccessor.GetValueInt32("MaxFailedPoints", 0);
             siderealTrackStartTimeProvider = optionsAccessor.GetValueString("SiderealTrackStartTimeProvider", "Now");
             siderealTrackEndTimeProvider = optionsAccessor.GetValueString("SiderealTrackEndTimeProvider", "Now");
+            removeHighRMSPointsAfterBuild = optionsAccessor.GetValueBoolean("RemoveHighRMSPointsAfterBuild", true);
         }
 
         public void ResetDefaults() {
@@ -77,6 +78,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MaxFailedPoints = 0;
             SiderealTrackStartTimeProvider = "Now";
             SiderealTrackEndTimeProvider = "Now";
+            RemoveHighRMSPointsAfterBuild = true;
         }
 
         private int minPointAltitude;
@@ -363,6 +365,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (siderealTrackEndTimeProvider != value) {
                     siderealTrackEndTimeProvider = value;
                     optionsAccessor.SetValueString("SiderealTrackEndTimeProvider", siderealTrackEndTimeProvider);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool removeHighRMSPointsAfterBuild;
+
+        public bool RemoveHighRMSPointsAfterBuild {
+            get => removeHighRMSPointsAfterBuild;
+            set {
+                if (removeHighRMSPointsAfterBuild != value) {
+                    removeHighRMSPointsAfterBuild = value;
+                    optionsAccessor.SetValueBoolean("RemoveHighRMSPointsAfterBuild", removeHighRMSPointsAfterBuild);
                     RaisePropertyChanged();
                 }
             }

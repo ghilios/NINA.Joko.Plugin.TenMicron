@@ -444,7 +444,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition Style="{StaticResource HideOnNoRetries}" />
-                            <RowDefinition Style="{StaticResource HideOnNoRetries}" />
+                            <RowDefinition />
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <TextBlock
@@ -501,7 +501,6 @@
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Unit="arcsec"
-                            IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
                             ToolTip="{StaticResource MaxPointRMS_Tooltip}">
                             <Binding Path="MaxPointRMS" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
                                 <Binding.ValidationRules>
@@ -664,26 +663,46 @@
                             Y="{Binding ScopePosition.Y}" />
                         <oxy:LineAnnotation
                             MaximumY="90"
-                            TextColor="{StaticResource DomeAzimuthTextColor}"
                             Text="Dome Az"
                             TextOrientation="AlongLine"
                             Type="Vertical"
                             LineStyle="Solid"
                             StrokeThickness="2"
-                            X="{Binding DomeInfo.Azimuth, UpdateSourceTrigger=PropertyChanged}"
-                            Visibility="{Binding DomeControlEnabled, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
-                            Color="{StaticResource DomeAzimuthColor}" />
+                            X="{Binding DomeInfo.Azimuth, UpdateSourceTrigger=PropertyChanged}">
+                            <oxy:LineAnnotation.Color>
+                                <MultiBinding Converter="{StaticResource TM_ColorAndBooleanToTransparentMultiBinding}">
+                                    <Binding Source="{StaticResource DomeAzimuthColor}" />
+                                    <Binding Path="DomeControlEnabled" />
+                                </MultiBinding>
+                            </oxy:LineAnnotation.Color>
+                            <oxy:LineAnnotation.TextColor>
+                                <MultiBinding Converter="{StaticResource TM_ColorAndBooleanToTransparentMultiBinding}">
+                                    <Binding Source="{StaticResource DomeAzimuthTextColor}" />
+                                    <Binding Path="DomeControlEnabled" />
+                                </MultiBinding>
+                            </oxy:LineAnnotation.TextColor>
+                        </oxy:LineAnnotation>
                         <oxy:PointAnnotation
-                            Stroke="{StaticResource NextUpDomeAzimuthColor}"
                             StrokeThickness="2"
                             Shape="Plus"
                             Size="8"
                             Opacity="0.6"
                             Text="Dome Target"
-                            TextColor="{StaticResource NextUpDomeAzimuthColor}"
                             X="{Binding NextUpDomePosition.X}"
-                            Y="{Binding NextUpDomePosition.Y}"
-                            Visibility="{Binding ShowNextUpDomePosition, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}" />
+                            Y="{Binding NextUpDomePosition.Y}">
+                            <oxy:PointAnnotation.Stroke>
+                                <MultiBinding Converter="{StaticResource TM_ColorAndBooleanToTransparentMultiBinding}">
+                                    <Binding Source="{StaticResource NextUpDomeAzimuthColor}" />
+                                    <Binding Path="ShowNextUpDomePosition" />
+                                </MultiBinding>
+                            </oxy:PointAnnotation.Stroke>
+                            <oxy:PointAnnotation.TextColor>
+                                <MultiBinding Converter="{StaticResource TM_ColorAndBooleanToTransparentMultiBinding}">
+                                    <Binding Source="{StaticResource NextUpDomeAzimuthColor}" />
+                                    <Binding Path="ShowNextUpDomePosition" />
+                                </MultiBinding>
+                            </oxy:PointAnnotation.TextColor>
+                        </oxy:PointAnnotation>
                     </oxy:Plot.Annotations>
                 </oxy:Plot>
             </Grid>

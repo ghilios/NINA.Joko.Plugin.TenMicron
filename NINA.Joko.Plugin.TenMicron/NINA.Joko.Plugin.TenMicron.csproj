@@ -376,12 +376,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Converters\CollectionContainsItemsToBooleanConverterNoCheck.cs" />
+    <Compile Include="Converters\ColorAndBooleanToTransparentMultiBinding.cs" />
     <Compile Include="Converters\DecimalDegreesToArcsecDoubleDashConverter.cs" />
     <Compile Include="Converters\DecimalMinToDoubleDashConverter.cs" />
     <Compile Include="Converters\DoubleZeroToVisibilityConverter.cs" />
     <Compile Include="Converters\EnumStaticDescriptionValueConverter.cs" />
     <Compile Include="Converters\EnumStaticDescriptionTypeConverter.cs" />
     <Compile Include="Converters\IntNegativeToVisibilityConverter.cs" />
+    <Compile Include="Converters\IntZeroBooleanMultiConverter.cs" />
     <Compile Include="Converters\InverseDoubleZeroToVisibilityConverter.cs" />
     <Compile Include="Converters\ModelPointStateToColorConverter.cs" />
     <Compile Include="Converters\NumericToHalfConverter.cs" />

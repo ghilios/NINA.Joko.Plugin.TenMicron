@@ -79,12 +79,12 @@ using System.Runtime.InteropServices;
 * Remove the worst alignment star from a loaded alignment model
 * Retry individual points that have high RMS
 * Retry model build failures using only the failed points, unless a maximum number of failures is exceeded
+* Advanced Sequencer item to set tracking rates not exposed by the ASCOM driver
 
 # Coming Soon #
 
 * Altitude-aware dome shutter calculations. By setting a dome shutter width in the model builder settings, a wider dome slit clearance will be used for higher altitudes to further reduce the number of dome slews
 * Advanced Sequencer item to build full-sky models
-* Advanced Sequencer item to set tracking rates not exposed by the ASCOM driver
 
 # Getting Help #
 

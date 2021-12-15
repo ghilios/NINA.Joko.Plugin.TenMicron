@@ -13,6 +13,7 @@
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Equipment.Interfaces;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
@@ -23,5 +24,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         AstrometricTime GetMountReportedRightAscension();
 
         AstrometricTime GetMountReportedLocalSiderealTime();
+
+        bool SetTrackingRate(TrackingMode trackingMode);
     }
 }

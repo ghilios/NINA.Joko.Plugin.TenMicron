@@ -579,5 +579,30 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var result = new DateTime(datePart.Year, datePart.Month, datePart.Day, hours, minutes, seconds, hundredthSeconds * 10, DateTimeKind.Utc);
             return new Response<DateTime>(result, rawResponse);
         }
+
+        public void SetSiderealTrackingRate() {
+            const string command = ":TQ#";
+            this.mountCommander.SendCommandBlind(command, true);
+        }
+
+        public void SetLunarTrackingRate() {
+            const string command = ":TL#";
+            this.mountCommander.SendCommandBlind(command, true);
+        }
+
+        public void SetSolarTrackingRate() {
+            const string command = ":TSOLAR#";
+            this.mountCommander.SendCommandBlind(command, true);
+        }
+
+        public void StopTracking() {
+            const string command = ":AL#";
+            this.mountCommander.SendCommandBlind(command, true);
+        }
+
+        public void StartTracking() {
+            const string command = ":AP#";
+            this.mountCommander.SendCommandBlind(command, true);
+        }
     }
 }

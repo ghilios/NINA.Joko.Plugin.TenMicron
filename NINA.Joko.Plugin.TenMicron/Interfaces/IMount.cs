@@ -90,5 +90,15 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         Response<bool> GetRefractionCorrectionEnabled();
 
         Response<DateTime> GetUTCTime();
+
+        void SetSiderealTrackingRate();
+
+        void SetLunarTrackingRate();
+
+        void SetSolarTrackingRate();
+
+        void StopTracking();
+
+        void StartTracking();
     }
 }

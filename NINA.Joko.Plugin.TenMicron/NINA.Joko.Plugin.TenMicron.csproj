@@ -450,6 +450,7 @@
       <DependentUpon>DataTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="SequenceItems\BuildSiderealPathModel.cs" />
+    <Compile Include="SequenceItems\SetTrackingRate.cs" />
     <Compile Include="SequenceItems\SaveModel.cs" />
     <Compile Include="SequenceItems\LoadModel.cs" />
     <Compile Include="Utility\DomeUtility.cs" />

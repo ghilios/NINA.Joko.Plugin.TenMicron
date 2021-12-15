@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using NINA.Joko.Plugin.TenMicron.Model;
 using System.Windows;
+using NINA.Equipment.Interfaces;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -306,6 +307,42 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 return mount.GetLocalSiderealTime();
             }
             return null;
+        }
+
+        public bool SetTrackingRate(TrackingMode trackingMode) {
+            if (supportedMountConnected) {
+                switch (trackingMode) {
+                    case TrackingMode.Sidereal:
+                        mount.SetSiderealTrackingRate();
+                        mount.StartTracking();
+                        return true;
+
+                    case TrackingMode.Solar:
+                        mount.SetSolarTrackingRate();
+                        mount.StartTracking();
+                        return true;
+
+                    case TrackingMode.Lunar:
+                        mount.SetLunarTrackingRate();
+                        mount.StartTracking();
+                        return true;
+
+                    case TrackingMode.Stopped:
+                        mount.StopTracking();
+                        return true;
+
+                    case TrackingMode.King:
+                        Logger.Error("King rate is not supported");
+                        return false;
+
+                    case TrackingMode.Custom:
+                        Logger.Error("Custom rate is not supported");
+                        return false;
+                }
+
+                throw new ArgumentException($"Unknown tracking mode received: {trackingMode}");
+            }
+            return false;
         }
     }
 }

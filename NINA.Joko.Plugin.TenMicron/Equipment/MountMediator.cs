@@ -15,6 +15,7 @@ using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Core.Enum;
 using System;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Equipment.Interfaces;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
@@ -30,6 +31,10 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         public AstrometricTime GetMountReportedRightAscension() {
             return handler.GetMountReportedRightAscension();
+        }
+
+        public bool SetTrackingRate(TrackingMode trackingMode) {
+            return handler.SetTrackingRate(trackingMode);
         }
     }
 }

@@ -59,6 +59,7 @@
                 <RowDefinition Height="0" />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -71,6 +72,7 @@
                 <TextBlock x:Key="DomeShutterWidth_Tooltip" Text="The width of the dome shutter, in mm. If set, this is used to determine if the scope is pointing out of the shutter instead of the Threshold setting from Dome Options" />
                 <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
                 <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
+                <TextBlock x:Key="PlateSolveSubframePercentage_Tooltip" Text="What percentage of the full camera resolution to use when taking exposures for plate solving. This is an alternative to binning, which increases the pixel scale" />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -254,6 +256,30 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource RemoveHighRMSPointsAfterBuild_Tooltip}"
                 IsChecked="{Binding RemoveHighRMSPointsAfterBuild}" />
+            <TextBlock
+                Grid.Row="11" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Plate Solve Subframe"
+                ToolTip="{StaticResource PlateSolveSubframePercentage_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="11" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Unit="%"
+                ToolTip="{StaticResource PlateSolveSubframePercentage_Tooltip}">
+                <Binding Path="PlateSolveSubframePercentage" UpdateSourceTrigger="LostFocus" Converter="{StaticResource PercentageConverter}" ConverterParameter="1">
+                    <Binding.ValidationRules>
+                        <rules:DoubleRangeRule>
+                            <rules:DoubleRangeRule.ValidRange>
+                                <rules:DoubleRangeChecker Maximum="100" Minimum="0.1" />
+                            </rules:DoubleRangeRule.ValidRange>
+                        </rules:DoubleRangeRule>
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

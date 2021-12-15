@@ -74,7 +74,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private class ModelBuilderState {
 
-            public ModelBuilderState(ModelBuilderOptions options, IList<ModelPoint> modelPoints, IMount mount, IDomeMediator domeMediator, IWeatherDataMediator weatherDataMediator) {
+            public ModelBuilderState(ModelBuilderOptions options, IList<ModelPoint> modelPoints, IMount mount, IDomeMediator domeMediator, IWeatherDataMediator weatherDataMediator, ICameraMediator cameraMediator, IProfileService profileService) {
                 this.Options = options;
                 var maxConcurrent = options.MaxConcurrency > 0 ? options.MaxConcurrency : int.MaxValue;
                 this.ProcessingSemaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
@@ -100,6 +100,24 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         }
                     }
                 }
+
+                if (options.PlateSolveSubframePercentage < 0.99d) {
+                    var cameraInfo = cameraMediator.GetInfo();
+                    if (!cameraInfo.CanSubSample) {
+                        Notification.ShowWarning("Camera does not support subsampling. Model building will use the entire frame");
+                    } else {
+                        var binning = profileService.ActiveProfile.PlateSolveSettings.Binning;
+
+                        Logger.Info($"Using {options.PlateSolveSubframePercentage * 100.0d}% subsampling with {binning}x binning for plate solves.");
+                        var fullWidth = cameraInfo.XSize / binning;
+                        var fullHeight = cameraInfo.YSize / binning;
+                        var startX = (1.0d - options.PlateSolveSubframePercentage) / 2.0d * fullWidth;
+                        var startY = (1.0d - options.PlateSolveSubframePercentage) / 2.0d * fullHeight;
+                        var width = options.PlateSolveSubframePercentage * fullWidth;
+                        var height = options.PlateSolveSubframePercentage * fullHeight;
+                        this.PlateSolveSubsample = new ObservableRectangle(x: startX, y: startY, width: width, height: height);
+                    }
+                }
             }
 
             public Separation SyncSeparation { get; set; } = null;
@@ -122,6 +140,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             public int PointsProcessed { get; set; }
             public int FailedPoints { get; set; }
             public bool IsComplete { get; set; } = false;
+            public ObservableRectangle PlateSolveSubsample { get; set; } = null;
 
             private static IComparer<ModelPoint> GetPointComparer(bool useDome, ModelBuilderOptions options) {
                 if (useDome && options.MinimizeDomeMovement) {
@@ -167,7 +186,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
 
             var reenableDomeFollower = false;
-            var state = new ModelBuilderState(options, modelPoints, mount, domeMediator, weatherDataMediator);
+            var state = new ModelBuilderState(options, modelPoints, mount, domeMediator, weatherDataMediator, cameraMediator, profileService);
             if (state.UseDome && domeMediator.IsFollowingScope) {
                 if (!await domeMediator.DisableFollowing(ct)) {
                     Logger.Warning("Failed to disable dome follower after 10u model build");
@@ -490,7 +509,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                 var scopeCoordinates = telescopeMediator.GetCurrentPosition();
 
-                var exposureData = await CaptureImage(firstPoint, stepProgress, ct);
+                var exposureData = await CaptureImage(state, firstPoint, stepProgress, ct);
                 ct.ThrowIfCancellationRequested();
 
                 // Restore point state so it can be used when actual building begins
@@ -608,7 +627,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                             }
 
                             // Successfully slewed to point. Take an exposure
-                            var exposureData = await CaptureImage(nextPoint, stepProgress, ct);
+                            var exposureData = await CaptureImage(state, nextPoint, stepProgress, ct);
                             ct.ThrowIfCancellationRequested();
                             if (exposureData == null) {
                                 Logger.Error("Failed to take exposure. Continuing to the next point");
@@ -803,7 +822,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             return true;
         }
 
-        private async Task<IExposureData> CaptureImage(ModelPoint point, IProgress<ApplicationStatus> stepProgress, CancellationToken ct) {
+        private async Task<IExposureData> CaptureImage(ModelBuilderState state, ModelPoint point, IProgress<ApplicationStatus> stepProgress, CancellationToken ct) {
             point.MountReportedSideOfPier = mount.GetSideOfPier();
             point.MountReportedDeclination = mount.GetDeclination();
             point.MountReportedRightAscension = mount.GetRightAscension();
@@ -816,6 +835,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
                 1
             );
+            if (state.PlateSolveSubsample != null) {
+                seq.SubSambleRectangle = state.PlateSolveSubsample;
+                seq.EnableSubSample = true;
+            }
 
             try {
                 point.ModelPointState = ModelPointStateEnum.Exposing;

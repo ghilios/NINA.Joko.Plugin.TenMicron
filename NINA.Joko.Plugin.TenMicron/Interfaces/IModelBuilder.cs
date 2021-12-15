@@ -30,6 +30,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public int DomeShutterWidth_mm { get; set; } = 0;
         public int MaxFailedPoints { get; set; } = 0;
         public bool RemoveHighRMSPointsAfterBuild { get; set; } = true;
+        public double PlateSolveSubframePercentage { get; set; } = 1.0d;
     }
 
     public class PointNextUpEventArgs : EventArgs {

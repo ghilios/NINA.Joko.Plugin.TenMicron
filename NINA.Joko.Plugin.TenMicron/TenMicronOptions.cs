@@ -55,6 +55,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             siderealTrackStartTimeProvider = optionsAccessor.GetValueString("SiderealTrackStartTimeProvider", "Now");
             siderealTrackEndTimeProvider = optionsAccessor.GetValueString("SiderealTrackEndTimeProvider", "Now");
             removeHighRMSPointsAfterBuild = optionsAccessor.GetValueBoolean("RemoveHighRMSPointsAfterBuild", true);
+            plateSolveSubframePercentage = optionsAccessor.GetValueDouble("PlateSolveSubframePercentage", 1.0d);
         }
 
         public void ResetDefaults() {
@@ -79,6 +80,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             SiderealTrackStartTimeProvider = "Now";
             SiderealTrackEndTimeProvider = "Now";
             RemoveHighRMSPointsAfterBuild = true;
+            PlateSolveSubframePercentage = 1.0d;
         }
 
         private int minPointAltitude;
@@ -378,6 +380,23 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (removeHighRMSPointsAfterBuild != value) {
                     removeHighRMSPointsAfterBuild = value;
                     optionsAccessor.SetValueBoolean("RemoveHighRMSPointsAfterBuild", removeHighRMSPointsAfterBuild);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double plateSolveSubframePercentage;
+
+        public double PlateSolveSubframePercentage {
+            get => plateSolveSubframePercentage;
+            set {
+                if (plateSolveSubframePercentage != value) {
+                    if (value <= 0.0d || value > 1.0d) {
+                        throw new ArgumentException($"PlateSolveSubframePercentage must be within (0, 1]", "PlateSolveSubframePercentage");
+                    }
+
+                    plateSolveSubframePercentage = value;
+                    optionsAccessor.SetValueDouble("PlateSolveSubframePercentage", plateSolveSubframePercentage);
                     RaisePropertyChanged();
                 }
             }

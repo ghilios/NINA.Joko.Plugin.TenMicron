@@ -463,7 +463,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 MaxConcurrency = modelBuilderOptions.MaxConcurrency,
                 DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,
                 MaxFailedPoints = MaxFailedPoints,
-                RemoveHighRMSPointsAfterBuild = modelBuilderOptions.RemoveHighRMSPointsAfterBuild
+                RemoveHighRMSPointsAfterBuild = modelBuilderOptions.RemoveHighRMSPointsAfterBuild,
+                PlateSolveSubframePercentage = modelBuilderOptions.PlateSolveSubframePercentage
             };
             var modelPoints = ModelPoints.ToList();
             return DoBuildModel(modelPoints, options, CancellationToken.None);

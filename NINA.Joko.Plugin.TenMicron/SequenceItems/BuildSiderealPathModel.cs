@@ -378,7 +378,9 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 AllowBlindSolves = options.AllowBlindSolves,
                 MaxConcurrency = options.MaxConcurrency,
                 DomeShutterWidth_mm = options.DomeShutterWidth_mm,
-                MaxFailedPoints = MaxFailedPoints
+                MaxFailedPoints = MaxFailedPoints,
+                RemoveHighRMSPointsAfterBuild = options.RemoveHighRMSPointsAfterBuild,
+                PlateSolveSubframePercentage = options.PlateSolveSubframePercentage
             };
             if (!await mountModelBuilderMediator.BuildModel(ModelPoints, modelBuilderOptions, token)) {
                 throw new Exception("10u model build failed");

@@ -58,6 +58,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool RemoveHighRMSPointsAfterBuild { get; set; }
 
+        double PlateSolveSubframePercentage { get; set; }
+
         void ResetDefaults();
     }
 }

@@ -859,23 +859,21 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private async Task<PlateSolveResult> SolveImage(ModelBuilderOptions options, IExposureData exposureData, CancellationToken ct) {
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
             var blindSolver = options.AllowBlindSolves ? plateSolverFactory.GetBlindSolver(profileService.ActiveProfile.PlateSolveSettings) : null;
-            var solver = plateSolverFactory.GetCaptureSolver(plateSolver, blindSolver, imagingMediator, filterWheelMediator);
-            var parameter = new CaptureSolverParameter() {
-                Attempts = profileService.ActiveProfile.PlateSolveSettings.NumberOfAttempts,
+            var solver = plateSolverFactory.GetImageSolver(plateSolver, blindSolver);
+            var parameter = new PlateSolveParameter() {
                 Binning = profileService.ActiveProfile.PlateSolveSettings.Binning,
                 Coordinates = telescopeMediator.GetCurrentPosition(),
                 DownSampleFactor = profileService.ActiveProfile.PlateSolveSettings.DownSampleFactor,
                 FocalLength = profileService.ActiveProfile.TelescopeSettings.FocalLength,
                 MaxObjects = profileService.ActiveProfile.PlateSolveSettings.MaxObjects,
                 PixelSize = profileService.ActiveProfile.CameraSettings.PixelSize,
-                ReattemptDelay = TimeSpan.FromMinutes(profileService.ActiveProfile.PlateSolveSettings.ReattemptDelay),
                 Regions = profileService.ActiveProfile.PlateSolveSettings.Regions,
                 SearchRadius = profileService.ActiveProfile.PlateSolveSettings.SearchRadius,
             };
 
             // Plate solves are done concurrently, so do not show progress
             var imageData = await exposureData.ToImageData();
-            return await solver.ImageSolver.Solve(imageData, parameter, null, ct);
+            return await solver.Solve(imageData, parameter, null, ct);
         }
 
         private async Task<bool> SolveAndCompleteProcessing(ModelBuilderState state, ModelPoint point, IExposureData exposureData, CancellationToken ct) {

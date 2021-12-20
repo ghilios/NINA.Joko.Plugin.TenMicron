@@ -383,11 +383,6 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 PlateSolveSubframePercentage = options.PlateSolveSubframePercentage
             };
 
-            // Persist the options so they show up on the builder tab. This probably should happen in the build model method instead
-            options.MaxFailedPoints = MaxFailedPoints;
-            options.MaxPointRMS = MaxPointRMS;
-            options.BuilderNumRetries = BuilderNumRetries;
-
             if (!await mountModelBuilderMediator.BuildModel(ModelPoints, modelBuilderOptions, token)) {
                 throw new Exception("10u model build failed");
             }

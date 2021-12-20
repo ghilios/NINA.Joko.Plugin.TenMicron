@@ -302,5 +302,49 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
         public override string ToString() {
             return $"Alt={Altitude}, Az={Azimuth}, State={ModelPointState}, RMSError={RMSError}, ModelIndex={ModelIndex}, MountRA={MountReportedRightAscension}, MountDEC={MountReportedDeclination}, MountLST={MountReportedLocalSiderealTime}, MountPier={MountReportedSideOfPier}, SolvedCoordinates={PlateSolvedCoordinates}, CaptureTime={CaptureTime}, ExpectedDomeSideOfPier={ExpectedDomeSideOfPier}";
         }
+
+        public ModelPoint Clone() {
+            return new ModelPoint(telescopeMediator) {
+                ModelIndex = ModelIndex,
+                ExpectedDomeSideOfPier = ExpectedDomeSideOfPier,
+                Altitude = Altitude,
+                Azimuth = Azimuth,
+                MinDomeAzimuth = MinDomeAzimuth,
+                MaxDomeAzimuth = MaxDomeAzimuth,
+                DomeAzimuth = DomeAzimuth,
+                DomeAltitude = DomeAltitude,
+                ModelPointState = ModelPointState,
+                MountReportedLocalSiderealTime = MountReportedLocalSiderealTime,
+                MountReportedRightAscension = MountReportedRightAscension,
+                MountReportedDeclination = MountReportedDeclination,
+                MountReportedSideOfPier = MountReportedSideOfPier,
+                PlateSolvedCoordinates = PlateSolvedCoordinates?.Clone(),
+                PlateSolvedRightAscension = PlateSolvedRightAscension,
+                PlateSolvedDeclination = PlateSolvedDeclination,
+                RMSError = RMSError,
+                CaptureTime = CaptureTime
+            };
+        }
+
+        public void CopyFrom(ModelPoint p) {
+            ModelIndex = p.ModelIndex;
+            ExpectedDomeSideOfPier = p.ExpectedDomeSideOfPier;
+            Altitude = p.Altitude;
+            Azimuth = p.Azimuth;
+            MinDomeAzimuth = p.MinDomeAzimuth;
+            MaxDomeAzimuth = p.MaxDomeAzimuth;
+            DomeAzimuth = p.DomeAzimuth;
+            DomeAltitude = p.DomeAltitude;
+            ModelPointState = p.ModelPointState;
+            MountReportedLocalSiderealTime = p.MountReportedLocalSiderealTime;
+            MountReportedRightAscension = p.MountReportedRightAscension;
+            MountReportedDeclination = p.MountReportedDeclination;
+            MountReportedSideOfPier = p.MountReportedSideOfPier;
+            PlateSolvedCoordinates = p.PlateSolvedCoordinates?.Clone();
+            PlateSolvedRightAscension = p.PlateSolvedRightAscension;
+            PlateSolvedDeclination = p.PlateSolvedDeclination;
+            RMSError = p.RMSError;
+            CaptureTime = p.CaptureTime;
+        }
     }
 }

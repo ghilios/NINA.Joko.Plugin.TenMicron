@@ -132,6 +132,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             public ModelBuilderOptions Options { get; private set; }
             public ImmutableList<ModelPoint> ModelPoints { get; private set; }
             public ImmutableList<ModelPoint> ValidPoints { get; private set; }
+            public ImmutableList<ModelPoint> BestModelPoints { get; set; } = ImmutableList.Create<ModelPoint>();
+            public double BestModelRMS { get; set; } = double.PositiveInfinity;
             public SemaphoreSlim ProcessingSemaphore { get; private set; }
             public List<Task<bool>> PendingTasks { get; private set; }
             public IComparer<ModelPoint> PointAzimuthComparer { get; private set; }
@@ -342,6 +344,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     // Now that we're through with the work, we only abort on cancellation (not stop)
                     builtModel = await FinishAlignment(state, ct);
+                    if ((double)builtModel.RMSError < state.BestModelRMS) {
+                        state.BestModelPoints = state.ValidPoints.Select(p => p.Clone()).ToImmutableList();
+                        state.BestModelRMS = (double)builtModel.RMSError;
+                    }
+
                     var retriesRemaining = options.NumRetries - state.BuildAttempt + 1;
                     if (state.FailedPoints == 0) {
                         Logger.Info($"No failed points remaining after build iteration {state.BuildAttempt}");
@@ -365,28 +372,40 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         if (retriesRemaining > 0) {
                             Notification.ShowInformation($"Retrying 10u model build for {state.FailedPoints} points");
                             state.ReverseAzimuthDirectionIfNecessary();
-                        } else if (options.RemoveHighRMSPointsAfterBuild && numFailedRMSPoints > 0) {
-                            // Stop showing progress during final point removal and model query
-                            state.IsComplete = true;
-                            Notification.ShowInformation($"Removing {numFailedRMSPoints} points with RMS > {options.MaxPointRMS}");
+                        } else {
+                            if ((double)builtModel.RMSError > state.BestModelRMS) {
+                                Notification.ShowInformation($"Restoring earlier build iteration that produced a lower RMS model");
+                                for (int i = 0; i < state.ValidPoints.Count; ++i) {
+                                    state.ValidPoints[i].CopyFrom(state.BestModelPoints[i]);
+                                }
 
-                            foreach (var point in state.ValidPoints) {
-                                // Reset model indexes in preparation for recreating model from existing points
-                                point.ModelIndex = -1;
+                                builtModel = await FinishAlignment(state, ct);
                             }
 
-                            Logger.Info("Deleting current alignment model to recreate it with remaining points");
-                            this.mountModelMediator.DeleteAlignment();
+                            numFailedRMSPoints = state.ValidPoints.Count(p => p.ModelPointState == ModelPointStateEnum.FailedRMS);
+                            if (options.RemoveHighRMSPointsAfterBuild && numFailedRMSPoints > 0) {
+                                // Stop showing progress during final point removal and model query
+                                state.IsComplete = true;
+                                Notification.ShowInformation($"Removing {numFailedRMSPoints} points with RMS > {options.MaxPointRMS}");
 
-                            Logger.Info("Starting new alignment spec to recreate it with remaining points");
-                            if (!this.mountModelMediator.StartNewAlignmentSpec()) {
-                                throw new ModelBuildException("Failed to start new alignment spec");
+                                foreach (var point in state.ValidPoints) {
+                                    // Reset model indexes in preparation for recreating model from existing points
+                                    point.ModelIndex = -1;
+                                }
+
+                                Logger.Info("Deleting current alignment model to recreate it with remaining points");
+                                this.mountModelMediator.DeleteAlignment();
+
+                                Logger.Info("Starting new alignment spec to recreate it with remaining points");
+                                if (!this.mountModelMediator.StartNewAlignmentSpec()) {
+                                    throw new ModelBuildException("Failed to start new alignment spec");
+                                }
+
+                                Logger.Info("Adding remaining points back to model");
+                                AddSuccessfulPointsToModel(state, ct);
+
+                                builtModel = await FinishAlignment(state, ct, overrideMaxPointRMS: int.MaxValue);
                             }
-
-                            Logger.Info("Adding remaining points back to model");
-                            AddSuccessfulPointsToModel(state, ct);
-
-                            builtModel = await FinishAlignment(state, ct, overrideMaxPointRMS: int.MaxValue);
                         }
                     }
                 }
@@ -413,6 +432,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                 var maxPointRMS = overrideMaxPointRMS ?? state.Options.MaxPointRMS;
                 var builtModel = await mountModelMediator.GetLoadedAlignmentModel(ct);
+                Logger.Info($"Completed alignment spec. RMSError={builtModel.RMSError}, Stars={builtModel.AlignmentStarCount}");
+
                 ct.ThrowIfCancellationRequested();
                 var modelAlignmentStars = builtModel.AlignmentStars.ToArray();
                 foreach (var point in state.ValidPoints) {
@@ -423,6 +444,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                 Logger.Info($"Point {point} exceeds limit of {state.Options.MaxPointRMS}. This point will be reattempted if there are remaining retries");
                                 point.ModelPointState = ModelPointStateEnum.FailedRMS;
                                 ++state.FailedPoints;
+                            } else {
+                                Logger.Info($"Point {point} added to model");
                             }
                         } else {
                             Logger.Error($"Point {point} has invalid model index {point.ModelIndex}. There are {modelAlignmentStars.Length} alignment stars in the model");

@@ -432,6 +432,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.ModelPoints = ImmutableList.ToImmutableList(modelPoints);
             UpdateDisplayModelPoints();
+
+            // Update VM and options to reflect requested build settings
+            modelBuilderOptions.WestToEastSorting = options.WestToEastSorting;
+            BuilderNumRetries = options.NumRetries;
+            MaxPointRMS = options.MaxPointRMS;
+            modelBuilderOptions.MinimizeDomeMovementEnabled = options.MinimizeDomeMovement;
+            modelBuilderOptions.SyncFirstPoint = options.SyncFirstPoint;
+            modelBuilderOptions.AllowBlindSolves = options.AllowBlindSolves;
+            modelBuilderOptions.MaxConcurrency = options.MaxConcurrency;
+            modelBuilderOptions.DomeShutterWidth_mm = options.DomeShutterWidth_mm;
+            MaxFailedPoints = options.MaxFailedPoints;
+            modelBuilderOptions.RemoveHighRMSPointsAfterBuild = options.RemoveHighRMSPointsAfterBuild;
+            modelBuilderOptions.PlateSolveSubframePercentage = options.PlateSolveSubframePercentage;
             return DoBuildModel(modelPoints, options, ct);
         }
 

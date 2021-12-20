@@ -352,6 +352,20 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             return true;
         }
 
+        public ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes) {
+            SiderealPathObjectCoordinates = coordinates;
+            SiderealTrackRADeltaDegrees = raDelta.Degree;
+            SelectedSiderealPathStartDateTimeProvider = SiderealPathStartDateTimeProviders.FirstOrDefault(p => p.Name == startTimeProvider.Name);
+            SelectedSiderealPathEndDateTimeProvider = SiderealPathEndDateTimeProviders.FirstOrDefault(p => p.Name == endTimeProvider.Name);
+            SiderealTrackStartOffsetMinutes = startOffsetMinutes;
+            SiderealTrackEndOffsetMinutes = endOffsetMinutes;
+            if (!GenerateSiderealPath()) {
+                throw new Exception("Failed to generate sidereal path");
+            }
+
+            return this.ModelPoints;
+        }
+
         private bool GenerateSiderealPath() {
             if (SiderealPathObjectCoordinates == null) {
                 Notification.ShowError("No object selected");

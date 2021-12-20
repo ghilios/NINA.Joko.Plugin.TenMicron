@@ -382,40 +382,32 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 RemoveHighRMSPointsAfterBuild = options.RemoveHighRMSPointsAfterBuild,
                 PlateSolveSubframePercentage = options.PlateSolveSubframePercentage
             };
+
+            // Persist the options so they show up on the builder tab. This probably should happen in the build model method instead
+            options.MaxFailedPoints = MaxFailedPoints;
+            options.MaxPointRMS = MaxPointRMS;
+            options.BuilderNumRetries = BuilderNumRetries;
+
             if (!await mountModelBuilderMediator.BuildModel(ModelPoints, modelBuilderOptions, token)) {
                 throw new Exception("10u model build failed");
             }
         }
 
-        private List<ModelPoint> ModelPoints = new List<ModelPoint>();
+        private ImmutableList<ModelPoint> ModelPoints = ImmutableList.Create<ModelPoint>();
 
         private void UpdateModelPoints() {
             if (SelectedSiderealPathStartDateTimeProvider == null || SelectedSiderealPathEndDateTimeProvider == null || Coordinates?.Coordinates == null || SiderealTrackRADeltaDegrees <= 0) {
                 return;
             }
 
-            try {
-                var startTime = SelectedSiderealPathStartDateTimeProvider.GetDateTime(null);
-                var endTime = SelectedSiderealPathEndDateTimeProvider.GetDateTime(null);
-                if (endTime < startTime) {
-                    endTime += TimeSpan.FromDays(1);
-                }
-
-                startTime += TimeSpan.FromMinutes(SiderealTrackStartOffsetMinutes);
-                endTime += TimeSpan.FromMinutes(SiderealTrackEndOffsetMinutes);
-                if (endTime < startTime) {
-                    endTime += TimeSpan.FromDays(1);
-                }
-                var raDelta = Angle.ByDegree(SiderealTrackRADeltaDegrees);
-                var coordinates = Coordinates.Coordinates;
-                Logger.Info($"Generating sidereal path. Coordinates={coordinates}, RADelta={raDelta}, StartTime={startTime}, EndTime={endTime}");
-
-                ModelPoints = modelPointGenerator.GenerateSiderealPath(coordinates, raDelta, startTime, endTime, mountModelBuilderMediator.CustomHorizon);
-                ModelPointCount = ModelPoints.Count(p => p.ModelPointState == ModelPointStateEnum.Generated);
-            } catch (Exception e) {
-                Logger.Error("Failed to generate model points", e);
-                throw;
-            }
+            ModelPoints = mountModelBuilderMediator.GenerateSiderealPath(
+                Coordinates,
+                Angle.ByDegree(SiderealTrackRADeltaDegrees),
+                SelectedSiderealPathStartDateTimeProvider,
+                SelectedSiderealPathEndDateTimeProvider,
+                SiderealTrackStartOffsetMinutes,
+                SiderealTrackEndOffsetMinutes);
+            ModelPointCount = ModelPoints.Count(p => p.ModelPointState == ModelPointStateEnum.Generated);
         }
 
         public bool Validate() {

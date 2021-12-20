@@ -10,10 +10,13 @@
 
 #endregion "copyright"
 
+using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Sequencer.Utility.DateTimeProvider;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +27,10 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         public Task<bool> BuildModel(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct) {
             return handler.BuildModel(modelPoints, options, ct);
+        }
+
+        public ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes) {
+            return handler.GenerateSiderealPath(coordinates, raDelta, startTimeProvider, endTimeProvider, startOffsetMinutes, endOffsetMinutes);
         }
     }
 }

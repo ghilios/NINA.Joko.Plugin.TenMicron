@@ -10,11 +10,13 @@
 
 #endregion "copyright"
 
-using NINA.Core.Enum;
+using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Sequencer.Utility.DateTimeProvider;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,5 +26,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         CustomHorizon CustomHorizon { get; }
 
         Task<bool> BuildModel(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct);
+
+        ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes);
     }
 }

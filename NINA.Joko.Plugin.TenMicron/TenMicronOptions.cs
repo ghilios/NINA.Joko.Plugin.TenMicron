@@ -56,6 +56,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             siderealTrackEndTimeProvider = optionsAccessor.GetValueString("SiderealTrackEndTimeProvider", "Now");
             removeHighRMSPointsAfterBuild = optionsAccessor.GetValueBoolean("RemoveHighRMSPointsAfterBuild", true);
             plateSolveSubframePercentage = optionsAccessor.GetValueDouble("PlateSolveSubframePercentage", 1.0d);
+            alternateDirectionsBetweenIterations = optionsAccessor.GetValueBoolean("AlternateDirectionsBetweenIterations", true);
         }
 
         public void ResetDefaults() {
@@ -81,6 +82,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             SiderealTrackEndTimeProvider = "Now";
             RemoveHighRMSPointsAfterBuild = true;
             PlateSolveSubframePercentage = 1.0d;
+            AlternateDirectionsBetweenIterations = true;
         }
 
         private int minPointAltitude;
@@ -397,6 +399,19 @@ namespace NINA.Joko.Plugin.TenMicron {
 
                     plateSolveSubframePercentage = value;
                     optionsAccessor.SetValueDouble("PlateSolveSubframePercentage", plateSolveSubframePercentage);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool alternateDirectionsBetweenIterations;
+
+        public bool AlternateDirectionsBetweenIterations {
+            get => alternateDirectionsBetweenIterations;
+            set {
+                if (alternateDirectionsBetweenIterations != value) {
+                    alternateDirectionsBetweenIterations = value;
+                    optionsAccessor.SetValueBoolean("AlternateDirectionsBetweenIterations", alternateDirectionsBetweenIterations);
                     RaisePropertyChanged();
                 }
             }

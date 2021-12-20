@@ -84,7 +84,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                 var domeInfo = domeMediator.GetInfo();
                 this.UseDome = domeInfo?.Connected == true && domeInfo?.CanSetAzimuth == true;
-                this.PointAzimuthComparer = GetPointComparer(this.UseDome, options);
+                this.PointAzimuthComparer = GetPointComparer(this.UseDome, options, false);
 
                 var refractionCorrectionEnabled = mount.GetRefractionCorrectionEnabled();
                 this.PressurehPa = refractionCorrectionEnabled ? (double)mount.GetPressure().Value : 0.0d;
@@ -120,6 +120,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
             }
 
+            public void ReverseAzimuthDirectionIfNecessary() {
+                if (Options.AlternateDirectionsBetweenIterations) {
+                    DirectionReversed = !DirectionReversed;
+                    this.PointAzimuthComparer = GetPointComparer(this.UseDome, Options, DirectionReversed);
+                }
+            }
+
             public Separation SyncSeparation { get; set; } = null;
             public DateTime IterationStartTime { get; set; }
             public ModelBuilderOptions Options { get; private set; }
@@ -141,12 +148,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             public int FailedPoints { get; set; }
             public bool IsComplete { get; set; } = false;
             public ObservableRectangle PlateSolveSubsample { get; set; } = null;
+            public bool DirectionReversed { get; private set; } = false;
 
-            private static IComparer<ModelPoint> GetPointComparer(bool useDome, ModelBuilderOptions options) {
+            private static IComparer<ModelPoint> GetPointComparer(bool useDome, ModelBuilderOptions options, bool reversed) {
+                bool westToEast = options.WestToEastSorting ^ reversed;
                 if (useDome && options.MinimizeDomeMovement) {
                     return Comparer<ModelPoint>.Create(
                         (mp1, mp2) => {
-                            if (!options.WestToEastSorting) {
+                            if (!westToEast) {
                                 var bound1 = double.IsNaN(mp1.MinDomeAzimuth) ? double.MinValue : mp1.MinDomeAzimuth;
                                 var bound2 = double.IsNaN(mp2.MinDomeAzimuth) ? double.MinValue : mp2.MinDomeAzimuth;
                                 return DOUBLE_COMPARER.Compare(bound1, bound2);
@@ -158,7 +167,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         });
                 } else {
                     return Comparer<ModelPoint>.Create(
-                        (mp1, mp2) => !options.WestToEastSorting ? DOUBLE_COMPARER.Compare(mp1.Azimuth, mp2.Azimuth) : DOUBLE_COMPARER.Compare(mp2.Azimuth, mp1.Azimuth));
+                        (mp1, mp2) => !westToEast ? DOUBLE_COMPARER.Compare(mp1.Azimuth, mp2.Azimuth) : DOUBLE_COMPARER.Compare(mp2.Azimuth, mp1.Azimuth));
                 }
             }
         }
@@ -296,6 +305,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     state.PointsProcessed = 0;
                     state.BuildAttempt = retryCount + 1;
                     state.IterationStartTime = DateTime.Now;
+                    state.PendingTasks.Clear();
 
                     // For these first few steps, only abort if cancel is requested. This way a stop can leave a valid model, if possible
                     ct.ThrowIfCancellationRequested();
@@ -343,6 +353,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                             foreach (var point in state.ValidPoints) {
                                 point.ModelPointState = ModelPointStateEnum.Generated;
                             }
+
+                            state.ReverseAzimuthDirectionIfNecessary();
                         } else {
                             Logger.Warning($"{state.FailedPoints} failed point exceeds limit of {state.Options.MaxFailedPoints}. No retries remaining, so moving on");
                             Notification.ShowWarning($"{state.FailedPoints} failed points with no retries remaining. Keeping all points and moving on.");
@@ -352,7 +364,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         Logger.Info($"{state.FailedPoints} failed points ({numFailedRMSPoints} with high RMS) during model build iteration {state.BuildAttempt}. {retriesRemaining} retries remaining");
                         if (retriesRemaining > 0) {
                             Notification.ShowInformation($"Retrying 10u model build for {state.FailedPoints} points");
+                            state.ReverseAzimuthDirectionIfNecessary();
                         } else if (options.RemoveHighRMSPointsAfterBuild && numFailedRMSPoints > 0) {
+                            // Stop showing progress during final point removal and model query
+                            state.IsComplete = true;
                             Notification.ShowInformation($"Removing {numFailedRMSPoints} points with RMS > {options.MaxPointRMS}");
 
                             foreach (var point in state.ValidPoints) {
@@ -756,6 +771,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     });
                 }
             } finally {
+                // Wait a bit before sending a final status update, since the Report is asynchronous and the previous one may still come in around the same time
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 stepProgress?.Report(new ApplicationStatus() { });
             }
         }

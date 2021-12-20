@@ -38,7 +38,6 @@
     <TextBlock x:Key="BuilderRetries_Tooltip" Text="How many time to retry model building when individual points fail. This will only reprocess failed points by re-using previous successful solves" />
     <TextBlock x:Key="MaxFailedPoints_Tooltip" Text="After a build iteration, another iteration isn't attempted if there are more than this many failed points" />
     <TextBlock x:Key="MaxPointRMS_Tooltip" Text="After a build iteration, any point with an RMS greater than this value will be treated as a failed point during a retry" />
-    <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
     <DataTemplate x:Key="TenMicron_ModelBuilder_Options">
         <Grid d:DataContext="{d:DesignInstance local:TenMicronOptions, IsDesignTimeCreatable=False}">
             <Grid.ColumnDefinitions>
@@ -60,6 +59,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -73,6 +73,8 @@
                 <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
                 <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
                 <TextBlock x:Key="PlateSolveSubframePercentage_Tooltip" Text="What percentage of the full camera resolution to use when taking exposures for plate solving. This is an alternative to binning, which increases the pixel scale" />
+                <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
+                <TextBlock x:Key="AlternateDirectionsBetweenIterations_Tooltip" Text="Alternates sort directions between each build iteration. This helps minimize scope, and particularly dome, movements" />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -280,6 +282,20 @@
                     </Binding.ValidationRules>
                 </Binding>
             </ninactrl:UnitTextBox>
+            <TextBlock
+                Grid.Row="12" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Alternate Direction"
+                ToolTip="{StaticResource AlternateDirectionsBetweenIterations_Tooltip}" />
+            <CheckBox
+                Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource AlternateDirectionsBetweenIterations_Tooltip}"
+                IsChecked="{Binding AlternateDirectionsBetweenIterations}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

@@ -60,6 +60,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         double PlateSolveSubframePercentage { get; set; }
 
+        bool AlternateDirectionsBetweenIterations { get; set; }
+
         void ResetDefaults();
     }
 }

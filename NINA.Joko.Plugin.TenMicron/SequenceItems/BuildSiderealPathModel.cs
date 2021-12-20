@@ -52,7 +52,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
             this.modelPointGenerator = modelPointGenerator;
             this.nighttimeCalculator = nighttimeCalculator;
             this.cameraMediator = cameraMediator;
-            this.Coordinates = new InputCoordinates();
+            this.Coordinates = null;
 
             var nowProvider = new NowDateTimeProvider(new SystemDateTime());
             this.SiderealPathStartDateTimeProviders = ImmutableList.Create<IDateTimeProvider>(
@@ -77,7 +77,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
 
         public override object Clone() {
             var cloned = new BuildSiderealPathModel(this) {
-                Coordinates = Coordinates.Clone(),
+                Coordinates = Coordinates?.Clone(),
                 Inherited = Inherited,
                 SiderealTrackStartOffsetMinutes = SiderealTrackStartOffsetMinutes,
                 SiderealTrackEndOffsetMinutes = SiderealTrackEndOffsetMinutes,

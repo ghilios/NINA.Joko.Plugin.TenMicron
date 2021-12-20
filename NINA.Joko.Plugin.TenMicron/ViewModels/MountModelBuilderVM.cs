@@ -323,7 +323,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.GoldenSpiral) {
                     return Task.FromResult(GenerateGoldenSpiral(this.GoldenSpiralStarCount));
                 } else if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.SiderealPath) {
-                    return Task.FromResult(GenerateSiderealPath());
+                    return Task.FromResult(GenerateSiderealPath(false));
                 } else {
                     throw new ArgumentException($"Unexpected Model Point Generation Type {this.ModelPointGenerationType}");
                 }
@@ -359,24 +359,31 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             SelectedSiderealPathEndDateTimeProvider = SiderealPathEndDateTimeProviders.FirstOrDefault(p => p.Name == endTimeProvider.Name);
             SiderealTrackStartOffsetMinutes = startOffsetMinutes;
             SiderealTrackEndOffsetMinutes = endOffsetMinutes;
-            if (!GenerateSiderealPath()) {
+            ModelPointGenerationType = ModelPointGenerationTypeEnum.SiderealPath;
+            if (!GenerateSiderealPath(false)) {
                 throw new Exception("Failed to generate sidereal path");
             }
 
             return this.ModelPoints;
         }
 
-        private bool GenerateSiderealPath() {
+        private bool GenerateSiderealPath(bool showNotifications) {
             if (SiderealPathObjectCoordinates == null) {
-                Notification.ShowError("No object selected");
+                if (showNotifications) {
+                    Notification.ShowError("No object selected");
+                }
                 return false;
             }
             if (SelectedSiderealPathStartDateTimeProvider == null) {
-                Notification.ShowError("No start time provider selected");
+                if (showNotifications) {
+                    Notification.ShowError("No start time provider selected");
+                }
                 return false;
             }
             if (SelectedSiderealPathEndDateTimeProvider == null) {
-                Notification.ShowError("No start time provider selected");
+                if (showNotifications) {
+                    Notification.ShowError("No start time provider selected");
+                }
                 return false;
             }
             var startTime = SelectedSiderealPathStartDateTimeProvider.GetDateTime(null);
@@ -399,12 +406,16 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     localModelPoints = localModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated).ToList();
                 }
                 var numPoints = localModelPoints.Count(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
-                Notification.ShowInformation($"Generated {numPoints} points");
+                if (showNotifications) {
+                    Notification.ShowInformation($"Generated {numPoints} points");
+                }
 
                 this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
                 return true;
             } catch (Exception e) {
-                Notification.ShowError($"Failed to generate sidereal path. {e.Message}");
+                if (showNotifications) {
+                    Notification.ShowError($"Failed to generate sidereal path. {e.Message}");
+                }
                 Logger.Error($"Failed to generate sidereal path. Coordinates={SiderealPathObjectCoordinates?.Coordinates}, RADelta={SiderealTrackRADeltaDegrees}, StartTime={startTime}, EndTime={endTime}", e);
                 return false;
             }

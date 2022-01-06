@@ -50,8 +50,11 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
         [Description("Outside Altitude Bounds")]
         OutsideAltitudeBounds = 99,
 
+        [Description("Outside Azimuth Bounds")]
+        OutsideAzimuthBounds = 100,
+
         [Description("Below Horizon")]
-        BelowHorizon = 100,
+        BelowHorizon = 101,
     }
 
     public class ModelPoint : BaseINPC {

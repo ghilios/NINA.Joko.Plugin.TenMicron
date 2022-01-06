@@ -79,7 +79,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var maxConcurrent = options.MaxConcurrency > 0 ? options.MaxConcurrency : int.MaxValue;
                 this.ProcessingSemaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
                 this.ModelPoints = ImmutableList.ToImmutableList(modelPoints);
-                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => p.ModelPointState != ModelPointStateEnum.BelowHorizon && p.ModelPointState != ModelPointStateEnum.OutsideAltitudeBounds));
+                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => p.ModelPointState != ModelPointStateEnum.BelowHorizon && p.ModelPointState != ModelPointStateEnum.OutsideAltitudeBounds && p.ModelPointState != ModelPointStateEnum.OutsideAzimuthBounds));
                 this.PendingTasks = new List<Task<bool>>();
 
                 var domeInfo = domeMediator.GetInfo();

@@ -53,6 +53,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         int MinPointAltitude { get; set; }
 
         int MaxPointAltitude { get; set; }
+        double MinPointAzimuth { get; set; }
+        double MaxPointAzimuth { get; set; }
 
         bool ShowRemovedPoints { get; set; }
 

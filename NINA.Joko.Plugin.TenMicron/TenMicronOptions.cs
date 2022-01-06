@@ -57,6 +57,8 @@ namespace NINA.Joko.Plugin.TenMicron {
             removeHighRMSPointsAfterBuild = optionsAccessor.GetValueBoolean("RemoveHighRMSPointsAfterBuild", true);
             plateSolveSubframePercentage = optionsAccessor.GetValueDouble("PlateSolveSubframePercentage", 1.0d);
             alternateDirectionsBetweenIterations = optionsAccessor.GetValueBoolean("AlternateDirectionsBetweenIterations", true);
+            minPointAzimuth = optionsAccessor.GetValueDouble("MinPointAzimuth", 0.5d);
+            maxPointAzimuth = optionsAccessor.GetValueDouble("MaxPointAzimuth", 359.5d);
         }
 
         public void ResetDefaults() {
@@ -83,6 +85,8 @@ namespace NINA.Joko.Plugin.TenMicron {
             RemoveHighRMSPointsAfterBuild = true;
             PlateSolveSubframePercentage = 1.0d;
             AlternateDirectionsBetweenIterations = true;
+            MinPointAzimuth = 0.5d;
+            MaxPointAzimuth = 359.5d;
         }
 
         private int minPointAltitude;
@@ -412,6 +416,42 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (alternateDirectionsBetweenIterations != value) {
                     alternateDirectionsBetweenIterations = value;
                     optionsAccessor.SetValueBoolean("AlternateDirectionsBetweenIterations", alternateDirectionsBetweenIterations);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double minPointAzimuth;
+
+        public double MinPointAzimuth {
+            get => minPointAzimuth;
+            set {
+                if (minPointAzimuth != value) {
+                    if (value <= 0.0d || double.IsNaN(value)) {
+                        minPointAzimuth = 0.0d;
+                    } else if (value >= 360.0d) {
+                        minPointAzimuth = 360.0d;
+                    }
+
+                    optionsAccessor.SetValueDouble("MinPointAzimuth", minPointAzimuth);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double maxPointAzimuth;
+
+        public double MaxPointAzimuth {
+            get => maxPointAzimuth;
+            set {
+                if (maxPointAzimuth != value) {
+                    if (value <= 0.0d || double.IsNaN(value)) {
+                        maxPointAzimuth = 0.0d;
+                    } else if (value >= 360.0d) {
+                        maxPointAzimuth = 360.0d;
+                    }
+
+                    optionsAccessor.SetValueDouble("MaxPointAzimuth", maxPointAzimuth);
                     RaisePropertyChanged();
                 }
             }

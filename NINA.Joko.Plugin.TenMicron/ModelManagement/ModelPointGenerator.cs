@@ -61,11 +61,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             int minViableNumPoints = 0;
             int maxViableNumPoints = int.MaxValue;
             int currentNumPoints = numPoints;
-
-            var meridianLimitDegrees = mountMediator.GetInfo().MeridianLimitDegrees;
-            Logger.Info($"Using meridian limit {meridianLimitDegrees:0.##}°");
-            var meridianUpperLimit = meridianLimitDegrees + 0.1d;
-            var meridianLowerLimit = 360.0d - meridianLimitDegrees - 0.1d;
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -82,13 +77,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     }
 
                     var azimuthDegrees = AstroUtil.EuclidianModulus(azimuth.Degree, 360.0);
-                    // Make sure no point is within the meridian limits
-                    if (azimuthDegrees < meridianUpperLimit) {
-                        azimuthDegrees = meridianUpperLimit;
-                    }
-                    if (azimuthDegrees > meridianLowerLimit) {
-                        azimuthDegrees = meridianLowerLimit;
-                    }
                     if (altitudeDegrees < 0.1d) {
                         altitudeDegrees = 0.1d;
                     }
@@ -100,6 +88,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     ModelPointStateEnum creationState;
                     if (altitudeDegrees < options.MinPointAltitude || altitudeDegrees > options.MaxPointAltitude) {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
+                    } else if (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth) {
+                        creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;
@@ -205,6 +195,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     ModelPointStateEnum creationState;
                     if (altitudeDegrees < options.MinPointAltitude || altitudeDegrees > options.MaxPointAltitude) {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
+                    } else if (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth) {
+                        creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;

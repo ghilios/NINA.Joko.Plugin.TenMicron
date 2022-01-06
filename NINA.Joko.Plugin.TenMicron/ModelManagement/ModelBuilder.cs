@@ -557,7 +557,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 ct.ThrowIfCancellationRequested();
 
                 if (solveResult?.Success == true) {
-                    state.SyncSeparation = solveResult.DetermineSeparation(scopeCoordinates);
+                    var solveResultCoordinates = solveResult.Coordinates.Transform(scopeCoordinates.Epoch);
+                    state.SyncSeparation = scopeCoordinates - solveResultCoordinates;
                     Notification.ShowInformation("First point solved, and offset will be used for 10u model build");
                 } else {
                     Logger.Warning("Failed to plate solve first point for initial sync. Moving on");
@@ -695,6 +696,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 if (!success) {
                     nextPoint.ModelPointState = ModelPointStateEnum.Failed;
                     ++state.FailedPoints;
+                }
+
+                var eligibleForNextPoint = eligiblePoints.Where(p => IsPointEligibleForBuild(p));
+                if (state.Options.MinimizeMeridianFlips) {
+                    if (eligibleForNextPoint.Any(p => p.ExpectedDomeSideOfPier == nextPoint.ExpectedDomeSideOfPier)) {
+                        eligibleForNextPoint = eligibleForNextPoint.Where(p => p.ExpectedDomeSideOfPier == nextPoint.ExpectedDomeSideOfPier);
+                    } else if (eligibleForNextPoint.Any()) {
+                        Logger.Info($"No more points on {nextPoint.ExpectedDomeSideOfPier} side of pier. Allowing flip to continue for the remaining points");
+                    }
                 }
 
                 if (state.UseDome) {

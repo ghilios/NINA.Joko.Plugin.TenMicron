@@ -32,6 +32,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool MinimizeDomeMovementEnabled { get; set; }
 
+        bool MinimizeMeridianFlipsEnabled { get; set; }
+
         bool WestToEastSorting { get; set; }
 
         int BuilderNumRetries { get; set; }

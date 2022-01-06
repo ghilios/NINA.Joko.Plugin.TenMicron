@@ -62,6 +62,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -75,6 +76,7 @@
                 <TextBlock x:Key="ShowRemovedPoints_Tooltip" Text="Whether to show points that were rejected for being outside of the altitude bounds or below the defined horizon" />
                 <TextBlock x:Key="DomeShutterWidth_Tooltip" Text="The width of the dome shutter, in mm. If set, this is used to determine if the scope is pointing out of the shutter instead of the Threshold setting from Dome Options" />
                 <TextBlock x:Key="MinimizeDomeMovement_Tooltip" Text="If enabled, points will be ordered based on the calculated dome azimuth. The left boundary of the dome opening is used for E->W sorting, and the right boundary for W->E" />
+                <TextBlock x:Key="MinimizeMeridianFlips_Tooltip" Text="If enabled, points will not cross over to the other side of the meridian until there are no more remaining on the current one. If you use a dome, this comes at the expensive of a potentially big dome movement in the middle of the model build" />
                 <TextBlock x:Key="WestToEast_Tooltip" Text="By default, points will be process from east to west. Enabling this toggle reverses that order" />
                 <TextBlock x:Key="PlateSolveSubframePercentage_Tooltip" Text="What percentage of the full camera resolution to use when taking exposures for plate solving. This is an alternative to binning, which increases the pixel scale" />
                 <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
@@ -208,6 +210,7 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource MinimizeDomeMovement_Tooltip}"
                 IsChecked="{Binding MinimizeDomeMovementEnabled}" />
+
             <TextBlock
                 Grid.Row="8" Grid.Column="0"
                 HorizontalAlignment="Left"
@@ -346,6 +349,21 @@
                     </Binding.ValidationRules>
                 </Binding>
             </ninactrl:UnitTextBox>
+
+            <TextBlock
+                Grid.Row="15" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Minimize Meridian Flips"
+                ToolTip="{StaticResource MinimizeMeridianFlips_Tooltip}" />
+            <CheckBox
+                Grid.Row="15" Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource MinimizeMeridianFlips_Tooltip}"
+                IsChecked="{Binding MinimizeMeridianFlipsEnabled}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

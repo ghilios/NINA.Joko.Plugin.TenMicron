@@ -24,6 +24,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public double MaxPointRMS { get; set; } = double.PositiveInfinity;
         public bool WestToEastSorting { get; set; } = false;
         public bool MinimizeDomeMovement { get; set; } = true;
+        public bool MinimizeMeridianFlips { get; set; } = true;
         public bool AllowBlindSolves { get; set; } = false;
         public bool SyncFirstPoint { get; set; } = true;
         public int MaxConcurrency { get; set; } = 3;

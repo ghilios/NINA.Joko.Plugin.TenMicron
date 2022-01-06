@@ -40,6 +40,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             siderealTrackRADeltaDegrees = optionsAccessor.GetValueDouble("SiderealTrackRADeltaDegrees", 1.5d);
             domeShutterWidth_mm = optionsAccessor.GetValueInt32("DomeShutterWidth_mm", 0);
             minimizeDomeMovementEnabled = optionsAccessor.GetValueBoolean("MinimizeDomeMovementEnabled", true);
+            minimizeMeridianFlipsEnabled = optionsAccessor.GetValueBoolean("MinimizeMeridianFlipsEnabled", true);
             modelPointGenerationType = optionsAccessor.GetValueEnum("ModelPointGenerationType", ModelPointGenerationTypeEnum.GoldenSpiral);
             builderNumRetries = optionsAccessor.GetValueInt32("BuilderNumRetries", 0);
             westToEastSorting = optionsAccessor.GetValueBoolean("WestToEastSorting", false);
@@ -68,6 +69,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             SiderealTrackRADeltaDegrees = 1.5d;
             DomeShutterWidth_mm = 0;
             MinimizeDomeMovementEnabled = true;
+            MinimizeMeridianFlipsEnabled = true;
             ModelPointGenerationType = ModelPointGenerationTypeEnum.GoldenSpiral;
             BuilderNumRetries = 0;
             WestToEastSorting = false;
@@ -204,6 +206,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (minimizeDomeMovementEnabled != value) {
                     minimizeDomeMovementEnabled = value;
                     optionsAccessor.SetValueBoolean("MinimizeDomeMovementEnabled", minimizeDomeMovementEnabled);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool minimizeMeridianFlipsEnabled;
+
+        public bool MinimizeMeridianFlipsEnabled {
+            get => minimizeMeridianFlipsEnabled;
+            set {
+                if (minimizeMeridianFlipsEnabled != value) {
+                    minimizeMeridianFlipsEnabled = value;
+                    optionsAccessor.SetValueBoolean("MinimizeMeridianFlipsEnabled", minimizeMeridianFlipsEnabled);
                     RaisePropertyChanged();
                 }
             }
@@ -431,6 +446,8 @@ namespace NINA.Joko.Plugin.TenMicron {
                         minPointAzimuth = 0.0d;
                     } else if (value >= 360.0d) {
                         minPointAzimuth = 360.0d;
+                    } else {
+                        minPointAzimuth = value;
                     }
 
                     optionsAccessor.SetValueDouble("MinPointAzimuth", minPointAzimuth);
@@ -449,6 +466,8 @@ namespace NINA.Joko.Plugin.TenMicron {
                         maxPointAzimuth = 0.0d;
                     } else if (value >= 360.0d) {
                         maxPointAzimuth = 360.0d;
+                    } else {
+                        maxPointAzimuth = value;
                     }
 
                     optionsAccessor.SetValueDouble("MaxPointAzimuth", maxPointAzimuth);

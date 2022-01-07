@@ -708,12 +708,11 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 if (state.UseDome) {
-                    var nextCandidates = eligiblePoints.Where(p => IsPointEligibleForBuild(p) && IsPointVisibleThroughDome(p, 0.0d));
+                    var nextCandidates = eligibleForNextPoint.Where(p => IsPointVisibleThroughDome(p, 0.0d));
                     nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                     if (nextPoint == null) {
                         // No points remaining visible through the slit. Widen the search to all eligible points on this side of the pier and slew the dome
-                        nextCandidates = eligiblePoints.Where(IsPointEligibleForBuild);
-                        nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
+                        nextPoint = eligibleForNextPoint.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                         if (nextPoint != null) {
                             Logger.Info($"Next point not visible through dome. Dome slew required. Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}, CurrentDomeAz={domeMediator.GetInfo().Azimuth:0.###}");
                             _ = SlewDomeIfNecessary(state, eligiblePoints, ct);
@@ -722,8 +721,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         Logger.Info($"Next point still visible through dome. No dome slew required. Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}, CurrentDomeAz={domeMediator.GetInfo().Azimuth:0.###}");
                     }
                 } else {
-                    var nextCandidates = eligiblePoints.Where(IsPointEligibleForBuild);
-                    nextPoint = nextCandidates.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
+                    nextPoint = eligibleForNextPoint.OrderBy(p => p, state.PointAzimuthComparer).FirstOrDefault();
                 }
 
                 PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = nextPoint });

@@ -446,6 +446,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             MaxFailedPoints = options.MaxFailedPoints;
             modelBuilderOptions.RemoveHighRMSPointsAfterBuild = options.RemoveHighRMSPointsAfterBuild;
             modelBuilderOptions.PlateSolveSubframePercentage = options.PlateSolveSubframePercentage;
+            modelBuilderOptions.DisableRefractionCorrection = options.DisableRefractionCorrection;
             return DoBuildModel(modelPoints, options, ct);
         }
 

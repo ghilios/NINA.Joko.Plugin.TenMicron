@@ -33,6 +33,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public bool RemoveHighRMSPointsAfterBuild { get; set; } = true;
         public double PlateSolveSubframePercentage { get; set; } = 1.0d;
         public bool AlternateDirectionsBetweenIterations { get; set; } = true;
+        public bool DisableRefractionCorrection { get; set; } = false;
     }
 
     public class PointNextUpEventArgs : EventArgs {

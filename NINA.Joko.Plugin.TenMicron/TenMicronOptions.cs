@@ -60,6 +60,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             alternateDirectionsBetweenIterations = optionsAccessor.GetValueBoolean("AlternateDirectionsBetweenIterations", true);
             minPointAzimuth = optionsAccessor.GetValueDouble("MinPointAzimuth", 0.5d);
             maxPointAzimuth = optionsAccessor.GetValueDouble("MaxPointAzimuth", 359.5d);
+            disableRefractionCorrection = optionsAccessor.GetValueBoolean("DisableRefractionCorrection", false);
         }
 
         public void ResetDefaults() {
@@ -89,6 +90,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             AlternateDirectionsBetweenIterations = true;
             MinPointAzimuth = 0.5d;
             MaxPointAzimuth = 359.5d;
+            DisableRefractionCorrection = false;
         }
 
         private int minPointAltitude;
@@ -471,6 +473,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                     }
 
                     optionsAccessor.SetValueDouble("MaxPointAzimuth", maxPointAzimuth);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool disableRefractionCorrection;
+
+        public bool DisableRefractionCorrection {
+            get => disableRefractionCorrection;
+            set {
+                if (disableRefractionCorrection != value) {
+                    disableRefractionCorrection = value;
+                    optionsAccessor.SetValueBoolean("DisableRefractionCorrection", disableRefractionCorrection);
                     RaisePropertyChanged();
                 }
             }

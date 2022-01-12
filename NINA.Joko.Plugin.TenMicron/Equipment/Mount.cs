@@ -604,5 +604,11 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             const string command = ":AP#";
             this.mountCommander.SendCommandBlind(command, true);
         }
+
+        public Response<bool> SetRefractionCorrection(bool enabled) {
+            var command = $":SREF{(enabled ? 1 : 0)}#";
+            var result = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(result, "");
+        }
     }
 }

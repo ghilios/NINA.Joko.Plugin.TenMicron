@@ -66,6 +66,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool AlternateDirectionsBetweenIterations { get; set; }
 
+        bool DisableRefractionCorrection { get; set; }
+
         void ResetDefaults();
     }
 }

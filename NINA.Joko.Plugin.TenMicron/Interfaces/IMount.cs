@@ -100,5 +100,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         void StopTracking();
 
         void StartTracking();
+
+        Response<bool> SetRefractionCorrection(bool enabled);
     }
 }

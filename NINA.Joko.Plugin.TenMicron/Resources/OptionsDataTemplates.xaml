@@ -63,6 +63,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -81,6 +82,7 @@
                 <TextBlock x:Key="PlateSolveSubframePercentage_Tooltip" Text="What percentage of the full camera resolution to use when taking exposures for plate solving. This is an alternative to binning, which increases the pixel scale" />
                 <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
                 <TextBlock x:Key="AlternateDirectionsBetweenIterations_Tooltip" Text="Alternates sort directions between each build iteration. This helps minimize scope, and particularly dome, movements" />
+                <TextBlock x:Key="DisableRefractionCorrection_Tooltip" Text="Disables refraction correction for the duration of model build. It is turned back on afterwards if it was originally enabled." />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -364,6 +366,21 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource MinimizeMeridianFlips_Tooltip}"
                 IsChecked="{Binding MinimizeMeridianFlipsEnabled}" />
+
+            <TextBlock
+                Grid.Row="16" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="Disable Refraction Correction"
+                ToolTip="{StaticResource DisableRefractionCorrection_Tooltip}" />
+            <CheckBox
+                Grid.Row="16" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource DisableRefractionCorrection_Tooltip}"
+                IsChecked="{Binding DisableRefractionCorrection}" />
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

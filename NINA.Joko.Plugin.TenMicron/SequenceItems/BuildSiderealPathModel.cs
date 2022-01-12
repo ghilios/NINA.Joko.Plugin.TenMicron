@@ -380,7 +380,8 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 DomeShutterWidth_mm = options.DomeShutterWidth_mm,
                 MaxFailedPoints = MaxFailedPoints,
                 RemoveHighRMSPointsAfterBuild = options.RemoveHighRMSPointsAfterBuild,
-                PlateSolveSubframePercentage = options.PlateSolveSubframePercentage
+                PlateSolveSubframePercentage = options.PlateSolveSubframePercentage,
+                DisableRefractionCorrection = options.DisableRefractionCorrection
             };
 
             if (!await mountModelBuilderMediator.BuildModel(ModelPoints, modelBuilderOptions, token)) {

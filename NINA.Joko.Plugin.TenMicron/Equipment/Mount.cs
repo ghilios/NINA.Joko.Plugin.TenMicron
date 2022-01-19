@@ -119,7 +119,10 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         Unknown = 98,
 
         [Description("Error")]
-        Error = 99
+        Error = 99,
+
+        [Description("Not Connected")]
+        NotConnected = 100
     }
 
     public static class MountResponseParser {

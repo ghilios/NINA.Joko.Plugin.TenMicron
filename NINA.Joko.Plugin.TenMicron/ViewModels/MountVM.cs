@@ -63,6 +63,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.telescopeMediator = telescopeMediator;
             this.mountMediator = mountMediator;
 
+            MountInfo.Status = MountStatusEnum.NotConnected;
+
             this.telescopeMediator.RegisterConsumer(this);
             this.mountMediator.RegisterHandler(this);
 
@@ -190,7 +192,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
 
             MountInfo = DeviceInfo.CreateDefaultInstance<MountInfo>();
-            MountInfo.Status = MountStatusEnum.Unknown;
+            MountInfo.Status = MountStatusEnum.NotConnected;
             supportedMountConnected = false;
 
             BroadcastMountInfo();

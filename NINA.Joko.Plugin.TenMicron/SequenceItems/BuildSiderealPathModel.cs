@@ -52,7 +52,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
             this.modelPointGenerator = modelPointGenerator;
             this.nighttimeCalculator = nighttimeCalculator;
             this.cameraMediator = cameraMediator;
-            this.Coordinates = null;
+            this.Coordinates = new InputCoordinates();
 
             var nowProvider = new NowDateTimeProvider(new SystemDateTime());
             this.SiderealPathStartDateTimeProviders = ImmutableList.Create<IDateTimeProvider>(

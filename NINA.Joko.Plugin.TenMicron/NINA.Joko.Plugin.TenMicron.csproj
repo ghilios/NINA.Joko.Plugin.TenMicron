@@ -397,6 +397,8 @@
     <Compile Include="Equipment\MountModelBuilderMediator.cs" />
     <Compile Include="Equipment\MountModelInfo.cs" />
     <Compile Include="Equipment\MountModelMediator.cs" />
+    <Compile Include="SequenceItems\PowerOn.cs" />
+    <Compile Include="Utility\NativeMethods.cs" />
     <Compile Include="Exceptions\CommandFailedException.cs" />
     <Compile Include="Exceptions\ModelBuildException.cs" />
     <Compile Include="Exceptions\ParseCancellationException.cs" />
@@ -452,6 +454,7 @@
       <DependentUpon>DataTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="SequenceItems\BuildSiderealPathModel.cs" />
+    <Compile Include="SequenceItems\Shutdown.cs" />
     <Compile Include="SequenceItems\SetTrackingRate.cs" />
     <Compile Include="SequenceItems\SaveModel.cs" />
     <Compile Include="SequenceItems\LoadModel.cs" />

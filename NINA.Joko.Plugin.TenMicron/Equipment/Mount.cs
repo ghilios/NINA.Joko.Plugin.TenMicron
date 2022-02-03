@@ -23,6 +23,7 @@ using System.Linq.Expressions;
 using System.Text;
 using NINA.Joko.Plugin.TenMicron.Converters;
 using NINA.Joko.Plugin.TenMicron.Model;
+using System.Linq;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
@@ -214,6 +215,24 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                     altitudeAdjustmentTurns: altitudeTurns, modelTerms: modelTerms, rmsError: rmsError),
                 s);
         }
+
+        private static string SanitizeIP(string ip) {
+            var ipParts = ip.Trim().Split('.');
+            return string.Join(".", ipParts.Select(s => int.Parse(s)));
+        }
+
+        public static Response<MountIP> ParseIP(string s) {
+            var splitResponse = s.TrimEnd('#').Split(',');
+            if (splitResponse.Length != 4) {
+                throw new ArgumentException($"IP response expected to have 4 parts, separated by commas. {s}");
+            }
+
+            var ipAddress = SanitizeIP(splitResponse[0]);
+            var subnet = SanitizeIP(splitResponse[1]);
+            var gateway = SanitizeIP(splitResponse[2]);
+            var fromDHCP = splitResponse[3] == "D";
+            return new Response<MountIP>(new MountIP(ip: ipAddress, subnet: subnet, gateway: gateway, fromDHCP: fromDHCP), s);
+        }
     }
 
     public class Mount : IMount {
@@ -338,6 +357,13 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var rawResponse = this.mountCommander.SendCommandString(command, true);
             var success = rawResponse == "V#";
             return new Response<bool>(success, rawResponse);
+        }
+
+        public Response<bool> Shutdown() {
+            const string command = ":shutdown#";
+
+            var success = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(success, "");
         }
 
         public Response<PierSide> GetSideOfPier() {
@@ -612,6 +638,20 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var command = $":SREF{(enabled ? 1 : 0)}#";
             var result = this.mountCommander.SendCommandBool(command, true);
             return new Response<bool>(result, "");
+        }
+
+        public Response<MountIP> GetIPAddress() {
+            const string command = ":GIP#";
+
+            var response = this.mountCommander.SendCommandString(command, true);
+            return MountResponseParser.ParseIP(response);
+        }
+
+        public Response<string> GetMACAddress() {
+            const string command = ":GMAC#";
+
+            var response = this.mountCommander.SendCommandString(command, true);
+            return new Response<string>(response.TrimEnd('#'), response);
         }
     }
 }

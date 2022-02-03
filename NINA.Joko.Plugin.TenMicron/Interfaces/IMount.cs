@@ -89,7 +89,13 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         Response<bool> GetRefractionCorrectionEnabled();
 
+        Response<bool> Shutdown();
+
         Response<DateTime> GetUTCTime();
+
+        Response<MountIP> GetIPAddress();
+
+        Response<string> GetMACAddress();
 
         void SetSiderealTrackingRate();
 

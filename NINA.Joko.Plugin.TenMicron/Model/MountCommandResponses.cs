@@ -342,4 +342,23 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             return $"{ProductName} v{Version} {Timestamp}";
         }
     }
+
+    public class MountIP {
+
+        public MountIP(string ip, string subnet, string gateway, bool fromDHCP) {
+            this.IP = ip;
+            this.Subnet = subnet;
+            this.Gateway = gateway;
+            this.FromDHCP = fromDHCP;
+        }
+
+        public string IP { get; private set; }
+        public string Subnet { get; private set; }
+        public string Gateway { get; private set; }
+        public bool FromDHCP { get; private set; }
+
+        public override string ToString() {
+            return $"IP={IP}, Subnet={Subnet}, Gateway={Gateway}, FromDHCP={FromDHCP}";
+        }
+    }
 }

@@ -16,6 +16,8 @@ using NINA.Core.Enum;
 using System;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Equipment.Interfaces;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
@@ -35,6 +37,14 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         public bool SetTrackingRate(TrackingMode trackingMode) {
             return handler.SetTrackingRate(trackingMode);
+        }
+
+        public bool Shutdown() {
+            return handler.Shutdown();
+        }
+
+        public Task<bool> PowerOn(CancellationToken ct) {
+            return handler.PowerOn(ct);
         }
     }
 }

@@ -68,6 +68,14 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool DisableRefractionCorrection { get; set; }
 
+        string IPAddress { get; set; }
+
+        string MACAddress { get; set; }
+
+        int Port { get; set; }
+
+        string DriverID { get; set; }
+
         void ResetDefaults();
     }
 }

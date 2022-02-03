@@ -29,29 +29,45 @@ using System.Windows.Input;
 using NINA.Joko.Plugin.TenMicron.Model;
 using System.Windows;
 using NINA.Equipment.Interfaces;
+using System.Threading;
+using System.Net;
+using NINA.Core.Model;
+using NINA.WPF.Base.Interfaces.Mediator;
+using System.Windows.Threading;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
     [Export(typeof(IDockableVM))]
     public class MountVM : DockableVM, IMountVM, ITelescopeConsumer {
+
+        private readonly SynchronizationContext synchronizationContext =
+            Application.Current?.Dispatcher != null
+            ? new DispatcherSynchronizationContext(Application.Current.Dispatcher)
+            : null;
+
+        private readonly IApplicationStatusMediator applicationStatusMediator;
         private readonly IMount mount;
         private readonly ITelescopeMediator telescopeMediator;
         private readonly IMountMediator mountMediator;
+        private readonly ITenMicronOptions options;
+        private IProgress<ApplicationStatus> progress;
         private DeviceUpdateTimer updateTimer;
         private bool disposed = false;
         private bool supportedMountConnected = false;
         private bool previousTelescopeConnected = false;
 
         [ImportingConstructor]
-        public MountVM(IProfileService profileService, ITelescopeMediator telescopeMediator) :
-            this(profileService, telescopeMediator, TenMicronPlugin.Mount, TenMicronPlugin.MountMediator) {
+        public MountVM(IProfileService profileService, ITelescopeMediator telescopeMediator, IApplicationStatusMediator applicationStatusMediator) :
+            this(profileService, telescopeMediator, applicationStatusMediator, TenMicronPlugin.Mount, TenMicronPlugin.MountMediator, TenMicronPlugin.TenMicronOptions) {
         }
 
         public MountVM(
             IProfileService profileService,
             ITelescopeMediator telescopeMediator,
+            IApplicationStatusMediator applicationStatusMediator,
             IMount mount,
-            IMountMediator mountMediator) : base(profileService) {
+            IMountMediator mountMediator,
+            ITenMicronOptions options) : base(profileService) {
             this.Title = "10u Mount Info";
 
             var dict = new ResourceDictionary();
@@ -62,14 +78,31 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.mount = mount;
             this.telescopeMediator = telescopeMediator;
             this.mountMediator = mountMediator;
+            this.applicationStatusMediator = applicationStatusMediator;
+            this.options = options;
 
             MountInfo.Status = MountStatusEnum.NotConnected;
+
+            if (SynchronizationContext.Current == synchronizationContext) {
+                this.progress = new Progress<ApplicationStatus>(p => {
+                    p.Source = this.Title;
+                    this.applicationStatusMediator.StatusUpdate(p);
+                });
+            } else {
+                synchronizationContext.Send(_ => {
+                    this.progress = new Progress<ApplicationStatus>(p => {
+                        p.Source = this.Title;
+                        this.applicationStatusMediator.StatusUpdate(p);
+                    });
+                }, null);
+            }
 
             this.telescopeMediator.RegisterConsumer(this);
             this.mountMediator.RegisterHandler(this);
 
             ResetMeridianSlewLimitCommand = new RelayCommand(ResetMeridianSlewLimit);
             ResetSlewSettleLimitCommand = new RelayCommand(ResetSlewSettleTime);
+            TogglePowerCommand = new AsyncCommand<bool>((object o) => Task.Run(() => TogglePower(o)));
         }
 
         private void BroadcastMountInfo() {
@@ -92,6 +125,71 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 Notification.ShowError($"Failed to reset slew settle time: {e.Message}");
                 Logger.Error(e);
             }
+        }
+
+        private Task<bool> TogglePower(object o) {
+            if (MountInfo.Connected) {
+                return Task.FromResult(Shutdown());
+            } else {
+                return PowerOn(CancellationToken.None);
+            }
+        }
+
+        public async Task<bool> PowerOn(CancellationToken ct) {
+            Task progressDelay = null;
+            CancellationTokenSource timeoutCts = null;
+            try {
+                if (string.IsNullOrEmpty(this.Options.IPAddress) || string.IsNullOrEmpty(this.Options.MACAddress)) {
+                    Notification.ShowError("Cannot power on mount. No IP address is set. If you connect via IP, connect at least once to initialize settings");
+                    Logger.Error("Cannot power on mount. No IP address is set. If you connect via IP, connect at least once to initialize settings");
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(this.Options.DriverID)) {
+                    Notification.ShowError("Cannot power on mount. Connect at least once to initialize settings");
+                    Logger.Error("Cannot power on mount. Connect at least once to initialize settings");
+                    return false;
+                }
+
+                this.progress.Report(new ApplicationStatus() {
+                    Status = "Sending WOL packet"
+                });
+
+                progressDelay = Task.Delay(1000, ct);
+                var ipAddress = IPAddress.Parse(this.Options.IPAddress);
+                var mac = this.Options.MACAddress;
+                await MountUtility.WakeOnLan(mac, ct);
+
+                await progressDelay;
+                this.progress.Report(new ApplicationStatus() {
+                    Status = "Waiting for mount to power on"
+                });
+
+                progressDelay = Task.Delay(1000, ct);
+                timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                var linkedCt = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, ct);
+                await MountUtility.WaitUntilResponding(ipAddress, this.Options.Port, linkedCt.Token);
+
+                profileService.ActiveProfile.TelescopeSettings.Id = this.Options.DriverID;
+                await telescopeMediator.Rescan();
+                return await telescopeMediator.Connect();
+            } catch (OperationCanceledException) {
+                if (timeoutCts?.IsCancellationRequested == true) {
+                    Notification.ShowError("Timed out waiting for mount to power on");
+                    Logger.Error("Timed out waiting for mount to power on");
+                } else {
+                    Logger.Info("10u power on cancelled");
+                }
+            } catch (Exception e) {
+                Notification.ShowError($"Failed to power on 10u mount: {e.Message}");
+                Logger.Error("Failed to power on 10u mount", e);
+            } finally {
+                if (progressDelay != null) {
+                    await progressDelay;
+                }
+                this.progress.Report(new ApplicationStatus() { });
+            }
+            return false;
         }
 
         public void Dispose() {
@@ -139,6 +237,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                         MountInfo.ProductFirmware = productFirmware;
                         MountInfo.MountId = mount.GetId();
                         MountInfo.Status = MountStatusEnum.Unknown;
+                        Options.DriverID = profileService.ActiveProfile.TelescopeSettings.Id;
+
+                        UpdateAddressConfig();
                         supportedMountConnected = true;
                         MountInfo.Connected = true;
 
@@ -164,6 +265,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
+        private void UpdateAddressConfig() {
+            try {
+                var ipAddress = mount.GetIPAddress();
+                var macAddress = mount.GetMACAddress();
+                options.IPAddress = ipAddress.Value.IP;
+                options.MACAddress = macAddress;
+            } catch (Exception e) {
+                Logger.Warning($"Failed to get IP and MAC address from 10u mount. {e.Message}");
+            }
+        }
+
         private MountInfo mountInfo = DeviceInfo.CreateDefaultInstance<MountInfo>();
 
         public MountInfo MountInfo {
@@ -173,6 +285,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 RaisePropertyChanged();
             }
         }
+
+        public ITenMicronOptions Options => options;
 
         private string refractionOverrideFilePath;
 
@@ -255,6 +369,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public ICommand ResetMeridianSlewLimitCommand { get; private set; }
         public ICommand ResetSlewSettleLimitCommand { get; private set; }
+        public ICommand TogglePowerCommand { get; private set; }
 
         private bool unattendedFlipEnabled;
 
@@ -343,6 +458,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 }
 
                 throw new ArgumentException($"Unknown tracking mode received: {trackingMode}");
+            }
+            return false;
+        }
+
+        public bool Shutdown() {
+            if (MountInfo.Connected) {
+                if (mount.Shutdown()) {
+                    _ = Disconnect();
+                    return true;
+                } else {
+                    Notification.ShowError("Failed to send a shutdown command to the 10u mount");
+                    Logger.Error("Failed to send a shutdown command to the 10u mount");
+                }
             }
             return false;
         }

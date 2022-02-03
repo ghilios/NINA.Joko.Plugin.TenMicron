@@ -20,6 +20,17 @@ using System.Globalization;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 
+using System;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Threading;
+
 namespace NINA.Joko.Plugin.TenMicron.Utility {
 
     public static class MountUtility {
@@ -93,6 +104,112 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
                 Notification.ShowWarning("ASCOM driver is configured to use J2000 coordinates. It is recommended you use JNow instead and reconnect");
             }
             return true;
+        }
+
+        // See: https://stackoverflow.com/questions/861873/wake-on-lan-using-c-sharp
+        public static async Task WakeOnLan(string macAddress, CancellationToken ct) {
+            byte[] magicPacket = BuildMagicPacket(macAddress);
+            foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces().Where((n) =>
+                n.NetworkInterfaceType != NetworkInterfaceType.Loopback && n.OperationalStatus == OperationalStatus.Up)) {
+                ct.ThrowIfCancellationRequested();
+
+                var iPInterfaceProperties = networkInterface.GetIPProperties();
+                foreach (var multicastIPAddressInformation in iPInterfaceProperties.MulticastAddresses) {
+                    ct.ThrowIfCancellationRequested();
+
+                    var multicastIpAddress = multicastIPAddressInformation.Address;
+                    // Ipv6: All hosts on LAN (with zone index)
+                    if (multicastIpAddress.ToString().StartsWith("ff02::1%", StringComparison.OrdinalIgnoreCase)) {
+                        var unicastIPAddressInformation = iPInterfaceProperties.UnicastAddresses.Where((u) =>
+                            u.Address.AddressFamily == AddressFamily.InterNetworkV6 && !u.Address.IsIPv6LinkLocal).FirstOrDefault();
+                        if (unicastIPAddressInformation != null) {
+                            await SendWakeOnLan(unicastIPAddressInformation.Address, multicastIpAddress, magicPacket, ct);
+                            break;
+                        }
+                    } else if (multicastIpAddress.ToString().Equals("224.0.0.1")) {
+                        // Ipv4: All hosts on LAN
+                        var unicastIPAddressInformation = iPInterfaceProperties.UnicastAddresses.Where((u) =>
+                            u.Address.AddressFamily == AddressFamily.InterNetwork && !iPInterfaceProperties.GetIPv4Properties().IsAutomaticPrivateAddressingActive).FirstOrDefault();
+                        if (unicastIPAddressInformation != null) {
+                            await SendWakeOnLan(unicastIPAddressInformation.Address, multicastIpAddress, magicPacket, ct);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static byte[] BuildMagicPacket(string macAddress) {
+            macAddress = Regex.Replace(macAddress, "[: -]", "");
+            byte[] macBytes = new byte[6];
+            for (int i = 0; i < 6; i++) {
+                macBytes[i] = Convert.ToByte(macAddress.Substring(i * 2, 2), 16);
+            }
+
+            using (var ms = new MemoryStream()) {
+                using (var bw = new BinaryWriter(ms)) {
+                    for (int i = 0; i < 6; i++) {
+                        bw.Write((byte)0xff);
+                    }
+                    for (int i = 0; i < 16; i++) {
+                        bw.Write(macBytes);
+                    }
+                }
+                return ms.ToArray();
+            }
+        }
+
+        private static async Task SendWakeOnLan(IPAddress localIpAddress, IPAddress multicastIpAddress, byte[] magicPacket, CancellationToken ct) {
+            using (var client = new UdpClient(new IPEndPoint(localIpAddress, 0))) {
+                using (ct.Register(() => client.Close())) {
+                    try {
+                        await client.SendAsync(magicPacket, magicPacket.Length, multicastIpAddress.ToString(), 9);
+                    } catch (Exception) {
+                        ct.ThrowIfCancellationRequested();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public static async Task<bool> IsResponding(IPAddress ipAddress, int port, CancellationToken ct) {
+            try {
+                using (var client = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp)) {
+                    using (ct.Register(() => client.Close())) {
+                        client.SendTimeout = 2000;
+                        client.ReceiveTimeout = 1000;
+
+                        await client.ConnectAsync(ipAddress, port);
+                        ct.ThrowIfCancellationRequested();
+
+                        var command = ":GJD#";
+                        var commandData = Encoding.ASCII.GetBytes(command);
+                        var sentBytes = await client.SendAsync(new ArraySegment<byte>(commandData), SocketFlags.None);
+                        ct.ThrowIfCancellationRequested();
+
+                        // 14 bytes expected: JJJJJJJ.JJJJJ#
+                        var receivedData = new byte[14];
+                        var receivedBytes = await client.ReceiveAsync(new ArraySegment<byte>(receivedData), SocketFlags.None);
+                        if (receivedBytes > 0) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (Exception) {
+                return false;
+            }
+            return false;
+        }
+
+        public static async Task<bool> WaitUntilResponding(IPAddress ipAddress, int port, CancellationToken ct) {
+            while (true) {
+                ct.ThrowIfCancellationRequested();
+
+                if (await IsResponding(ipAddress, port, ct)) {
+                    return true;
+                }
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            }
         }
     }
 }

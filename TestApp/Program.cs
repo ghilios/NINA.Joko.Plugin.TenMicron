@@ -56,8 +56,6 @@ namespace TestApp {
         }
 
         private static void Main(string[] args) {
-            Foo(typeof(ASCOM.DriverAccess.Focuser));
-
             /*
             string id = ASCOM.DriverAccess.Telescope.Choose("");
             if (string.IsNullOrEmpty(id))
@@ -65,13 +63,16 @@ namespace TestApp {
             */
 
             // create this device
-            /*
             ASCOM.DriverAccess.Telescope device = new ASCOM.DriverAccess.Telescope("ASCOM.tenmicron_mount.Telescope");
             device.Connected = true;
 
             var mountCommander = new AscomMountCommander(device);
             var mount = new Mount(mountCommander);
-            */
+
+            var ip = mount.GetIPAddress();
+            var mac = mount.GetMACAddress();
+            Console.WriteLine();
+
             /*
             var productFirmware = mount.GetProductFirmware();
             var mountId = mount.GetId();

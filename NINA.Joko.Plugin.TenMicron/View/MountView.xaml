@@ -14,8 +14,34 @@
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <GroupBox Grid.Row="0">
+        <UniformGrid Columns="2" Grid.Row="0">
+            <Button
+                Width="100"
+                Height="30"
+                Margin="10"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Command="{Binding TogglePowerCommand}">
+                <TextBlock
+                    Margin="5,5,5,5"
+                    Foreground="{StaticResource ButtonForegroundBrush}"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="Text" Value="Power On" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MountInfo.Connected}" Value="True">
+                                    <Setter Property="Text" Value="Power Off" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Button>
+        </UniformGrid>
+        <GroupBox Grid.Row="1">
             <GroupBox.Header>
                 <TextBlock Text="Mount Information" />
             </GroupBox.Header>
@@ -53,9 +79,31 @@
                         </UniformGrid>
                     </UniformGrid>
                 </Border>
+                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                    <UniformGrid Columns="2">
+                        <UniformGrid
+                            Margin="0,6,0,6"
+                            VerticalAlignment="Center"
+                            Columns="2">
+                            <TextBlock Text="IP" />
+                            <TextBlock Margin="5,0,0,0" Text="{Binding Options.IPAddress}" />
+                        </UniformGrid>
+                    </UniformGrid>
+                </Border>
+                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                    <UniformGrid Columns="2">
+                        <UniformGrid
+                            Margin="0,6,0,6"
+                            VerticalAlignment="Center"
+                            Columns="2">
+                            <TextBlock Text="MAC" />
+                            <TextBlock Margin="5,0,0,0" Text="{Binding Options.MACAddress}" />
+                        </UniformGrid>
+                    </UniformGrid>
+                </Border>
             </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Row="1">
+        <GroupBox Grid.Row="2">
             <GroupBox.Header>
                 <TextBlock Text="Mount Status" />
             </GroupBox.Header>

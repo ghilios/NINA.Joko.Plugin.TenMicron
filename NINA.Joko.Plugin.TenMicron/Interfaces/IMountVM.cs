@@ -16,6 +16,8 @@ using NINA.Core.Enum;
 using System;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Equipment.Interfaces;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
@@ -28,5 +30,9 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         AstrometricTime GetMountReportedLocalSiderealTime();
 
         bool SetTrackingRate(TrackingMode trackingMode);
+
+        bool Shutdown();
+
+        Task<bool> PowerOn(CancellationToken ct);
     }
 }

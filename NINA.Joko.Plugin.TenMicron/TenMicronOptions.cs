@@ -61,6 +61,10 @@ namespace NINA.Joko.Plugin.TenMicron {
             minPointAzimuth = optionsAccessor.GetValueDouble("MinPointAzimuth", 0.5d);
             maxPointAzimuth = optionsAccessor.GetValueDouble("MaxPointAzimuth", 359.5d);
             disableRefractionCorrection = optionsAccessor.GetValueBoolean("DisableRefractionCorrection", false);
+            ipAddress = optionsAccessor.GetValueString("IPAddress", "");
+            macAddress = optionsAccessor.GetValueString("MACAddress", "");
+            port = optionsAccessor.GetValueInt32("Port", 3490);
+            driverID = optionsAccessor.GetValueString("DriverID", "");
         }
 
         public void ResetDefaults() {
@@ -91,6 +95,10 @@ namespace NINA.Joko.Plugin.TenMicron {
             MinPointAzimuth = 0.5d;
             MaxPointAzimuth = 359.5d;
             DisableRefractionCorrection = false;
+            MACAddress = "";
+            IPAddress = "";
+            Port = 3490;
+            DriverID = "";
         }
 
         private int minPointAltitude;
@@ -486,6 +494,61 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (disableRefractionCorrection != value) {
                     disableRefractionCorrection = value;
                     optionsAccessor.SetValueBoolean("DisableRefractionCorrection", disableRefractionCorrection);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string ipAddress;
+
+        public string IPAddress {
+            get => ipAddress;
+            set {
+                if (ipAddress != value) {
+                    ipAddress = value;
+                    optionsAccessor.SetValueString("IPAddress", ipAddress);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string macAddress;
+
+        public string MACAddress {
+            get => macAddress;
+            set {
+                if (macAddress != value) {
+                    macAddress = value;
+                    optionsAccessor.SetValueString("MACAddress", macAddress);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int port;
+
+        public int Port {
+            get => port;
+            set {
+                if (port != value) {
+                    if (value < 0 || value > short.MaxValue) {
+                        throw new ArgumentException($"Port must be between (0, {short.MaxValue})", "Port");
+                    }
+                    port = value;
+                    optionsAccessor.SetValueInt32("Port", port);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string driverID;
+
+        public string DriverID {
+            get => driverID;
+            set {
+                if (driverID != value) {
+                    driverID = value;
+                    optionsAccessor.SetValueString("DriverID", driverID);
                     RaisePropertyChanged();
                 }
             }

@@ -111,5 +111,17 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                 }
             }
         }
+
+        private bool dualAxisTrackingEnabled;
+
+        public bool DualAxisTrackingEnabled {
+            get => dualAxisTrackingEnabled;
+            set {
+                if (dualAxisTrackingEnabled != value) {
+                    dualAxisTrackingEnabled = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
     }
 }

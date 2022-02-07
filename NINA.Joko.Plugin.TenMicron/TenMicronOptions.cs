@@ -63,6 +63,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             disableRefractionCorrection = optionsAccessor.GetValueBoolean("DisableRefractionCorrection", false);
             ipAddress = optionsAccessor.GetValueString("IPAddress", "");
             macAddress = optionsAccessor.GetValueString("MACAddress", "");
+            wolBroadcastIP = optionsAccessor.GetValueString("WolBroadcastIP", "");
             port = optionsAccessor.GetValueInt32("Port", 3490);
             driverID = optionsAccessor.GetValueString("DriverID", "");
         }
@@ -97,6 +98,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             DisableRefractionCorrection = false;
             MACAddress = "";
             IPAddress = "";
+            WolBroadcastIP = "";
             Port = 3490;
             DriverID = "";
         }
@@ -536,6 +538,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                     }
                     port = value;
                     optionsAccessor.SetValueInt32("Port", port);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private string wolBroadcastIP;
+
+        public string WolBroadcastIP {
+            get => wolBroadcastIP;
+            set {
+                if (wolBroadcastIP != value) {
+                    wolBroadcastIP = value;
+                    optionsAccessor.SetValueString("WolBroadcastIP", wolBroadcastIP);
                     RaisePropertyChanged();
                 }
             }

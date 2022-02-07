@@ -653,5 +653,19 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var response = this.mountCommander.SendCommandString(command, true);
             return new Response<string>(response.TrimEnd('#'), response);
         }
+
+        public Response<bool> GetDualAxisTrackingEnabled() {
+            const string command = ":Gdat#";
+
+            var response = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(response, "");
+        }
+
+        public Response<bool> SetDualAxisTracking(bool enabled) {
+            var command = $":Sdat{(enabled ? 1 : 0)}#";
+
+            var result = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(result, "");
+        }
     }
 }

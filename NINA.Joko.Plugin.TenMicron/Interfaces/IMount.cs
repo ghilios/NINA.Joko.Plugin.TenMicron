@@ -91,6 +91,10 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         Response<bool> Shutdown();
 
+        Response<bool> GetDualAxisTrackingEnabled();
+
+        Response<bool> SetDualAxisTracking(bool enabled);
+
         Response<DateTime> GetUTCTime();
 
         Response<MountIP> GetIPAddress();

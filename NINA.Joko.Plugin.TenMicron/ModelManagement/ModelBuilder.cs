@@ -312,7 +312,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             processingInProgressCount = 0;
 
             // Pre-Step 2: Sync the first point, if configured to do so
-            await PreStep2_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
+            // await PreStep2_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
 
             // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
             PreStep3_CacheDomeAzimuthRanges(state);
@@ -536,18 +536,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private async Task PreStep2_SyncFirstPoint(ModelBuilderState state, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
+        private async Task SyncNextPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
             if (state.Options.SyncFirstPoint) {
-                var eligiblePoints = state.ValidPoints.Where(IsPointEligibleForBuild).ToList();
-                var firstPoint = eligiblePoints.OrderBy(p => p, state.PointAzimuthComparer).First();
-                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = firstPoint });
+                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = point });
                 var firstPointSlews = new List<Task<bool>>();
 
                 if (state.UseDome) {
-                    var celestialCoordinates = firstPoint.ToTopocentric(new SystemDateTime()).Transform(Epoch.JNOW);
-                    if (state.SyncSeparation != null) {
-                        celestialCoordinates += state.SyncSeparation;
-                    }
+                    var celestialCoordinates = point.ToTopocentric(new SystemDateTime()).Transform(Epoch.JNOW);
 
                     // Dome azimuths are not yet cached, so we need to compute this directly
                     var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
@@ -558,7 +553,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
                     firstPointSlews.Add(domeMediator.SlewToAzimuth(targetDomeCoordinates.Azimuth.Degree, ct));
                 }
-                firstPointSlews.Add(SlewTelescopeToPoint(state, firstPoint, ct));
+                firstPointSlews.Add(SlewTelescopeToPoint(state, point, ct));
 
                 var results = await Task.WhenAll(firstPointSlews);
                 if (!results.All(r => r)) {
@@ -568,23 +563,22 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                 var scopeCoordinates = telescopeMediator.GetCurrentPosition();
 
-                var exposureData = await CaptureImage(state, firstPoint, stepProgress, ct);
+                var exposureData = await CaptureImage(state, point, stepProgress, ct);
                 ct.ThrowIfCancellationRequested();
 
                 // Restore point state so it can be used when actual building begins
-                firstPoint.ModelPointState = ModelPointStateEnum.Generated;
+                point.ModelPointState = ModelPointStateEnum.Generated;
 
                 var solveResult = await SolveImage(state.Options, exposureData, ct);
                 ct.ThrowIfCancellationRequested();
 
                 if (solveResult?.Success == true) {
-                    var solveResultCoordinates = solveResult.Coordinates.Transform(scopeCoordinates.Epoch);
-                    state.SyncSeparation = scopeCoordinates - solveResultCoordinates;
-                    Logger.Info($"Sync separation offset calculated: {state.SyncSeparation}");
-                    Notification.ShowInformation("First point solved, and offset will be used for 10u model build");
+                    await telescopeMediator.Sync(solveResult.Coordinates);
+
+                    Notification.ShowInformation("First iteration point solved and synced");
                 } else {
-                    Logger.Warning("Failed to plate solve first point for initial sync. Moving on");
-                    Notification.ShowInformation("Failed to plate solve first point for initial sync. Moving on");
+                    Logger.Warning("Failed to plate solve first point for sync. Moving on");
+                    Notification.ShowInformation("Failed to plate solve first point for sync. Moving on");
                 }
             }
         }
@@ -644,6 +638,10 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             Logger.Info($"Processing {eligiblePoints.Count} points. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
             if (state.UseDome) {
                 _ = SlewDomeIfNecessary(state, eligiblePoints, ct);
+            }
+
+            if (nextPoint != null) {
+                await SyncNextPoint(state, nextPoint, ct, stepProgress);
             }
 
             while (nextPoint != null) {

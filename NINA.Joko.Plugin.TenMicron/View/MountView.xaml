@@ -207,7 +207,9 @@
                             Margin="0,6,0,6"
                             VerticalAlignment="Center"
                             Columns="2">
-                            <TextBlock Text="Unattended Flip Enabled" />
+                            <TextBlock
+                                Text="Unattended Flip Enabled"
+                                VerticalAlignment="Center" />
                             <!-- Only allow this to be turned off if it is on -->
                             <CheckBox
                                 MinWidth="80"
@@ -217,6 +219,27 @@
                                 Unchecked="UnattendedFlipEnabled_Unchecked"
                                 IsChecked="{Binding UnattendedFlipEnabled}"
                                 IsEnabled="{Binding UnattendedFlipEnabled}" />
+                        </UniformGrid>
+                    </UniformGrid>
+                </Border>
+                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
+                    <UniformGrid Columns="2">
+                        <UniformGrid
+                            Margin="0,6,0,6"
+                            VerticalAlignment="Center"
+                            Columns="2">
+                            <TextBlock
+                                Text="Dual-Axis Tracking"
+                                VerticalAlignment="Center" />
+                            <CheckBox
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Unchecked="DualAxisTrackingEnabled_Toggled"
+                                Checked="DualAxisTrackingEnabled_Toggled"
+                                IsEnabled="{Binding MountInfo.Connected}"
+                                IsChecked="{Binding MountInfo.DualAxisTrackingEnabled}" />
                         </UniformGrid>
                     </UniformGrid>
                 </Border>

@@ -107,8 +107,13 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
         }
 
         // See: https://stackoverflow.com/questions/861873/wake-on-lan-using-c-sharp
-        public static async Task WakeOnLan(string macAddress, CancellationToken ct) {
+        public static async Task WakeOnLan(string macAddress, string broadcastAddress, CancellationToken ct) {
             byte[] magicPacket = BuildMagicPacket(macAddress);
+
+            if (IPAddress.TryParse(broadcastAddress, out var broadcastIpAddress)) {
+                await SendWakeOnLan(IPAddress.Any, broadcastIpAddress, magicPacket, ct);
+            }
+
             foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces().Where((n) =>
                 n.NetworkInterfaceType != NetworkInterfaceType.Loopback && n.OperationalStatus == OperationalStatus.Up)) {
                 ct.ThrowIfCancellationRequested();

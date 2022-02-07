@@ -72,6 +72,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         string MACAddress { get; set; }
 
+        string WolBroadcastIP { get; set; }
+
         int Port { get; set; }
 
         string DriverID { get; set; }

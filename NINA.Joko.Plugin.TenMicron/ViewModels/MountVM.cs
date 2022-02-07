@@ -136,6 +136,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         public async Task<bool> PowerOn(CancellationToken ct) {
+            if (MountInfo.Connected) {
+                return true;
+            }
+
             Task progressDelay = null;
             CancellationTokenSource timeoutCts = null;
             try {
@@ -158,7 +162,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 progressDelay = Task.Delay(1000, ct);
                 var ipAddress = IPAddress.Parse(this.Options.IPAddress);
                 var mac = this.Options.MACAddress;
-                await MountUtility.WakeOnLan(mac, ct);
+                await MountUtility.WakeOnLan(mac, this.Options.WolBroadcastIP, ct);
 
                 await progressDelay;
                 this.progress.Report(new ApplicationStatus() {
@@ -338,6 +342,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             mountValues.TryGetValue(nameof(MountInfo.MeridianLimitDegrees), out o);
             MountInfo.MeridianLimitDegrees = (int)(o ?? 0);
 
+            mountValues.TryGetValue(nameof(MountInfo.DualAxisTrackingEnabled), out o);
+            MountInfo.DualAxisTrackingEnabled = (bool)(o ?? false);
+
             BroadcastMountInfo();
         }
 
@@ -354,11 +361,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 mountValues.Add(nameof(MountInfo.Status), this.mount.GetStatus().Value);
                 mountValues.Add(nameof(MountInfo.SlewSettleTimeSeconds), this.mount.GetSlewSettleTimeSeconds().Value);
                 mountValues.Add(nameof(MountInfo.MeridianLimitDegrees), this.mount.GetMeridianSlewLimitDegrees().Value);
+                mountValues.Add(nameof(MountInfo.DualAxisTrackingEnabled), this.mount.GetDualAxisTrackingEnabled().Value);
                 return mountValues;
             } catch (Exception e) {
                 if (telescopeMediator.GetInfo().Connected) {
                     Notification.ShowError($"Failed to retrieve mount properties. 10u mount utilities disconnected");
                     Logger.Error("Failed while retrieving 10u mount properties", e);
+                    MountInfo = DeviceInfo.CreateDefaultInstance<MountInfo>();
                 }
 
                 mountValues.Clear();
@@ -390,6 +399,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError($"Failed to disable unattended flip: {ex.Message}");
+            }
+        }
+
+        public void SetDualAxisTracking(bool enabled) {
+            try {
+                if (mount.SetDualAxisTracking(enabled)) {
+                    MountInfo.DualAxisTrackingEnabled = enabled;
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError($"Failed to set dual axis tracking to {enabled}: {ex.Message}");
             }
         }
 
@@ -432,16 +452,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     case TrackingMode.Sidereal:
                         mount.SetSiderealTrackingRate();
                         mount.StartTracking();
+                        mount.SetDualAxisTracking(true);
                         return true;
 
                     case TrackingMode.Solar:
                         mount.SetSolarTrackingRate();
                         mount.StartTracking();
+                        mount.SetDualAxisTracking(true);
                         return true;
 
                     case TrackingMode.Lunar:
                         mount.SetLunarTrackingRate();
                         mount.StartTracking();
+                        mount.SetDualAxisTracking(true);
                         return true;
 
                     case TrackingMode.Stopped:

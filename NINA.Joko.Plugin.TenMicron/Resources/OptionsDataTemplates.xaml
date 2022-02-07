@@ -64,11 +64,12 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
                 <TextBlock x:Key="MaxConcurrency_Tooltip" Text="The maximum number of plate solves that can run concurrently during a model build. This can be set to infinite if you have plenty of system memory or are using a fast plate solver such as ASTAP with blind solves disabled" />
-                <TextBlock x:Key="SyncFirstPoint_Tooltip" Text="The existing alignment model is cleared when a new model build starts, so the pointing model is likely to be off. This setting solves and computes an offset for the first model point to get closer to the actual requested physicaly coordinates in the sky. This is more important for a sidereal track model as opposed to a full sky one. No sync is actually performed, since that would affect the reproducibility of the model build." />
+                <TextBlock x:Key="SyncFirstPoint_Tooltip" Text="The existing alignment model is cleared each time a model build iteration starts, so the pointing model is likely to be off. This setting solves and syncs the first model point during each iteration to get closer to the actual requested physicaly coordinates in the sky. This is more important for a sidereal track model as opposed to a full sky one." />
                 <TextBlock x:Key="AllowBlindSolves_Tooltip" Text="Plate solving is done over a narrow search radius to ensure it is fast. This should generally work since you know where the telescope is pointed, but could fail if the pointing model is very far off (more than 30 degrees). This setting enables falling back to blind solves when they fail, at the expense of potentially much longer model build times" />
                 <TextBlock x:Key="MinPointAltitude_Tooltip" Text="The minimum altitude allowed for point generation" />
                 <TextBlock x:Key="MaxPointAltitude_Tooltip" Text="The maximum altitude allowed for point generation" />
@@ -83,6 +84,7 @@
                 <TextBlock x:Key="RemoveHighRMSPointsAfterBuild_Tooltip" Text="Removes points with RMS above a threshold from a newly built model" />
                 <TextBlock x:Key="AlternateDirectionsBetweenIterations_Tooltip" Text="Alternates sort directions between each build iteration. This helps minimize scope, and particularly dome, movements" />
                 <TextBlock x:Key="DisableRefractionCorrection_Tooltip" Text="Disables refraction correction for the duration of model build. It is turned back on afterwards if it was originally enabled." />
+                <TextBlock x:Key="WolBroadcastIP_Tooltip" Text="The IP address to use for broadcasting the WOL packet to power on the mount. This might not be needed based on your network setup, but try setting this if Power On from the Mount Info pane doesn't work." />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0" Grid.Column="0"
@@ -381,6 +383,28 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource DisableRefractionCorrection_Tooltip}"
                 IsChecked="{Binding DisableRefractionCorrection}" />
+
+            <TextBlock
+                Grid.Row="17" Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="WOL Broadcast IP"
+                ToolTip="{StaticResource WolBroadcastIP_Tooltip}" />
+            <TextBox
+                Grid.Row="17" Grid.Column="1" Grid.ColumnSpan="2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                ToolTip="{StaticResource WolBroadcastIP_Tooltip}">
+                <TextBox.Text>
+                    <Binding Path="WolBroadcastIP" UpdateSourceTrigger="LostFocus">
+                        <Binding.ValidationRules>
+                            <rules:IsValidIPAddressRule />
+                        </Binding.ValidationRules>
+                    </Binding>
+                </TextBox.Text>
+            </TextBox>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

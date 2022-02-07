@@ -12,8 +12,6 @@
 
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Equipment.Interfaces.ViewModel;
-using NINA.Core.Enum;
-using System;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Equipment.Interfaces;
 using System.Threading.Tasks;
@@ -34,5 +32,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         bool Shutdown();
 
         Task<bool> PowerOn(CancellationToken ct);
+
+        void SetDualAxisTracking(bool enabled);
     }
 }

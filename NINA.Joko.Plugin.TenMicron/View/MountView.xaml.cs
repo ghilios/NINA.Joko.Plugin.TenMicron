@@ -34,7 +34,10 @@ namespace NINA.Joko.Plugin.TenMicron.View {
         private void DualAxisTrackingEnabled_Toggled(object sender, RoutedEventArgs e) {
             var checkBox = (CheckBox)sender;
             var mountVM = (MountVM)checkBox.DataContext;
-            mountVM.SetDualAxisTracking(checkBox.IsChecked ?? false);
+            var isChecked = checkBox.IsChecked;
+            if (isChecked.HasValue) {
+                mountVM.SetDualAxisTracking(isChecked.Value);
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿<ResourceDictionary
     x:Class="NINA.Joko.Plugin.TenMicron.Resources.DataTemplates"
-    xmlns:view="clr-namespace:NINA.Joko.Plugin.TenMicron.View"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:view="clr-namespace:NINA.Joko.Plugin.TenMicron.View">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="OptionsDataTemplates.xaml" />
     </ResourceDictionary.MergedDictionaries>

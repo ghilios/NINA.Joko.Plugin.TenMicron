@@ -11,6 +11,7 @@
 #endregion "copyright"
 
 using NINA.Joko.Plugin.TenMicron.ViewModels;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 

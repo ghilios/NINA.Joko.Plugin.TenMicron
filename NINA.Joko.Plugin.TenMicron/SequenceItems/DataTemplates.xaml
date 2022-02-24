@@ -3,11 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:local="clr-namespace:NINA.Joko.Plugin.TenMicron.SequenceItems"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:mini="clr-namespace:NINA.View.Sequencer.MiniSequencer;assembly=NINA.Sequencer"
     xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
+    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:view="clr-namespace:NINA.View.Sequencer;assembly=NINA.Sequencer"
     mc:Ignorable="d">
@@ -31,8 +31,8 @@
                     <TextBox
                         MinWidth="40"
                         Margin="5,0,0,0"
-                        Text="{Binding ModelName}"
                         VerticalAlignment="Center"
+                        Text="{Binding ModelName}"
                         TextAlignment="Right" />
                 </StackPanel>
             </view:SequenceBlockView.SequenceItemContent>
@@ -56,8 +56,8 @@
                     <TextBox
                         MinWidth="40"
                         Margin="5,0,0,0"
-                        Text="{Binding ModelName}"
                         VerticalAlignment="Center"
+                        Text="{Binding ModelName}"
                         TextAlignment="Right" />
                 </StackPanel>
             </view:SequenceBlockView.SequenceItemContent>
@@ -71,9 +71,9 @@
                 VerticalAlignment="Center"
                 Text="Points:" />
             <TextBlock
+                Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Margin="5,0,0,0"
                 Text="{Binding ModelPointCount}" />
         </StackPanel>
     </DataTemplate>
@@ -98,8 +98,8 @@
                 Margin="10,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="minutes"
-                ToolTip="{StaticResource SiderealTrackStartTimeOffset_Tooltip}">
+                ToolTip="{StaticResource SiderealTrackStartTimeOffset_Tooltip}"
+                Unit="minutes">
                 <Binding Path="SiderealTrackStartOffsetMinutes" UpdateSourceTrigger="LostFocus" />
             </ninactrl:UnitTextBox>
             <StackPanel Orientation="Horizontal">
@@ -186,8 +186,8 @@
                 Margin="10,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="minutes"
-                ToolTip="{StaticResource SiderealTrackEndTimeOffset_Tooltip}">
+                ToolTip="{StaticResource SiderealTrackEndTimeOffset_Tooltip}"
+                Unit="minutes">
                 <Binding Path="SiderealTrackEndOffsetMinutes" UpdateSourceTrigger="LostFocus" />
             </ninactrl:UnitTextBox>
             <StackPanel Orientation="Horizontal">
@@ -266,8 +266,8 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="°"
-                ToolTip="{StaticResource SiderealTrackRADeltaDegrees_Tooltip}">
+                ToolTip="{StaticResource SiderealTrackRADeltaDegrees_Tooltip}"
+                Unit="°">
                 <Binding Path="SiderealTrackRADeltaDegrees" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <rules:GreaterThanZeroRule />
@@ -289,9 +289,12 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="retries"
-                ToolTip="{StaticResource BuilderRetries_Tooltip}">
-                <Binding Path="BuilderNumRetries" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToDisabledConverter}">
+                ToolTip="{StaticResource BuilderRetries_Tooltip}"
+                Unit="retries">
+                <Binding
+                    Converter="{StaticResource TM_ZeroToDisabledConverter}"
+                    Path="BuilderNumRetries"
+                    UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <rules:GreaterZeroRule />
                     </Binding.ValidationRules>
@@ -308,10 +311,13 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="points"
                 IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
-                ToolTip="{StaticResource MaxFailedPoints_Tooltip}">
-                <Binding Path="MaxFailedPoints" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
+                ToolTip="{StaticResource MaxFailedPoints_Tooltip}"
+                Unit="points">
+                <Binding
+                    Converter="{StaticResource TM_ZeroToInfinityConverter}"
+                    Path="MaxFailedPoints"
+                    UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <rules:GreaterZeroRule />
                     </Binding.ValidationRules>
@@ -328,10 +334,13 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Unit="arcsec"
                 IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
-                ToolTip="{StaticResource MaxPointRMS_Tooltip}">
-                <Binding Path="MaxPointRMS" UpdateSourceTrigger="LostFocus" Converter="{StaticResource TM_ZeroToInfinityConverter}">
+                ToolTip="{StaticResource MaxPointRMS_Tooltip}"
+                Unit="arcsec">
+                <Binding
+                    Converter="{StaticResource TM_ZeroToInfinityConverter}"
+                    Path="MaxPointRMS"
+                    UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <rules:GreaterZeroRule />
                     </Binding.ValidationRules>
@@ -345,17 +354,20 @@
         x:Shared="false"
         Orientation="Horizontal">
         <StackPanel Orientation="Vertical">
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource StartTimeDetails}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource EndTimeDetails}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource RADeltaDetails}" />
-                <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource ModelPointCountDetails}" Margin="10,0,0,0" />
+                <ContentPresenter
+                    Margin="10,0,0,0"
+                    Content="{Binding}"
+                    ContentTemplate="{StaticResource ModelPointCountDetails}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource BuildRetryDetails}" />
             </StackPanel>
         </StackPanel>

@@ -403,6 +403,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         public void SetDualAxisTracking(bool enabled) {
+            if (!MountInfo.Connected) {
+                return;
+            }
+
             try {
                 if (mount.SetDualAxisTracking(enabled)) {
                     MountInfo.DualAxisTrackingEnabled = enabled;

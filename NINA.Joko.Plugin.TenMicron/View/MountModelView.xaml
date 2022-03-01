@@ -372,7 +372,7 @@
                                 Width="30"
                                 Height="30"
                                 Margin="1,0,0,0"
-                                Command="{Binding LoadModelNamesCommand}"
+                                Command="{Binding RefreshCommand}"
                                 IsEnabled="{Binding ModelNamesLoaded}">
                                 <Button.ToolTip>
                                     <ToolTip ToolTipService.ShowOnDisabled="False">
@@ -443,6 +443,14 @@
                             Command="{Binding SaveAsModelCommand}"
                             IsEnabled="{Binding ModelLoaded}">
                             <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Save As" />
+                        </Button>
+                        <Button
+                            Width="Auto"
+                            Height="30"
+                            Margin="5,0,5,5"
+                            Command="{Binding ClearAlignmentCommand}"
+                            IsEnabled="{Binding ModelLoaded}">
+                            <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="Clear Model" />
                         </Button>
                     </StackPanel>
                 </Grid>

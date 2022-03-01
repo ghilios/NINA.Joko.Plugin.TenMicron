@@ -84,12 +84,17 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ModelNames = new AsyncObservableCollection<string>() { GetUnselectedModelName() };
             this.SelectedModelName = GetUnselectedModelName();
 
-            this.LoadModelNamesCommand = new AsyncCommand<bool>(async o => { await LoadModelNames(this.disconnectCts.Token); return true; });
+            this.RefreshCommand = new AsyncCommand<bool>(async o => {
+                await LoadModelNames(this.disconnectCts.Token);
+                await LoadAlignmentModel(this.disconnectCts.Token);
+                return true;
+            });
             this.DeleteSelectedModelCommand = new AsyncCommand<bool>(DeleteSelectedModel);
             this.LoadSelectedModelCommand = new AsyncCommand<bool>(LoadSelectedModel);
             this.SaveSelectedModelCommand = new AsyncCommand<bool>(SaveSelectedModel);
             this.SaveAsModelCommand = new AsyncCommand<bool>(SaveAsModel);
             this.DeleteWorstStarCommand = new AsyncCommand<bool>(DeleteWorstStar);
+            this.ClearAlignmentCommand = new RelayCommand(o => DeleteAlignment());
 
             mountModelMediator.RegisterHandler(this);
             this.telescopeMediator.RegisterConsumer(this);
@@ -154,7 +159,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 ModelLoaded = false;
                 this.LoadModel(selectedModelName);
                 _ = LoadAlignmentModel(this.disconnectCts.Token);
-                ModelLoaded = true;
                 return Task.FromResult(true);
             } catch (Exception e) {
                 Notification.ShowError($"Failed to load {selectedModelName}. {e.Message}");
@@ -307,9 +311,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                             if (LoadedAlignmentModel.AlignmentStarCount <= 0) {
                                 Notification.ShowWarning("No alignment stars in loaded model");
                                 Logger.Warning("No alignment stars in loaded model");
+                            } else {
+                                ModelLoaded = true;
                             }
-
-                            ModelLoaded = true;
                         } catch (OperationCanceledException) {
                         } catch (Exception ex) {
                             Notification.ShowError("Failed to get 10u alignment model");
@@ -442,12 +446,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        public ICommand LoadModelNamesCommand { get; private set; }
+        public ICommand RefreshCommand { get; private set; }
         public ICommand DeleteSelectedModelCommand { get; private set; }
         public ICommand LoadSelectedModelCommand { get; private set; }
         public ICommand SaveSelectedModelCommand { get; private set; }
         public ICommand SaveAsModelCommand { get; private set; }
         public ICommand DeleteWorstStarCommand { get; private set; }
+        public ICommand ClearAlignmentCommand { get; private set; }
 
         public Task<IList<string>> Rescan() {
             throw new NotImplementedException();
@@ -522,6 +527,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             if (Connected) {
                 mount.DeleteAlignment();
                 LoadedAlignmentModel.Clear();
+                ModelLoaded = false;
             }
         }
 

@@ -311,9 +311,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             PreStep1_ClearState(state);
             processingInProgressCount = 0;
 
-            // Pre-Step 2: Sync the first point, if configured to do so
-            // await PreStep2_SyncFirstPoint(state, stopOrCancelCt, stepProgress);
-
             // Pre-Step 3: If a dome is connected, pre-compute all dome ranges since we're using a fixed Alt/Az for each point
             PreStep3_CacheDomeAzimuthRanges(state);
 
@@ -536,53 +533,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             }
         }
 
-        private async Task SyncNextPoint(ModelBuilderState state, ModelPoint point, CancellationToken ct, IProgress<ApplicationStatus> stepProgress) {
-            if (state.Options.SyncFirstPoint) {
-                PointNextUp?.Invoke(this, new PointNextUpEventArgs() { Point = point });
-                var firstPointSlews = new List<Task<bool>>();
-
-                if (state.UseDome) {
-                    var celestialCoordinates = point.ToTopocentric(new SystemDateTime()).Transform(Epoch.JNOW);
-
-                    // Dome azimuths are not yet cached, so we need to compute this directly
-                    var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
-                    var longitudeDegrees = profileService.ActiveProfile.AstrometrySettings.Longitude;
-                    var longitude = Angle.ByDegree(longitudeDegrees);
-                    var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
-                    var sideOfPier = MeridianFlip.ExpectedPierSide(celestialCoordinates, Angle.ByHours(lst));
-                    var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
-                    firstPointSlews.Add(domeMediator.SlewToAzimuth(targetDomeCoordinates.Azimuth.Degree, ct));
-                }
-                firstPointSlews.Add(SlewTelescopeToPoint(state, point, ct));
-
-                var results = await Task.WhenAll(firstPointSlews);
-                if (!results.All(r => r)) {
-                    throw new Exception("Failed to slew dome and/or telescope for first sync");
-                }
-                ct.ThrowIfCancellationRequested();
-
-                var scopeCoordinates = telescopeMediator.GetCurrentPosition();
-
-                var exposureData = await CaptureImage(state, point, stepProgress, ct);
-                ct.ThrowIfCancellationRequested();
-
-                // Restore point state so it can be used when actual building begins
-                point.ModelPointState = ModelPointStateEnum.Generated;
-
-                var solveResult = await SolveImage(state.Options, exposureData, ct);
-                ct.ThrowIfCancellationRequested();
-
-                if (solveResult?.Success == true) {
-                    await telescopeMediator.Sync(solveResult.Coordinates);
-
-                    Notification.ShowInformation("First iteration point solved and synced");
-                } else {
-                    Logger.Warning("Failed to plate solve first point for sync. Moving on");
-                    Notification.ShowInformation("Failed to plate solve first point for sync. Moving on");
-                }
-            }
-        }
-
         private void Step3_PrepareRetryPoints(ModelBuilderState state, CancellationToken ct) {
             var validPoints = state.ValidPoints;
             var existingFailedPoints = validPoints.Where(p => p.ModelPointState == ModelPointStateEnum.Failed || p.ModelPointState == ModelPointStateEnum.FailedRMS).ToList();
@@ -638,10 +588,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             Logger.Info($"Processing {eligiblePoints.Count} points. First point Alt={nextPoint.Altitude:0.###}, Az={nextPoint.Azimuth:0.###}, MinDomeAz={nextPoint.MinDomeAzimuth:0.###}, MaxDomeAz={nextPoint.MaxDomeAzimuth:0.###}");
             if (state.UseDome) {
                 _ = SlewDomeIfNecessary(state, eligiblePoints, ct);
-            }
-
-            if (nextPoint != null) {
-                await SyncNextPoint(state, nextPoint, ct, stepProgress);
             }
 
             while (nextPoint != null) {

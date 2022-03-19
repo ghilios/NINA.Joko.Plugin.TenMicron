@@ -149,8 +149,8 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var context = parser.angle();
 
             var sign = context.sign().GetText();
-            var degrees = int.Parse(context.degrees().GetText());
-            var minutes = int.Parse(context.minutes().GetText());
+            var degrees = int.Parse(context.degrees().GetText(), CultureInfo.InvariantCulture);
+            var minutes = int.Parse(context.minutes().GetText(), CultureInfo.InvariantCulture);
             var seconds = ParseIntOrDefault(context.seconds()?.GetText(), 0);
             var tenthSeconds = ParseIntOrDefault(context.tenth_seconds()?.GetText(), 0);
             var positive = sign != "-";
@@ -161,8 +161,8 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var parser = GetParser<TimeLexer, TimeParser>(s);
             var context = parser.time();
 
-            var hours = int.Parse(context.hours().GetText());
-            var minutes = int.Parse(context.minutes().GetText());
+            var hours = int.Parse(context.hours().GetText(), CultureInfo.InvariantCulture);
+            var minutes = int.Parse(context.minutes().GetText(), CultureInfo.InvariantCulture);
             var tenthMinutes = ParseIntOrDefault(context.tenth_minutes()?.GetText(), 0);
             var seconds = ParseIntOrDefault(context.seconds()?.GetText(), 0);
             var tenthSeconds = ParseIntOrDefault(context.tenth_seconds()?.GetText(), 0);
@@ -178,20 +178,20 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var declinationAngleContext = context.angle();
             var errorContext = context.error();
 
-            var localHours = int.Parse(localHourContext.hours().GetText());
-            var localMinutes = int.Parse(localHourContext.minutes().GetText());
-            var localSeconds = int.Parse(localHourContext.seconds().GetText());
-            var raHundredthSeconds = int.Parse(localHourContext.hundredthSeconds().GetText());
+            var localHours = int.Parse(localHourContext.hours().GetText(), CultureInfo.InvariantCulture);
+            var localMinutes = int.Parse(localHourContext.minutes().GetText(), CultureInfo.InvariantCulture);
+            var localSeconds = int.Parse(localHourContext.seconds().GetText(), CultureInfo.InvariantCulture);
+            var raHundredthSeconds = int.Parse(localHourContext.hundredthSeconds().GetText(), CultureInfo.InvariantCulture);
             var rightAscension = new AstrometricTime(localHours, localMinutes, localSeconds, raHundredthSeconds);
 
             var decSign = declinationAngleContext.sign().GetText();
-            var decDegrees = int.Parse(declinationAngleContext.degrees().GetText());
-            var decMinutes = int.Parse(declinationAngleContext.minutes().GetText());
-            var decSeconds = int.Parse(declinationAngleContext.seconds().GetText());
-            var decTenthSeconds = int.Parse(declinationAngleContext.tenthSeconds().GetText());
+            var decDegrees = int.Parse(declinationAngleContext.degrees().GetText(), CultureInfo.InvariantCulture);
+            var decMinutes = int.Parse(declinationAngleContext.minutes().GetText(), CultureInfo.InvariantCulture);
+            var decSeconds = int.Parse(declinationAngleContext.seconds().GetText(), CultureInfo.InvariantCulture);
+            var decTenthSeconds = int.Parse(declinationAngleContext.tenthSeconds().GetText(), CultureInfo.InvariantCulture);
             var declination = new CoordinateAngle(decSign != "-", decDegrees, decMinutes, decSeconds, decTenthSeconds * 10);
 
-            var errorArcseconds = decimal.Parse(errorContext.GetText());
+            var errorArcseconds = decimal.Parse(errorContext.GetText(), CultureInfo.InvariantCulture);
             return new Response<AlignmentStarInfo>(new AlignmentStarInfo(rightAscension, declination, errorArcseconds), s);
         }
 
@@ -199,15 +199,15 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var parser = GetParser<AlignmentModelInfoLexer, AlignmentModelInfoParser>(s);
             var context = parser.alignmentModelInfo();
 
-            var raAzimuth = decimal.Parse(context.raAzimuth().GetText());
-            var raAltitude = decimal.Parse(context.raAltitude().GetText());
-            var paError = decimal.Parse(context.paError().GetText());
-            var raPositionAngle = decimal.Parse(context.raPositionAngle().GetText());
-            var orthogonalityError = decimal.Parse(context.orthogonalityError().GetText());
-            var azimuthTurns = decimal.Parse(context.azimuthTurns().GetText());
-            var altitudeTurns = decimal.Parse(context.altitudeTurns().GetText());
-            var modelTerms = int.Parse(context.modelTerms().GetText());
-            var rmsError = decimal.Parse(context.rmsError().GetText());
+            var raAzimuth = decimal.Parse(context.raAzimuth().GetText(), CultureInfo.InvariantCulture);
+            var raAltitude = decimal.Parse(context.raAltitude().GetText(), CultureInfo.InvariantCulture);
+            var paError = decimal.Parse(context.paError().GetText(), CultureInfo.InvariantCulture);
+            var raPositionAngle = decimal.Parse(context.raPositionAngle().GetText(), CultureInfo.InvariantCulture);
+            var orthogonalityError = decimal.Parse(context.orthogonalityError().GetText(), CultureInfo.InvariantCulture);
+            var azimuthTurns = decimal.Parse(context.azimuthTurns().GetText(), CultureInfo.InvariantCulture);
+            var altitudeTurns = decimal.Parse(context.altitudeTurns().GetText(), CultureInfo.InvariantCulture);
+            var modelTerms = int.Parse(context.modelTerms().GetText(), CultureInfo.InvariantCulture);
+            var rmsError = decimal.Parse(context.rmsError().GetText(), CultureInfo.InvariantCulture);
             return new Response<AlignmentModelInfo>(
                 new AlignmentModelInfo(
                     rightAscensionAzimuth: raAzimuth, rightAscensionAltitude: raAltitude, polarAlignErrorDegrees: paError,
@@ -218,7 +218,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         private static string SanitizeIP(string ip) {
             var ipParts = ip.Trim().Split('.');
-            return string.Join(".", ipParts.Select(s => int.Parse(s)));
+            return string.Join(".", ipParts.Select(s => int.Parse(s, CultureInfo.InvariantCulture)));
         }
 
         public static Response<MountIP> ParseIP(string s) {
@@ -265,7 +265,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
             // returns nnn#
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = int.Parse(rawResponse.TrimEnd('#'));
+            var result = int.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<int>(result, rawResponse);
         }
 
@@ -320,7 +320,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
             // Returns count followed by #
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = int.Parse(rawResponse.TrimEnd('#'));
+            var result = int.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<int>(result, rawResponse);
         }
 
@@ -420,7 +420,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                 throw new Exception($"Failed to add alignment point using {command}");
             }
 
-            var numPoints = int.Parse(rawResponse.TrimEnd('#'));
+            var numPoints = int.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<int>(numPoints, rawResponse);
         }
 
@@ -440,7 +440,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
             // Returns limit followed by #
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = int.Parse(rawResponse.TrimEnd('#'));
+            var result = int.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<int>(result, rawResponse);
         }
 
@@ -455,7 +455,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             const string command = ":Gstm#";
 
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+            var result = decimal.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<decimal>(result, rawResponse);
         }
 
@@ -473,7 +473,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             const string command = ":Gstat#";
 
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = int.Parse(rawResponse.TrimEnd('#'));
+            var result = int.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<MountStatusEnum>((MountStatusEnum)result, rawResponse);
         }
 
@@ -489,7 +489,8 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
             // Needs to be divided by 4 to get arcsecs/sec, according to spec
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+
+            var result = decimal.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<decimal>(result / 4, rawResponse);
         }
 
@@ -556,7 +557,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             const string command = ":GRPRS#";
 
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+            var result = decimal.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<decimal>(result, rawResponse);
         }
 
@@ -564,7 +565,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             const string command = ":GRTMP#";
 
             var rawResponse = this.mountCommander.SendCommandString(command, true);
-            var result = decimal.Parse(rawResponse.TrimEnd('#'));
+            var result = decimal.Parse(rawResponse.TrimEnd('#'), CultureInfo.InvariantCulture);
             return new Response<decimal>(result, rawResponse);
         }
 
@@ -590,19 +591,19 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var timePartString = responseParts[1].TrimEnd('#');
 
             var datePart = DateTime.ParseExact(datePartString, DATE_FORMATS, null, DateTimeStyles.None);
-            int hours = int.Parse(timePartString.Substring(0, 2));
-            int minutes = int.Parse(timePartString.Substring(3, 2));
+            int hours = int.Parse(timePartString.Substring(0, 2), CultureInfo.InvariantCulture);
+            int minutes = int.Parse(timePartString.Substring(3, 2), CultureInfo.InvariantCulture);
             int seconds;
             if (timePartString.Length == 7) {
-                seconds = int.Parse(timePartString.Substring(6, 1)) * 6;
+                seconds = int.Parse(timePartString.Substring(6, 1), CultureInfo.InvariantCulture) * 6;
             } else {
-                seconds = int.Parse(timePartString.Substring(6, 2));
+                seconds = int.Parse(timePartString.Substring(6, 2), CultureInfo.InvariantCulture);
             }
             int hundredthSeconds = 0;
             if (timePartString.Length == 10) {
-                hundredthSeconds = int.Parse(timePartString.Substring(9, 1)) * 10;
+                hundredthSeconds = int.Parse(timePartString.Substring(9, 1), CultureInfo.InvariantCulture) * 10;
             } else if (timePartString.Length == 11) {
-                hundredthSeconds = int.Parse(timePartString.Substring(9, 2));
+                hundredthSeconds = int.Parse(timePartString.Substring(9, 2), CultureInfo.InvariantCulture);
             }
 
             var result = new DateTime(datePart.Year, datePart.Month, datePart.Day, hours, minutes, seconds, hundredthSeconds * 10, DateTimeKind.Utc);

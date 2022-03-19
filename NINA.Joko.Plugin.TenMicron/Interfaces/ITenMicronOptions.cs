@@ -48,8 +48,6 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         int MaxConcurrency { get; set; }
 
-        bool SyncFirstPoint { get; set; }
-
         ModelPointGenerationTypeEnum ModelPointGenerationType { get; set; }
 
         int MinPointAltitude { get; set; }

@@ -26,7 +26,6 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         public bool MinimizeDomeMovement { get; set; } = true;
         public bool MinimizeMeridianFlips { get; set; } = true;
         public bool AllowBlindSolves { get; set; } = false;
-        public bool SyncFirstPoint { get; set; } = true;
         public int MaxConcurrency { get; set; } = 3;
         public int DomeShutterWidth_mm { get; set; } = 0;
         public int MaxFailedPoints { get; set; } = 0;

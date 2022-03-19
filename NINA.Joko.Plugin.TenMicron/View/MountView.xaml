@@ -9,12 +9,12 @@
     <Grid Margin="5" VerticalAlignment="Top">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
-            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition />
-            <RowDefinition />
-            <RowDefinition />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <UniformGrid Columns="2" Grid.Row="0">
             <Button
@@ -41,7 +41,7 @@
                 </TextBlock>
             </Button>
         </UniformGrid>
-        <GroupBox Grid.Row="1">
+        <GroupBox Grid.Row="1" VerticalAlignment="Stretch">
             <GroupBox.Header>
                 <TextBlock Text="Mount Information" />
             </GroupBox.Header>
@@ -103,11 +103,11 @@
                 </Border>
             </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Row="2">
+        <GroupBox Grid.Row="2" VerticalAlignment="Stretch">
             <GroupBox.Header>
                 <TextBlock Text="Mount Status" />
             </GroupBox.Header>
-            <StackPanel>
+            <StackPanel Orientation="Vertical">
                 <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0">
                     <UniformGrid Columns="2">
                         <UniformGrid

@@ -439,7 +439,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             MaxPointRMS = options.MaxPointRMS;
             modelBuilderOptions.MinimizeDomeMovementEnabled = options.MinimizeDomeMovement;
             modelBuilderOptions.MinimizeMeridianFlipsEnabled = options.MinimizeMeridianFlips;
-            modelBuilderOptions.SyncFirstPoint = options.SyncFirstPoint;
             modelBuilderOptions.AllowBlindSolves = options.AllowBlindSolves;
             modelBuilderOptions.MaxConcurrency = options.MaxConcurrency;
             modelBuilderOptions.DomeShutterWidth_mm = options.DomeShutterWidth_mm;
@@ -499,7 +498,6 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 MaxPointRMS = MaxPointRMS,
                 MinimizeDomeMovement = modelBuilderOptions.MinimizeDomeMovementEnabled,
                 MinimizeMeridianFlips = modelBuilderOptions.MinimizeMeridianFlipsEnabled,
-                SyncFirstPoint = modelBuilderOptions.SyncFirstPoint,
                 AllowBlindSolves = modelBuilderOptions.AllowBlindSolves,
                 MaxConcurrency = modelBuilderOptions.MaxConcurrency,
                 DomeShutterWidth_mm = modelBuilderOptions.DomeShutterWidth_mm,

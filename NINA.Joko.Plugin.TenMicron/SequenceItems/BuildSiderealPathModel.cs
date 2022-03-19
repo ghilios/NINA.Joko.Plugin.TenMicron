@@ -374,7 +374,6 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 NumRetries = BuilderNumRetries,
                 MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
                 MinimizeDomeMovement = options.MinimizeDomeMovementEnabled,
-                SyncFirstPoint = options.SyncFirstPoint,
                 AllowBlindSolves = options.AllowBlindSolves,
                 MaxConcurrency = options.MaxConcurrency,
                 DomeShutterWidth_mm = options.DomeShutterWidth_mm,
@@ -426,9 +425,9 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
         }
 
         public override void AfterParentChanged() {
-            var coordinates = ItemUtility.RetrieveContextCoordinates(this.Parent).Item1;
-            if (coordinates != null) {
-                Coordinates.Coordinates = coordinates;
+            var contextCoordinates = ItemUtility.RetrieveContextCoordinates(this.Parent);
+            if (contextCoordinates != null) {
+                Coordinates.Coordinates = contextCoordinates.Coordinates;
                 UpdateModelPoints();
                 Inherited = true;
             } else {

@@ -48,7 +48,6 @@ namespace NINA.Joko.Plugin.TenMicron {
             logCommands = optionsAccessor.GetValueBoolean("LogCommands", false);
             maxConcurrency = optionsAccessor.GetValueInt32("MaxConcurrency", 3);
             allowBlindSolves = optionsAccessor.GetValueBoolean("AllowBlindSolves", false);
-            syncFirstPoint = optionsAccessor.GetValueBoolean("SyncFirstPoint", true);
             minPointAltitude = optionsAccessor.GetValueInt32("MinPointAltitude", 0);
             maxPointAltitude = optionsAccessor.GetValueInt32("MaxPointAltitude", 90);
             showRemovedPoints = optionsAccessor.GetValueBoolean("ShowRemovedPoints", true);
@@ -83,7 +82,6 @@ namespace NINA.Joko.Plugin.TenMicron {
             LogCommands = false;
             MaxConcurrency = 3;
             AllowBlindSolves = false;
-            SyncFirstPoint = true;
             MinPointAltitude = 0;
             MaxPointAltitude = 90;
             ShowRemovedPoints = true;
@@ -303,19 +301,6 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (logCommands != value) {
                     logCommands = value;
                     optionsAccessor.SetValueBoolean("LogCommands", logCommands);
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        private bool syncFirstPoint;
-
-        public bool SyncFirstPoint {
-            get => syncFirstPoint;
-            set {
-                if (syncFirstPoint != value) {
-                    syncFirstPoint = value;
-                    optionsAccessor.SetValueBoolean("SyncFirstPoint", syncFirstPoint);
                     RaisePropertyChanged();
                 }
             }

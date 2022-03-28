@@ -501,5 +501,21 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
             return false;
         }
+
+        public string Action(string actionName, string actionParameters) {
+            throw new NotImplementedException();
+        }
+
+        public string SendCommandString(string command, bool raw = true) {
+            throw new NotImplementedException();
+        }
+
+        public bool SendCommandBool(string command, bool raw = true) {
+            throw new NotImplementedException();
+        }
+
+        public void SendCommandBlind(string command, bool raw = true) {
+            throw new NotImplementedException();
+        }
     }
 }

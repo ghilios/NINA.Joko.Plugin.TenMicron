@@ -270,8 +270,8 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         }
 
         public Response<string> GetModelName(int modelIndex) {
-            if (modelIndex < 1 || modelIndex > 9) {
-                throw new ArgumentException("modelIndex must be between 0 and 9 inclusive", "modelIndex");
+            if (modelIndex < 1 || modelIndex > 99) {
+                throw new ArgumentException("modelIndex must be between 1 and 99 inclusive", "modelIndex");
             }
             string command = $":modelnam{modelIndex}#";
             // returns name#, or just # if it is not valid

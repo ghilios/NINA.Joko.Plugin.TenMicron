@@ -349,8 +349,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private Task alignmentModelNameLoadTask;
 
         private async Task LoadModelNames(CancellationToken ct) {
-            if (alignmentModelNameLoadTask != null) {
-                await alignmentModelNameLoadTask;
+            var localTask = alignmentModelNameLoadTask;
+            if (localTask != null) {
+                await localTask;
+                return;
             }
 
             this.alignmentModelNameLoadTask = Task.Run(() => {
@@ -379,8 +381,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 }
             }, ct);
 
-            await this.alignmentModelNameLoadTask;
-            this.alignmentModelNameLoadTask = null;
+            try {
+                await this.alignmentModelNameLoadTask;
+            } finally {
+                this.alignmentModelNameLoadTask = null;
+            }
         }
 
         private static string GetUnselectedModelName() {

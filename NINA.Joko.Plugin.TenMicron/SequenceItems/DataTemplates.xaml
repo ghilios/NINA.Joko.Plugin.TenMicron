@@ -311,7 +311,6 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
                 ToolTip="{StaticResource MaxFailedPoints_Tooltip}"
                 Unit="points">
                 <Binding
@@ -334,7 +333,6 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                IsEnabled="{Binding BuilderNumRetries, Converter={StaticResource TM_PositiveToBooleanConverter}}"
                 ToolTip="{StaticResource MaxPointRMS_Tooltip}"
                 Unit="arcsec">
                 <Binding

@@ -422,7 +422,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                                 Logger.Info("Adding remaining points back to model");
                                 AddSuccessfulPointsToModel(state, ct);
 
-                                builtModel = await FinishAlignment(state, ct, overrideMaxPointRMS: int.MaxValue);
+                                builtModel = await FinishAlignment(state, ct, overrideMaxPointRMS: double.PositiveInfinity);
                             }
                         }
                     }
@@ -439,7 +439,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             return builtModel;
         }
 
-        private async Task<LoadedAlignmentModel> FinishAlignment(ModelBuilderState state, CancellationToken ct, int? overrideMaxPointRMS = null) {
+        private async Task<LoadedAlignmentModel> FinishAlignment(ModelBuilderState state, CancellationToken ct, double? overrideMaxPointRMS = null) {
             var completedPoints = state.ValidPoints.Count - state.FailedPoints;
             if (completedPoints > 2) {
                 Logger.Info("Completing alignment spec");

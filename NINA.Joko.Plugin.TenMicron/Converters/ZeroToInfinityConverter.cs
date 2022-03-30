@@ -39,15 +39,15 @@ namespace NINA.Joko.Plugin.TenMicron.Converters {
             if (value is string) {
                 var s = (string)value;
                 if (targetType == typeof(int)) {
-                    if (s == "unlimited") {
+                    if (s == "unlimited" || !double.TryParse(s, out var result) || result <= 0.0) {
                         return 0;
                     }
-                    return int.Parse(s);
+                    return (int)result;
                 } else if (targetType == typeof(double)) {
-                    if (s == "unlimited") {
+                    if (s == "unlimited" || !double.TryParse(s, out var result) || result <= 0.0) {
                         return 0.0d;
                     }
-                    return double.Parse(s);
+                    return result;
                 }
             }
             throw new ArgumentException("Invalid Type for Converter");

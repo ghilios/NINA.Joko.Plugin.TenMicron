@@ -372,7 +372,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
             var modelBuilderOptions = new ModelBuilderOptions() {
                 WestToEastSorting = options.WestToEastSorting,
                 NumRetries = BuilderNumRetries,
-                MaxPointRMS = BuilderNumRetries > 0 ? MaxPointRMS : double.PositiveInfinity,
+                MaxPointRMS = MaxPointRMS > 0 ? MaxPointRMS : double.PositiveInfinity,
                 MinimizeDomeMovement = options.MinimizeDomeMovementEnabled,
                 AllowBlindSolves = options.AllowBlindSolves,
                 MaxConcurrency = options.MaxConcurrency,

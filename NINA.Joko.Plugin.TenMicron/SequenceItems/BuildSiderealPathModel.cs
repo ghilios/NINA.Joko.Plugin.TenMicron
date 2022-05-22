@@ -15,6 +15,7 @@ using NINA.Astrometry;
 using NINA.Astrometry.Interfaces;
 using NINA.Core.Model;
 using NINA.Core.Utility;
+using NINA.Core.Utility.Notification;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
@@ -395,14 +396,18 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
                 return;
             }
 
-            ModelPoints = mountModelBuilderMediator.GenerateSiderealPath(
-                Coordinates,
-                Angle.ByDegree(SiderealTrackRADeltaDegrees),
-                SelectedSiderealPathStartDateTimeProvider,
-                SelectedSiderealPathEndDateTimeProvider,
-                SiderealTrackStartOffsetMinutes,
-                SiderealTrackEndOffsetMinutes);
-            ModelPointCount = ModelPoints.Count(p => p.ModelPointState == ModelPointStateEnum.Generated);
+            try {
+                ModelPoints = mountModelBuilderMediator.GenerateSiderealPath(
+                    Coordinates,
+                    Angle.ByDegree(SiderealTrackRADeltaDegrees),
+                    SelectedSiderealPathStartDateTimeProvider,
+                    SelectedSiderealPathEndDateTimeProvider,
+                    SiderealTrackStartOffsetMinutes,
+                    SiderealTrackEndOffsetMinutes);
+                ModelPointCount = ModelPoints.Count(p => p.ModelPointState == ModelPointStateEnum.Generated);
+            } catch (Exception e) {
+                Notification.ShowError($"Failed to generate sidereal path model: {e.Message}");
+            }
         }
 
         public bool Validate() {

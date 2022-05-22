@@ -155,7 +155,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         }
 
         public List<ModelPoint> GenerateSiderealPath(Coordinates coordinates, Angle raDelta, DateTime startTime, DateTime endTime, CustomHorizon horizon) {
-            if (endTime <= startTime) {
+            if (endTime < startTime) {
                 throw new Exception($"End time ({endTime}) comes before start time ({startTime})");
             }
             if (endTime > (startTime + TimeSpan.FromDays(1))) {

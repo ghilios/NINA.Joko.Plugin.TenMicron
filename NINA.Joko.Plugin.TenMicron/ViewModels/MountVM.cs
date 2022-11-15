@@ -517,5 +517,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public void SendCommandBlind(string command, bool raw = true) {
             throw new NotImplementedException();
         }
+
+        public IDevice GetDevice() {
+            throw new NotImplementedException();
+        }
     }
 }

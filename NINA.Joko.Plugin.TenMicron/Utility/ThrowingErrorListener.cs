@@ -12,13 +12,14 @@
 
 using Antlr4.Runtime;
 using NINA.Joko.Plugin.TenMicron.Exceptions;
+using System.IO;
 
 namespace NINA.Joko.Plugin.TenMicron.Utility {
 
     public class ThrowingErrorListener : BaseErrorListener {
         public static readonly ThrowingErrorListener INSTANCE = new ThrowingErrorListener();
 
-        public override void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e) {
+        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e) {
             throw new ParseCancellationException($"line {line}:{charPositionInLine} {msg}");
         }
     }

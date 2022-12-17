@@ -12,7 +12,6 @@
 
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Properties;
-using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
@@ -24,6 +23,8 @@ using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.Equipment.Interfaces;
 using NINA.Joko.Plugin.TenMicron.ModelManagement;
 using NINA.PlateSolving.Interfaces;
+using NINA.Core.Utility;
+using RelayCommand = CommunityToolkit.Mvvm.Input.RelayCommand;
 
 namespace NINA.Joko.Plugin.TenMicron {
 
@@ -54,7 +55,7 @@ namespace NINA.Joko.Plugin.TenMicron {
                 TenMicronOptions = new TenMicronOptions(profileService);
             }
 
-            ResetModelBuilderDefaultsCommand = new RelayCommand((object o) => TenMicronOptions.ResetDefaults());
+            ResetModelBuilderDefaultsCommand = new RelayCommand(TenMicronOptions.ResetDefaults);
 
             MountCommander = new TelescopeMediatorMountCommander(telescopeMediator, TenMicronOptions);
             Mount = new Mount(MountCommander);

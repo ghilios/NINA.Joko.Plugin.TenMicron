@@ -133,8 +133,10 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
                         }
                     } else if (multicastIpAddress.ToString().Equals("224.0.0.1")) {
                         // Ipv4: All hosts on LAN
+#pragma warning disable CA1416 // Validate platform compatibility
                         var unicastIPAddressInformation = iPInterfaceProperties.UnicastAddresses.Where((u) =>
                             u.Address.AddressFamily == AddressFamily.InterNetwork && !iPInterfaceProperties.GetIPv4Properties().IsAutomaticPrivateAddressingActive).FirstOrDefault();
+#pragma warning restore CA1416 // Validate platform compatibility
                         if (unicastIPAddressInformation != null) {
                             await SendWakeOnLan(unicastIPAddressInformation.Address, multicastIpAddress, magicPacket, ct);
                             break;

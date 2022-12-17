@@ -14,7 +14,6 @@ using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Core.Model;
-using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
 using NINA.Equipment.Equipment;
 using NINA.Equipment.Equipment.MyTelescope;
@@ -34,6 +33,9 @@ using NINA.Core.Enum;
 using System.Windows;
 using System.Linq;
 using NINA.Equipment.Interfaces;
+using CommunityToolkit.Mvvm.Input;
+using NINA.Core.Utility;
+using RelayCommand = CommunityToolkit.Mvvm.Input.RelayCommand;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -85,24 +87,23 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ModelNames = new AsyncObservableCollection<string>() { GetUnselectedModelName() };
             this.SelectedModelName = GetUnselectedModelName();
 
-            this.RefreshCommand = new AsyncCommand<bool>(async o => {
+            this.RefreshCommand = new AsyncRelayCommand<bool>(async o => {
                 await LoadModelNames(this.disconnectCts.Token);
                 await LoadAlignmentModel(this.disconnectCts.Token);
-                return true;
             });
-            this.DeleteSelectedModelCommand = new AsyncCommand<bool>(DeleteSelectedModel);
-            this.LoadSelectedModelCommand = new AsyncCommand<bool>(LoadSelectedModel);
-            this.SaveSelectedModelCommand = new AsyncCommand<bool>(SaveSelectedModel);
-            this.SaveAsModelCommand = new AsyncCommand<bool>(SaveAsModel);
-            this.DeleteWorstStarCommand = new AsyncCommand<bool>(DeleteWorstStar);
-            this.ClearAlignmentCommand = new RelayCommand(o => DeleteAlignment());
+            this.DeleteSelectedModelCommand = new AsyncRelayCommand(DeleteSelectedModel);
+            this.LoadSelectedModelCommand = new AsyncRelayCommand(LoadSelectedModel);
+            this.SaveSelectedModelCommand = new AsyncRelayCommand(SaveSelectedModel);
+            this.SaveAsModelCommand = new AsyncRelayCommand(SaveAsModel);
+            this.DeleteWorstStarCommand = new AsyncRelayCommand(DeleteWorstStar);
+            this.ClearAlignmentCommand = new RelayCommand(DeleteAlignment);
 
             mountModelMediator.RegisterHandler(this);
             this.telescopeMediator.RegisterConsumer(this);
             this.mountMediator.RegisterConsumer(this);
         }
 
-        private Task<bool> DeleteWorstStar(object o) {
+        private Task<bool> DeleteWorstStar() {
             try {
                 var alignmentStars = new AlignmentStarPoint[this.LoadedAlignmentModel.AlignmentStarCount];
                 this.LoadedAlignmentModel.AlignmentStars.CopyTo(alignmentStars, 0);
@@ -138,7 +139,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> DeleteSelectedModel(object o) {
+        private Task<bool> DeleteSelectedModel() {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Deleting model {selectedModelName}");
@@ -153,7 +154,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> LoadSelectedModel(object o) {
+        private Task<bool> LoadSelectedModel() {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Loading model {selectedModelName}");
@@ -168,7 +169,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> SaveSelectedModel(object o) {
+        private Task<bool> SaveSelectedModel() {
             try {
                 var selectedModelName = this.SelectedModelName;
                 Logger.Info($"Saving model as {selectedModelName}");
@@ -185,7 +186,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> SaveAsModel(object o) {
+        private Task<bool> SaveAsModel() {
             try {
                 var result = MyInputBox.Show("Save Model As...", "Model Name", "What name to save the active model with");
                 if (result.MessageBoxResult == System.Windows.MessageBoxResult.OK) {

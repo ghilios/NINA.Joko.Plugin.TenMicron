@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using CommunityToolkit.Mvvm.Input;
 using NINA.Astrometry;
 using NINA.Astrometry.Interfaces;
 using NINA.Core.Model;
@@ -132,13 +133,13 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.profileService.ActiveProfile.DomeSettings.PropertyChanged += DomeSettings_PropertyChanged;
             this.LoadHorizon();
 
-            this.GeneratePointsCommand = new AsyncCommand<bool>(GeneratePoints);
-            this.ClearPointsCommand = new AsyncCommand<bool>(ClearPoints);
-            this.BuildCommand = new AsyncCommand<bool>(BuildModel);
-            this.CancelBuildCommand = new AsyncCommand<bool>(CancelBuildModel);
-            this.StopBuildCommand = new AsyncCommand<bool>(StopBuildModel);
-            this.CoordsFromFramingCommand = new AsyncCommand<bool>(CoordsFromFraming);
-            this.CoordsFromScopeCommand = new AsyncCommand<bool>(CoordsFromScope);
+            this.GeneratePointsCommand = new AsyncRelayCommand(GeneratePoints);
+            this.ClearPointsCommand = new AsyncRelayCommand(ClearPoints);
+            this.BuildCommand = new AsyncRelayCommand(BuildModel);
+            this.CancelBuildCommand = new AsyncRelayCommand(CancelBuildModel);
+            this.StopBuildCommand = new AsyncRelayCommand(StopBuildModel);
+            this.CoordsFromFramingCommand = new AsyncRelayCommand(CoordsFromFraming);
+            this.CoordsFromScopeCommand = new AsyncRelayCommand(CoordsFromScope);
         }
 
         private void ModelBuilderOptions_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -318,7 +319,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             Connected = false;
         }
 
-        private Task<bool> GeneratePoints(object o) {
+        private Task<bool> GeneratePoints() {
             try {
                 if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.GoldenSpiral) {
                     return Task.FromResult(GenerateGoldenSpiral(this.GoldenSpiralStarCount));
@@ -334,7 +335,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> ClearPoints(object o) {
+        private Task<bool> ClearPoints() {
             this.ModelPoints.Clear();
             this.DisplayModelPoints.Clear();
             return Task.FromResult(true);
@@ -487,7 +488,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> BuildModel(object o) {
+        private Task<bool> BuildModel() {
             if (modelBuildCts != null) {
                 throw new Exception("Model build already in progress");
             }
@@ -509,7 +510,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             return DoBuildModel(modelPoints, options, CancellationToken.None);
         }
 
-        private async Task<bool> CancelBuildModel(object o) {
+        private async Task<bool> CancelBuildModel() {
             try {
                 modelBuildCts?.Cancel();
                 var localModelBuildTask = modelBuildTask;
@@ -522,7 +523,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private async Task<bool> StopBuildModel(object o) {
+        private async Task<bool> StopBuildModel() {
             try {
                 modelBuildStopCts?.Cancel();
                 var localModelBuildTask = modelBuildTask;
@@ -535,7 +536,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> CoordsFromFraming(object o) {
+        private Task<bool> CoordsFromFraming() {
             try {
                 this.SiderealPathObjectCoordinates = new InputCoordinates(framingAssistant.DSO.Coordinates);
                 return Task.FromResult(true);
@@ -544,7 +545,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> CoordsFromScope(object o) {
+        private Task<bool> CoordsFromScope() {
             try {
                 var telescopeInfo = telescopeMediator.GetInfo();
                 this.SiderealPathObjectCoordinates = new InputCoordinates(telescopeInfo.Coordinates);

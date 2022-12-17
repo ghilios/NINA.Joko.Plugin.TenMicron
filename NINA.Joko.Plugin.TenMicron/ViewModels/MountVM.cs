@@ -34,6 +34,8 @@ using System.Net;
 using NINA.Core.Model;
 using NINA.WPF.Base.Interfaces.Mediator;
 using System.Windows.Threading;
+using CommunityToolkit.Mvvm.Input;
+using RelayCommand = CommunityToolkit.Mvvm.Input.RelayCommand;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -102,14 +104,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             ResetMeridianSlewLimitCommand = new RelayCommand(ResetMeridianSlewLimit);
             ResetSlewSettleLimitCommand = new RelayCommand(ResetSlewSettleTime);
-            TogglePowerCommand = new AsyncCommand<bool>((object o) => Task.Run(() => TogglePower(o)));
+            TogglePowerCommand = new AsyncRelayCommand(() => Task.Run(TogglePower));
         }
 
         private void BroadcastMountInfo() {
             this.mountMediator.Broadcast(MountInfo);
         }
 
-        private void ResetMeridianSlewLimit(object o) {
+        private void ResetMeridianSlewLimit() {
             try {
                 this.mount.SetMeridianSlewLimit(0);
             } catch (Exception e) {
@@ -118,7 +120,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private void ResetSlewSettleTime(object o) {
+        private void ResetSlewSettleTime() {
             try {
                 this.mount.SetSlewSettleTime(decimal.Zero);
             } catch (Exception e) {
@@ -127,7 +129,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             }
         }
 
-        private Task<bool> TogglePower(object o) {
+        private Task<bool> TogglePower() {
             if (MountInfo.Connected) {
                 return Task.FromResult(Shutdown());
             } else {

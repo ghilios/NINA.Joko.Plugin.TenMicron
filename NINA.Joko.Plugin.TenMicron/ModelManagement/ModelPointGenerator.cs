@@ -10,6 +10,7 @@
 
 #endregion "copyright"
 
+using Accord.Statistics.Distributions.Univariate;
 using NINA.Astrometry;
 using NINA.Core.Model;
 using NINA.Core.Utility;
@@ -33,15 +34,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         private static readonly double GOLDEN_RATIO = (1.0d + Math.Sqrt(5d)) / 2.0d;
 
         private readonly IProfileService profileService;
-        private readonly ICustomDateTime dateTime;
         private readonly ITelescopeMediator telescopeMediator;
         private readonly ITenMicronOptions options;
         private readonly IWeatherDataMediator weatherDataMediator;
         private readonly IMountMediator mountMediator;
 
-        public ModelPointGenerator(IProfileService profileService, ICustomDateTime dateTime, ITelescopeMediator telescopeMediator, IWeatherDataMediator weatherDataMediator, ITenMicronOptions options, IMountMediator mountMediator) {
+        public ModelPointGenerator(IProfileService profileService, ITelescopeMediator telescopeMediator, IWeatherDataMediator weatherDataMediator, ITenMicronOptions options, IMountMediator mountMediator) {
             this.profileService = profileService;
-            this.dateTime = dateTime;
             this.telescopeMediator = telescopeMediator;
             this.weatherDataMediator = weatherDataMediator;
             this.options = options;
@@ -170,6 +169,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var meridianUpperLimit = meridianLimitDegrees + 0.1d;
             var meridianLowerLimit = 360.0d - meridianLimitDegrees - 0.1d;
             var points = new List<ModelPoint>();
+            var decJitterSigmaDegrees = this.options.DecJitterSigmaDegrees;
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -177,7 +177,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var currentTime = startTime;
                 var raDeltaTime = TimeSpan.FromHours(raDelta.Hours);
                 while (currentTime < endTime) {
-                    var pointCoordinates = ToTopocentric(coordinates, currentTime);
+                    var nextCoordinates = coordinates.Clone();
+
+                    var decJitter = NormalDistribution.Random(mean: 0.0, stdDev: decJitterSigmaDegrees);
+                    decJitter = Math.Min(3.0d * decJitterSigmaDegrees, Math.Max(-3.0d * decJitterSigmaDegrees, decJitter));
+
+                    var nextDec = nextCoordinates.Dec + decJitter;
+                    nextCoordinates.Dec = Math.Min(90.0d, Math.Max(-90.0d, nextDec));
+
+                    var pointCoordinates = ToTopocentric(nextCoordinates, currentTime);
                     var azimuthDegrees = pointCoordinates.Azimuth.Degree;
                     var altitudeDegrees = pointCoordinates.Altitude.Degree;
 
@@ -213,13 +221,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     currentTime += raDeltaTime;
                 }
 
-                if (validPoints < MAX_POINTS) {
+                if (validPoints <= MAX_POINTS) {
                     return points;
                 } else {
-                    // We have too many points, so decrease until we're below the limit. This algorithm is guaranteed to converge as we always reduce the ra delta
-                    var reduceRatio = MAX_POINTS / validPoints;
-                    var nextRaDelta = Angle.ByDegree(raDelta.Degree * reduceRatio);
-                    Logger.Info($"Too many points ({validPoints}) generated with RA delta ({raDelta}). Reducing to {nextRaDelta}");
+                    // We have too many points, so increase until we're below the limit. This algorithm is guaranteed to converge as we always increase the ra delta
+                    var increaseRatio = (double)validPoints / MAX_POINTS;
+                    var nextRaDelta = Angle.ByDegree(raDelta.Degree * increaseRatio);
+                    Logger.Info($"Too many points ({validPoints}) generated with RA delta ({raDelta}). Increasing to {nextRaDelta}");
 
                     raDelta = nextRaDelta;
                 }

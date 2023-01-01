@@ -32,5 +32,9 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         public ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes) {
             return handler.GenerateSiderealPath(coordinates, raDelta, startTimeProvider, endTimeProvider, startOffsetMinutes, endOffsetMinutes);
         }
+
+        public ImmutableList<ModelPoint> GenerateGoldenSpiral(int goldenSpiralStarCount) {
+            return handler.GenerateGoldenSpiral(goldenSpiralStarCount);
+        }
     }
 }

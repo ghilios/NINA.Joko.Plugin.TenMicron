@@ -322,7 +322,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private Task<bool> GeneratePoints() {
             try {
                 if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.GoldenSpiral) {
-                    return Task.FromResult(GenerateGoldenSpiral(this.GoldenSpiralStarCount));
+                    return Task.FromResult(GenerateGoldenSpiral(this.GoldenSpiralStarCount, true));
                 } else if (this.ModelPointGenerationType == ModelPointGenerationTypeEnum.SiderealPath) {
                     return Task.FromResult(GenerateSiderealPath(false));
                 } else {
@@ -341,16 +341,26 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             return Task.FromResult(true);
         }
 
-        private bool GenerateGoldenSpiral(int goldenSpiralStarCount) {
+        private bool GenerateGoldenSpiral(int goldenSpiralStarCount, bool showNotifications) {
             var localModelPoints = this.modelPointGenerator.GenerateGoldenSpiral(goldenSpiralStarCount, this.CustomHorizon);
             this.ModelPoints = ImmutableList.ToImmutableList(localModelPoints);
             if (!this.modelBuilderOptions.ShowRemovedPoints) {
                 localModelPoints = localModelPoints.Where(mp => mp.ModelPointState == ModelPointStateEnum.Generated).ToList();
             }
-            var numPoints = localModelPoints.Count(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
-            Notification.ShowInformation($"Generated {numPoints} points");
+            if (showNotifications) {
+                var numPoints = localModelPoints.Count(mp => mp.ModelPointState == ModelPointStateEnum.Generated);
+                Notification.ShowInformation($"Generated {numPoints} points");
+            }
             this.DisplayModelPoints = new AsyncObservableCollection<ModelPoint>(localModelPoints);
             return true;
+        }
+
+        public ImmutableList<ModelPoint> GenerateGoldenSpiral(int goldenSpiralStarCount) {
+            ModelPointGenerationType = ModelPointGenerationTypeEnum.GoldenSpiral;
+            if (!GenerateGoldenSpiral(goldenSpiralStarCount, false)) {
+                throw new Exception("Failed to generate golden spiral");
+            }
+            return this.ModelPoints;
         }
 
         public ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes) {

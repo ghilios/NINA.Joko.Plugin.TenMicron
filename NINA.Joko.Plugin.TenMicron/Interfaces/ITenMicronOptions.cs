@@ -76,6 +76,8 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         string DriverID { get; set; }
 
+        double DecJitterSigmaDegrees { get; set; }
+
         void ResetDefaults();
     }
 }

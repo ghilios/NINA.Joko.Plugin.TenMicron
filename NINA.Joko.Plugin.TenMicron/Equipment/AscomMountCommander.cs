@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-using ASCOM.DriverAccess;
+using ASCOM.Com.DriverAccess;
 using NINA.Joko.Plugin.TenMicron.Exceptions;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
 

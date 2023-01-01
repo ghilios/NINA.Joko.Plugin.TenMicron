@@ -28,5 +28,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         Task<bool> BuildModel(IList<ModelPoint> modelPoints, ModelBuilderOptions options, CancellationToken ct);
 
         ImmutableList<ModelPoint> GenerateSiderealPath(InputCoordinates coordinates, Angle raDelta, IDateTimeProvider startTimeProvider, IDateTimeProvider endTimeProvider, int startOffsetMinutes, int endOffsetMinutes);
+
+        ImmutableList<ModelPoint> GenerateGoldenSpiral(int goldenSpiralStarCount);
     }
 }

@@ -65,6 +65,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             wolBroadcastIP = optionsAccessor.GetValueString("WolBroadcastIP", "");
             port = optionsAccessor.GetValueInt32("Port", 3490);
             driverID = optionsAccessor.GetValueString("DriverID", "");
+            decJitterSigmaDegrees = optionsAccessor.GetValueDouble(nameof(DecJitterSigmaDegrees), 1.0d);
         }
 
         public void ResetDefaults() {
@@ -99,6 +100,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             WolBroadcastIP = "";
             Port = 3490;
             DriverID = "";
+            DecJitterSigmaDegrees = 1.0d;
         }
 
         private int minPointAltitude;
@@ -549,6 +551,26 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (driverID != value) {
                     driverID = value;
                     optionsAccessor.SetValueString("DriverID", driverID);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private double decJitterSigmaDegrees;
+
+        public double DecJitterSigmaDegrees {
+            get => decJitterSigmaDegrees;
+            set {
+                if (decJitterSigmaDegrees != value) {
+                    if (value < 0.0d || double.IsNaN(value)) {
+                        decJitterSigmaDegrees = 0.0d;
+                    } else if (value >= 10.0d) {
+                        decJitterSigmaDegrees = 10.0d;
+                    } else {
+                        decJitterSigmaDegrees = value;
+                    }
+
+                    optionsAccessor.SetValueDouble(nameof(DecJitterSigmaDegrees), decJitterSigmaDegrees);
                     RaisePropertyChanged();
                 }
             }

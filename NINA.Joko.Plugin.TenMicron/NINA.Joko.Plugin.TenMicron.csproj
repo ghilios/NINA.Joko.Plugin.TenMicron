@@ -341,6 +341,7 @@
     <Compile Include="Equipment\MountModelBuilderMediator.cs" />
     <Compile Include="Equipment\MountModelInfo.cs" />
     <Compile Include="Equipment\MountModelMediator.cs" />
+    <Compile Include="SequenceItems\BuildGoldenSpiralModel.cs" />
     <Compile Include="SequenceItems\PowerOn.cs" />
     <Compile Include="Utility\NativeMethods.cs" />
     <Compile Include="Exceptions\CommandFailedException.cs" />

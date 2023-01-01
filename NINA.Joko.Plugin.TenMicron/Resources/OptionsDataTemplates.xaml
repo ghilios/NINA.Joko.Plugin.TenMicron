@@ -65,6 +65,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.Resources>
                 <TextBlock x:Key="LogCommands_Tooltip" Text="If enabled, every 10u command sent and response received will be logged at INFO level in the NINA log" />
@@ -84,6 +85,7 @@
                 <TextBlock x:Key="AlternateDirectionsBetweenIterations_Tooltip" Text="Alternates sort directions between each build iteration. This helps minimize scope, and particularly dome, movements" />
                 <TextBlock x:Key="DisableRefractionCorrection_Tooltip" Text="Disables refraction correction for the duration of model build. It is turned back on afterwards if it was originally enabled." />
                 <TextBlock x:Key="WolBroadcastIP_Tooltip" Text="The IP address to use for broadcasting the WOL packet to power on the mount. This might not be needed based on your network setup, but try setting this if Power On from the Mount Info pane doesn't work." />
+                <TextBlock x:Key="DecJitterSigma_Tooltip" Text="When creating a sidereal path model, points are randomly jittered along the dec arc. This parameter controls how wide this can vary, with the maximum distance being 3 * sigma." />
             </Grid.Resources>
             <TextBlock
                 Grid.Row="0"
@@ -422,10 +424,39 @@
                 Grid.Column="0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
+                Text="Dec Jitter σ"
+                ToolTip="{StaticResource PlateSolveSubframePercentage_Tooltip}" />
+            <ninactrl:UnitTextBox
+                Grid.Row="17"
+                Grid.Column="1"
+                MinWidth="80"
+                Margin="5,5,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                ToolTip="{StaticResource DecJitterSigma_Tooltip}"
+                Unit="°">
+                <Binding
+                    Path="DecJitterSigmaDegrees"
+                    UpdateSourceTrigger="LostFocus">
+                    <Binding.ValidationRules>
+                        <rules:DoubleRangeRule>
+                            <rules:DoubleRangeRule.ValidRange>
+                                <rules:DoubleRangeChecker Maximum="10.0" Minimum="0.0" />
+                            </rules:DoubleRangeRule.ValidRange>
+                        </rules:DoubleRangeRule>
+                    </Binding.ValidationRules>
+                </Binding>
+            </ninactrl:UnitTextBox>
+
+            <TextBlock
+                Grid.Row="18"
+                Grid.Column="0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
                 Text="WOL Broadcast IP"
                 ToolTip="{StaticResource WolBroadcastIP_Tooltip}" />
             <TextBox
-                Grid.Row="17"
+                Grid.Row="18"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
                 MinWidth="80"

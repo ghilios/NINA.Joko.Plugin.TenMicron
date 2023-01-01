@@ -435,9 +435,7 @@
                 VerticalAlignment="Center"
                 ToolTip="{StaticResource DecJitterSigma_Tooltip}"
                 Unit="°">
-                <Binding
-                    Path="DecJitterSigmaDegrees"
-                    UpdateSourceTrigger="LostFocus">
+                <Binding Path="DecJitterSigmaDegrees" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <rules:DoubleRangeRule>
                             <rules:DoubleRangeRule.ValidRange>

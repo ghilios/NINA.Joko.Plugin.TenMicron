@@ -33,6 +33,7 @@ using System.Collections.Immutable;
 using NINA.Core.Enum;
 using System.Windows;
 using System.Linq;
+using NINA.Equipment.Interfaces;
 
 namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
@@ -608,6 +609,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         }
 
         public void SendCommandBlind(string command, bool raw = true) {
+            throw new NotImplementedException();
+        }
+
+        public IDevice GetDevice() {
             throw new NotImplementedException();
         }
     }

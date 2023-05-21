@@ -31,5 +31,9 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
         public DateTime GetDateTime(ISequenceEntity context) {
             return DateTime.Now;
         }
+
+        public TimeOnly GetRolloverTime(ISequenceEntity context) {
+            return new TimeOnly(12, 0, 0);
+        }
     }
 }

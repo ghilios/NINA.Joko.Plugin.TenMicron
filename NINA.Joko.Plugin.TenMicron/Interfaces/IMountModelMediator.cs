@@ -11,7 +11,7 @@
 #endregion "copyright"
 
 using NINA.Core.Enum;
-using NINA.Equipment.Interfaces.Mediator;
+using NINA.Core.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Model;
 using System.Threading;
@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IMountModelMediator : IDeviceMediator<IMountModelVM, IMountModelConsumer, MountModelInfo> {
+    public interface IMountModelMediator : IMediator<IMountModelVM> {
 
         string GetModelName(int modelIndex);
 
@@ -56,5 +56,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
             AstrometricTime localSiderealTime);
 
         Task<LoadedAlignmentModel> GetLoadedAlignmentModel(CancellationToken ct);
+
+        MountModelInfo GetInfo();
     }
 }

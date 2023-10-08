@@ -16,10 +16,12 @@ using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Equipment.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
+using NINA.Core.Interfaces;
+using System.Runtime;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IMountMediator : IDeviceMediator<IMountVM, IMountConsumer, MountInfo> {
+    public interface IMountMediator : IMediator<IMountVM> {
 
         CoordinateAngle GetMountReportedDeclination();
 
@@ -32,5 +34,13 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         bool Shutdown();
 
         Task<bool> PowerOn(CancellationToken ct);
+
+        MountInfo GetInfo();
+
+        void RegisterConsumer(IMountConsumer consumer);
+
+        void RemoveConsumer(IMountConsumer consumer);
+
+        void Broadcast(MountInfo deviceInfo);
     }
 }

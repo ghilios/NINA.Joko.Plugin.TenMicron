@@ -18,10 +18,29 @@ using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Equipment.Interfaces;
 using System.Threading.Tasks;
 using System.Threading;
+using NINA.Equipment.Equipment.MyTelescope;
+using System.Collections.Generic;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
-    public class MountMediator : DeviceMediator<IMountVM, IMountConsumer, MountInfo>, IMountMediator {
+    public class MountMediator : Mediator<IMountVM>, IMountMediator {
+        protected List<IMountConsumer> consumers = new List<IMountConsumer>();
+
+        public void RegisterConsumer(IMountConsumer consumer) {
+            lock (consumers) {
+                consumers.Add(consumer);
+            }
+            if (handler != null) {
+                var info = handler.GetDeviceInfo();
+                consumer.UpdateDeviceInfo(info);
+            }
+        }
+
+        public void RemoveConsumer(IMountConsumer consumer) {
+            lock (consumers) {
+                consumers.Remove(consumer);
+            }
+        }
 
         public CoordinateAngle GetMountReportedDeclination() {
             return handler.GetMountReportedDeclination();
@@ -45,6 +64,18 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         public Task<bool> PowerOn(CancellationToken ct) {
             return handler.PowerOn(ct);
+        }
+
+        public MountInfo GetInfo() {
+            return handler.GetDeviceInfo();
+        }
+
+        public void Broadcast(MountInfo deviceInfo) {
+            lock (consumers) {
+                foreach (IMountConsumer c in consumers) {
+                    c.UpdateDeviceInfo(deviceInfo);
+                }
+            }
         }
     }
 }

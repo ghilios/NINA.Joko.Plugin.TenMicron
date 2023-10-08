@@ -19,7 +19,7 @@ using System.Threading;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IMountVM : IDeviceVM<MountInfo>, IDockableVM {
+    public interface IMountVM : IDockableVM {
 
         CoordinateAngle GetMountReportedDeclination();
 
@@ -34,5 +34,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         Task<bool> PowerOn(CancellationToken ct);
 
         void SetDualAxisTracking(bool enabled);
+
+        MountInfo GetDeviceInfo();
     }
 }

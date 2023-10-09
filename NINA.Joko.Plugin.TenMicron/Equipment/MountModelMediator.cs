@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
-    public class MountModelMediator : DeviceMediator<IMountModelVM, IMountModelConsumer, MountModelInfo>, IMountModelMediator {
+    public class MountModelMediator : Mediator<IMountModelVM>, IMountModelMediator {
 
         public void DeleteAlignment() {
             handler.DeleteAlignment();
@@ -85,6 +85,10 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
         public Task<LoadedAlignmentModel> GetLoadedAlignmentModel(CancellationToken ct) {
             return handler.GetLoadedAlignmentModel(ct);
+        }
+
+        public MountModelInfo GetInfo() {
+            return handler.GetDeviceInfo();
         }
     }
 }

@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
-    public interface IMountModelVM : IDeviceVM<MountModelInfo>, IDockableVM {
+    public interface IMountModelVM : IDockableVM {
 
         string GetModelName(int modelIndex);
 
@@ -56,5 +56,7 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
             AstrometricTime localSiderealTime);
 
         Task<LoadedAlignmentModel> GetLoadedAlignmentModel(CancellationToken ct);
+
+        MountModelInfo GetDeviceInfo();
     }
 }

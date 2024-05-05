@@ -123,5 +123,41 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                 }
             }
         }
+
+        private bool refractionCorrectionEnabled;
+
+        public bool RefractionCorrectionEnabled {
+            get => refractionCorrectionEnabled;
+            set {
+                if (refractionCorrectionEnabled != value) {
+                    refractionCorrectionEnabled = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private decimal refractionTemperature;
+
+        public decimal RefractionTemperature {
+            get => refractionTemperature;
+            set {
+                if (refractionTemperature != value) {
+                    refractionTemperature = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private decimal refractionPressure;
+
+        public decimal RefractionPressure {
+            get => refractionPressure;
+            set {
+                if (refractionPressure != value) {
+                    refractionPressure = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
     }
 }

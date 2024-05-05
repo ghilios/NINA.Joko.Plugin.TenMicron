@@ -31,9 +31,15 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
         bool Shutdown();
 
+        bool SetTemperature(double tempCelcius);
+
+        bool SetPressure(double pressureHpa);
+
         Task<bool> PowerOn(CancellationToken ct);
 
         void SetDualAxisTracking(bool enabled);
+
+        void SetRefactionCorrectionEnabled(bool enabled);
 
         MountInfo GetDeviceInfo();
     }

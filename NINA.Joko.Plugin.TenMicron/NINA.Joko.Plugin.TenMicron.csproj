@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWPF>true</UseWPF>
@@ -66,10 +66,8 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ASCOM.Com.Components" Version="1.0.70" />
-    <PackageReference Include="ASCOM.Common.Components" Version="1.0.70" />
     <PackageReference Include="ASCOM.Exception.Library" Version="6.6.1" />
-    <PackageReference Include="ASCOM.Tools" Version="1.0.70" />
+    <PackageReference Include="ASCOM.Tools" Version="1.0.108" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.355802">
       <PrivateAssets>all</PrivateAssets>
@@ -80,13 +78,13 @@
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.11.1" />
     <PackageReference Include="Antlr4BuildTasks" Version="12.1.0" PrivateAssets="all" />
     <PackageReference Include="Dirkster.AvalonDock" Version="4.60.0" />
-    <PackageReference Include="NINA.Plugin" Version="3.0.0.1022-nightly" />
+    <PackageReference Include="NINA.Plugin" Version="3.0.0.9001" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <Page Remove="Properties\DesignTimeResources.xaml" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo TargetDir: $(TargetDir)&#xD;&#xA;      if not exist &quot;%25localappdata%25\NINA\Plugins&quot; (&#xD;&#xA;      echo &quot;Creating $(PlatformName) Plugins folder&quot;&#xD;&#xA;      mkdir  &quot;%25localappdata%25\NINA\Plugins&quot;&#xD;&#xA;      )&#xD;&#xA;&#xD;&#xA;      if not exist &quot;%25localappdata%25\NINA\Plugin\10 Micron Tools&quot; (&#xD;&#xA;      echo &quot;Creating $(PlatformName) Plugins 10 Micron Tools folder&quot;&#xD;&#xA;      mkdir  &quot;%25localappdata%25\NINA\Plugins\10 Micron Tools&quot;&#xD;&#xA;      )&#xD;&#xA;&#xD;&#xA;      echo &quot;Copying $(PlatformName) $(TargetFileName)&quot;&#xD;&#xA;      xcopy &quot;$(TargetPath)&quot; &quot;%25localappdata%25\NINA\Plugins\10 Micron Tools&quot; /h/k/r/y&#xD;&#xA;      xcopy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;%25localappdata%25\NINA\Plugins\10 Micron Tools&quot; /h/k/r/y&#xD;&#xA;&#xD;&#xA;      echo &quot;Copying $(PlatformName) $(TargetFileName) Dependencies&quot;&#xD;&#xA;      xcopy &quot;$(TargetDir)Antlr4.Runtime.Standard.dll&quot; &quot;%25localappdata%25\NINA\Plugins\10 Micron Tools&quot; /h/k/r/y" />
+    <Exec Command="echo TargetDir: $(TargetDir)&#xD;&#xA;      if not exist &quot;%25localappdata%25\NINA\Plugins&quot; (&#xD;&#xA;      echo &quot;Creating $(PlatformName) Plugins folder&quot;&#xD;&#xA;      mkdir  &quot;%25localappdata%25\NINA\Plugins&quot;&#xD;&#xA;      mkdir  &quot;%25localappdata%25\NINA\Plugins\3.0.0&quot;&#xD;&#xA;      )&#xD;&#xA;&#xD;&#xA;      if not exist &quot;%25localappdata%25\NINA\Plugin\10 Micron Tools&quot; (&#xD;&#xA;      echo &quot;Creating $(PlatformName) Plugins 10 Micron Tools folder&quot;&#xD;&#xA;      mkdir  &quot;%25localappdata%25\NINA\Plugins\3.0.0\10 Micron Tools&quot;&#xD;&#xA;      )&#xD;&#xA;&#xD;&#xA;      echo &quot;Copying $(PlatformName) $(TargetFileName)&quot;&#xD;&#xA;      xcopy &quot;$(TargetPath)&quot; &quot;%25localappdata%25\NINA\Plugins\3.0.0\10 Micron Tools&quot; /h/k/r/y&#xD;&#xA;      xcopy &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;%25localappdata%25\NINA\Plugins\3.0.0\10 Micron Tools&quot; /h/k/r/y&#xD;&#xA;&#xD;&#xA;      echo &quot;Copying $(PlatformName) $(TargetFileName) Dependencies&quot;&#xD;&#xA;      xcopy &quot;$(TargetDir)Antlr4.Runtime.Standard.dll&quot; &quot;%25localappdata%25\NINA\Plugins\3.0.0\10 Micron Tools&quot; /h/k/r/y" />
   </Target>
 </Project>

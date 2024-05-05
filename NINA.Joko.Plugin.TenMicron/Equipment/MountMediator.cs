@@ -77,5 +77,13 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                 }
             }
         }
+
+        public bool SetTemperature(double tempCelcius) {
+            return handler.SetTemperature(tempCelcius);
+        }
+
+        public bool SetPressure(double pressureHpa) {
+            return handler.SetPressure(pressureHpa);
+        }
     }
 }

@@ -40,5 +40,14 @@ namespace NINA.Joko.Plugin.TenMicron.View {
                 mountVM.SetDualAxisTracking(isChecked.Value);
             }
         }
+
+        private void RefractionCorrectionEnabled_Toggled(object sender, RoutedEventArgs e) {
+            var checkBox = (CheckBox)sender;
+            var mountVM = (MountVM)checkBox.DataContext;
+            var isChecked = checkBox.IsChecked;
+            if (isChecked.HasValue) {
+                mountVM.SetRefactionCorrectionEnabled(isChecked.Value);
+            }
+        }
     }
 }

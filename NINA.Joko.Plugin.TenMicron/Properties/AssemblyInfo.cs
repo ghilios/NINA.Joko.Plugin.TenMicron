@@ -16,11 +16,10 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The following GUID is used as a unique identifier of the plugin
 [assembly: Guid("751dd53f-8194-4220-90b9-197f78abb60b")]
-
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("3.0.0.3")]
-[assembly: AssemblyFileVersion("3.0.0.3")]
+[assembly: AssemblyVersion("3.0.0.5")]
+[assembly: AssemblyFileVersion("3.0.0.5")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("10 Micron Tools")]
@@ -33,10 +32,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("George Hilios (jokogeo)")]
 // The product name that this plugin is part of
 [assembly: AssemblyProduct("10 Micron Tools")]
-[assembly: AssemblyCopyright("Copyright ©  2022")]
+[assembly: AssemblyCopyright("Copyright ©  2024")]
 
 // The minimum Version of N.I.N.A. that this plugin is compatible with
-[assembly: AssemblyMetadata("MinimumApplicationVersion", "3.0.0.1022")]
+[assembly: AssemblyMetadata("MinimumApplicationVersion", "3.0.0.9001")]
 
 // The license your plugin code is using
 [assembly: AssemblyMetadata("License", "MPL-2.0")]

@@ -347,6 +347,15 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             mountValues.TryGetValue(nameof(MountInfo.DualAxisTrackingEnabled), out o);
             MountInfo.DualAxisTrackingEnabled = (bool)(o ?? false);
 
+            mountValues.TryGetValue(nameof(MountInfo.RefractionCorrectionEnabled), out o);
+            MountInfo.RefractionCorrectionEnabled = (bool)(o ?? false);
+
+            mountValues.TryGetValue(nameof(MountInfo.RefractionTemperature), out o);
+            MountInfo.RefractionTemperature = (decimal)(o ?? decimal.Zero);
+
+            mountValues.TryGetValue(nameof(MountInfo.RefractionPressure), out o);
+            MountInfo.RefractionPressure = (decimal)(o ?? decimal.Zero);
+
             BroadcastMountInfo();
         }
 
@@ -364,6 +373,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 mountValues.Add(nameof(MountInfo.SlewSettleTimeSeconds), this.mount.GetSlewSettleTimeSeconds().Value);
                 mountValues.Add(nameof(MountInfo.MeridianLimitDegrees), this.mount.GetMeridianSlewLimitDegrees().Value);
                 mountValues.Add(nameof(MountInfo.DualAxisTrackingEnabled), this.mount.GetDualAxisTrackingEnabled().Value);
+                mountValues.Add(nameof(MountInfo.RefractionCorrectionEnabled), this.mount.GetRefractionCorrectionEnabled().Value);
+                mountValues.Add(nameof(MountInfo.RefractionTemperature), this.mount.GetTemperature().Value);
+                mountValues.Add(nameof(MountInfo.RefractionPressure), this.mount.GetPressure().Value);
                 return mountValues;
             } catch (Exception e) {
                 if (telescopeMediator.GetInfo().Connected) {
@@ -416,6 +428,21 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError($"Failed to set dual axis tracking to {enabled}: {ex.Message}");
+            }
+        }
+
+        public void SetRefactionCorrectionEnabled(bool enabled) {
+            if (!MountInfo.Connected) {
+                return;
+            }
+
+            try {
+                if (mount.SetRefractionCorrection(enabled)) {
+                    MountInfo.RefractionCorrectionEnabled = enabled;
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError($"Failed to set refraction correction to {enabled}: {ex.Message}");
             }
         }
 
@@ -522,6 +549,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         public IDevice GetDevice() {
             throw new NotImplementedException();
+        }
+
+        public bool SetTemperature(double tempCelcius) {
+            return mount.SetTemperature(tempCelcius);
+        }
+
+        public bool SetPressure(double pressureHpa) {
+            return mount.SetPressure(pressureHpa);
         }
     }
 }

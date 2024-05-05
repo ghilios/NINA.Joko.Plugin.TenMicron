@@ -112,5 +112,9 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
         void StartTracking();
 
         Response<bool> SetRefractionCorrection(bool enabled);
+
+        Response<bool> SetTemperature(double valCelcius);
+
+        Response<bool> SetPressure(double val);
     }
 }

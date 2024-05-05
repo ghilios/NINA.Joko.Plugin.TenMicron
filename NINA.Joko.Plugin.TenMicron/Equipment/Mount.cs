@@ -24,6 +24,7 @@ using System.Text;
 using NINA.Joko.Plugin.TenMicron.Converters;
 using NINA.Joko.Plugin.TenMicron.Model;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
@@ -379,6 +380,32 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                 throw new Exception($"Unexpected pier side {rawResponse} returned by {command}");
             }
             return new Response<PierSide>(sideOfPier, rawResponse);
+        }
+
+        public Response<bool> SetRefractionCorrectionEnabled(bool value) {
+            // :SREFn#
+            int valueInt = value ? 1 : 0;
+            string command = $":SREF{valueInt}#";
+
+            var success = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(success, "");
+        }
+
+        public Response<bool> SetPressure(double val) {
+            // :SRPRSPPPP.P#
+            string command = $":SRPRS{val:0000.0}#";
+
+            var success = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(success, "");
+        }
+
+        public Response<bool> SetTemperature(double valCelcius) {
+            //:SRTMPsTTT.T#
+            var sign = Math.Sign(valCelcius) >= 0 ? '+' : '-';
+            string command = $":SRTMP{sign}{valCelcius:000.0}#";
+
+            var success = this.mountCommander.SendCommandBool(command, true);
+            return new Response<bool>(success, "");
         }
 
         public Response<int> AddAlignmentPointToSpec(

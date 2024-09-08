@@ -85,9 +85,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
+                    bool standardAzimuthComparison = options.MinPointAzimuth <= options.MaxPointAzimuth;
                     if (altitudeDegrees < options.MinPointAltitude || altitudeDegrees > options.MaxPointAltitude) {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
-                    } else if (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth) {
+                    } else if (standardAzimuthComparison && (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth)) {
+                        creationState = ModelPointStateEnum.OutsideAzimuthBounds;
+                    } else if (!standardAzimuthComparison && (azimuthDegrees < options.MaxPointAzimuth || azimuthDegrees >= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
@@ -201,9 +204,12 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
+                    bool standardAzimuthComparison = options.MinPointAzimuth <= options.MaxPointAzimuth;
                     if (altitudeDegrees < options.MinPointAltitude || altitudeDegrees > options.MaxPointAltitude) {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
-                    } else if (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth) {
+                    } else if (standardAzimuthComparison && (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth)) {
+                        creationState = ModelPointStateEnum.OutsideAzimuthBounds;
+                    } else if (!standardAzimuthComparison && (azimuthDegrees < options.MaxPointAzimuth || azimuthDegrees >= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;

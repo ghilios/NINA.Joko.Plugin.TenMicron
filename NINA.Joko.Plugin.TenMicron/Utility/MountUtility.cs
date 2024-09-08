@@ -108,40 +108,40 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
         public static async Task WakeOnLan(string macAddress, string broadcastAddress, CancellationToken ct) {
             byte[] magicPacket = BuildMagicPacket(macAddress);
 
+            List<Task> wakeTasks = new List<Task>();
             if (IPAddress.TryParse(broadcastAddress, out var broadcastIpAddress)) {
-                await SendWakeOnLan(IPAddress.Any, broadcastIpAddress, magicPacket, ct);
+                wakeTasks.Add(SendWakeOnLan(IPAddress.Any, broadcastIpAddress, magicPacket, ct));
             }
 
-            foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces().Where((n) =>
-                n.NetworkInterfaceType != NetworkInterfaceType.Loopback && n.OperationalStatus == OperationalStatus.Up)) {
-                ct.ThrowIfCancellationRequested();
+            foreach (NetworkInterface nics in NetworkInterface.GetAllNetworkInterfaces()) {
+                if (!nics.Supports(NetworkInterfaceComponent.IPv4)) {
+                    Logger.Debug($"Skipping {nics.Name} since it doesn't support IPv4");
+                    continue;
+                }
+                if (nics.NetworkInterfaceType == NetworkInterfaceType.Loopback) {
+                    continue;
+                }
+                if (!nics.SupportsMulticast) {
+                    Logger.Debug($"Skipping {nics.Name} since it doesn't support multicast");
+                    continue;
+                }
 
-                var iPInterfaceProperties = networkInterface.GetIPProperties();
-                foreach (var multicastIPAddressInformation in iPInterfaceProperties.MulticastAddresses) {
-                    ct.ThrowIfCancellationRequested();
+                foreach (UnicastIPAddressInformation address in nics.GetIPProperties().UnicastAddresses) {
+                    if (address.Address.AddressFamily != AddressFamily.InterNetwork) {
+                        Logger.Debug($"Skipping {address.Address} on {nics.Name} since it isn't InterNetwork");
+                        continue;
+                    }
+                    Logger.Info($"Sending WOL package to {broadcastAddress} using {address.Address} on {nics.Name}");
+                    wakeTasks.Add(SendWakeOnLan(address.Address, broadcastIpAddress, magicPacket, ct));
 
-                    var multicastIpAddress = multicastIPAddressInformation.Address;
-                    // Ipv6: All hosts on LAN (with zone index)
-                    if (multicastIpAddress.ToString().StartsWith("ff02::1%", StringComparison.OrdinalIgnoreCase)) {
-                        var unicastIPAddressInformation = iPInterfaceProperties.UnicastAddresses.Where((u) =>
-                            u.Address.AddressFamily == AddressFamily.InterNetworkV6 && !u.Address.IsIPv6LinkLocal).FirstOrDefault();
-                        if (unicastIPAddressInformation != null) {
-                            await SendWakeOnLan(unicastIPAddressInformation.Address, multicastIpAddress, magicPacket, ct);
-                            break;
-                        }
-                    } else if (multicastIpAddress.ToString().Equals("224.0.0.1")) {
-                        // Ipv4: All hosts on LAN
-#pragma warning disable CA1416 // Validate platform compatibility
-                        var unicastIPAddressInformation = iPInterfaceProperties.UnicastAddresses.Where((u) =>
-                            u.Address.AddressFamily == AddressFamily.InterNetwork && !iPInterfaceProperties.GetIPv4Properties().IsAutomaticPrivateAddressingActive).FirstOrDefault();
-#pragma warning restore CA1416 // Validate platform compatibility
-                        if (unicastIPAddressInformation != null) {
-                            await SendWakeOnLan(unicastIPAddressInformation.Address, multicastIpAddress, magicPacket, ct);
-                            break;
-                        }
+                    foreach (MulticastIPAddressInformation multicastAddress in nics.GetIPProperties().MulticastAddresses) {
+                        Logger.Info($"Sending WOL package to {multicastAddress.Address} using {address.Address} on {nics.Name}");
+                        wakeTasks.Add(SendWakeOnLan(address.Address, multicastAddress.Address, magicPacket, ct));
                     }
                 }
             }
+
+            await Task.WhenAll(wakeTasks.ToArray());
         }
 
         private static byte[] BuildMagicPacket(string macAddress) {
@@ -165,15 +165,21 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
         }
 
         private static async Task SendWakeOnLan(IPAddress localIpAddress, IPAddress multicastIpAddress, byte[] magicPacket, CancellationToken ct) {
-            using (var client = new UdpClient(new IPEndPoint(localIpAddress, 0))) {
-                using (ct.Register(() => client.Close())) {
-                    try {
-                        await client.SendAsync(magicPacket, magicPacket.Length, multicastIpAddress.ToString(), 9);
-                    } catch (Exception) {
-                        ct.ThrowIfCancellationRequested();
-                        throw;
+            var port = 9;
+            try {
+                var localEndPoint = new IPEndPoint(localIpAddress, 0);
+                using (var client = new UdpClient()) {
+                    client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                    client.ExclusiveAddressUse = false;
+                    client.Client.Bind(localEndPoint);
+                    client.EnableBroadcast = true;
+                    using (ct.Register(() => client.Close())) {
+                        await client.SendAsync(magicPacket, magicPacket.Length, multicastIpAddress.ToString(), port);
                     }
                 }
+            } catch (Exception e) {
+                Logger.Warning($"Failed to send WOL packet using local IP {localIpAddress} and multicast IP {multicastIpAddress}. Error: {e}");
             }
         }
 

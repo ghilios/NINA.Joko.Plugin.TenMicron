@@ -18,8 +18,8 @@ using System.Runtime.InteropServices;
 [assembly: Guid("751dd53f-8194-4220-90b9-197f78abb60b")]
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("3.0.0.5")]
-[assembly: AssemblyFileVersion("3.0.0.5")]
+[assembly: AssemblyVersion("3.0.0.6")]
+[assembly: AssemblyFileVersion("3.0.0.6")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("10 Micron Tools")]

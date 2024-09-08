@@ -60,11 +60,17 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
                     alignmentModel.RightAscensionAzimuth = alignmentModelInfo.RightAscensionAzimuth;
                     alignmentModel.RightAscensionAltitude = alignmentModelInfo.RightAscensionAltitude;
                     alignmentModel.PolarAlignErrorDegrees = alignmentModelInfo.PolarAlignErrorDegrees;
-                    alignmentModel.PAErrorAltitudeDegrees = alignmentModelInfo.RightAscensionAltitude - (decimal)telescopeInfo.SiteLatitude;
-                    if ((double)alignmentModelInfo.RightAscensionAzimuth < 180.0d) {
-                        alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth;
+                    if (telescopeInfo.SiteLatitude >= 0) {
+                        // Northern hemisphere
+                        if ((double)alignmentModelInfo.RightAscensionAzimuth < 180.0d) {
+                            alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth;
+                        } else {
+                            alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)360.0d;
+                        }
+                        alignmentModel.PAErrorAltitudeDegrees = alignmentModelInfo.RightAscensionAltitude - (decimal)telescopeInfo.SiteLatitude;
                     } else {
-                        alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)360.0d;
+                        alignmentModel.PAErrorAzimuthDegrees = alignmentModelInfo.RightAscensionAzimuth - (decimal)180.0d;
+                        alignmentModel.PAErrorAltitudeDegrees = alignmentModelInfo.RightAscensionAltitude + (decimal)telescopeInfo.SiteLatitude;
                     }
 
                     alignmentModel.RightAscensionPolarPositionAngleDegrees = alignmentModelInfo.RightAscensionPolarPositionAngleDegrees;

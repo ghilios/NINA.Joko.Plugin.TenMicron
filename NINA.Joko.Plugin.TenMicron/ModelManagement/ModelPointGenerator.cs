@@ -90,7 +90,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
                     } else if (standardAzimuthComparison && (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
-                    } else if (!standardAzimuthComparison && (azimuthDegrees < options.MaxPointAzimuth || azimuthDegrees >= options.MinPointAzimuth)) {
+                    } else if (!standardAzimuthComparison && (azimuthDegrees > options.MaxPointAzimuth && azimuthDegrees <= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
@@ -209,7 +209,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         creationState = ModelPointStateEnum.OutsideAltitudeBounds;
                     } else if (standardAzimuthComparison && (azimuthDegrees < options.MinPointAzimuth || azimuthDegrees >= options.MaxPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
-                    } else if (!standardAzimuthComparison && (azimuthDegrees < options.MaxPointAzimuth || azimuthDegrees >= options.MinPointAzimuth)) {
+                    } else if (!standardAzimuthComparison && (azimuthDegrees > options.MaxPointAzimuth && azimuthDegrees <= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;

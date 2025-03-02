@@ -55,6 +55,9 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
 
         [Description("Below Horizon")]
         BelowHorizon = 101,
+
+        [Description("Too Close to Meridian")]
+        CloseToMeridian = 102,
     }
 
     public class ModelPoint : BaseINPC {

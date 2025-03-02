@@ -228,6 +228,18 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
             }
 
+            bool reenableDualAxisTracking = false;
+            if (options.DisableDATAlignment && mount.GetDualAxisTrackingEnabled()) {
+                if (mount.SetDualAxisTracking(false)) {
+                    Notification.ShowInformation("Disabled dual-axis tracking to build 10u model. It will be turned back on after completion");
+                    Logger.Info("Disabled refraction correction");
+                    reenableDualAxisTracking = true;
+                } else {
+                    Notification.ShowInformation("Failed to disable dual-axis tracking during 10u model build. Continuing");
+                    Logger.Warning("Failed to disable dual-axis tracking during 10u model build. Continuing");
+                }
+            }
+
             try {
                 return await DoBuild(state, linkedCts.Token, stopToken, overallProgress, stepProgress);
             } finally {
@@ -265,6 +277,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     } else {
                         Logger.Warning("Failed to re-enable refraction correction after 10u model build");
                         Notification.ShowWarning("Failed to re-enable refraction correction after 10u model build");
+                    }
+                }
+
+                if (reenableDualAxisTracking) {
+                    if (mount.SetDualAxisTracking(true)) {
+                        Logger.Info("Re-enabled dual-axis tracking");
+                    } else {
+                        Logger.Warning("Failed to re-enable dual-axis tracking after 10u model build");
+                        Notification.ShowWarning("Failed to re-enable dual-axis tracking after 10u model build");
                     }
                 }
 

@@ -22,6 +22,7 @@ using NINA.Joko.Plugin.TenMicron.Utility;
 using NINA.Profile.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 
 namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
@@ -60,6 +61,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             int minViableNumPoints = 0;
             int maxViableNumPoints = int.MaxValue;
             int currentNumPoints = numPoints;
+            var now = DateTime.UtcNow;
+            var nowHoursAngle = new AstrometricTime(now.Hour, now.Minute, now.Second, now.Millisecond / 10).ToAngle();
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -83,6 +86,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         altitudeDegrees = 89.9;
                     }
 
+                    var coordinates = ToEquatorial(altitudeDegrees, azimuthDegrees, now);
+                    var localMinute = (Angle.ByHours(coordinates.RA) - nowHoursAngle).Hours * 60.0d;
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
                     bool standardAzimuthComparison = options.MinPointAzimuth <= options.MaxPointAzimuth;
@@ -92,6 +97,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (!standardAzimuthComparison && (azimuthDegrees > options.MaxPointAzimuth && azimuthDegrees <= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
+                    } else if (Math.Abs(localMinute) < 14.0d) {
+                        creationState = ModelPointStateEnum.CloseToMeridian;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;
@@ -156,6 +163,18 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 wavelength: wavelength);
         }
 
+        private Coordinates ToEquatorial(double altitudeDegrees, double azimuthDegrees, DateTime time) {
+            var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
+            var longitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude);
+            var topocentric = new TopocentricCoordinates(
+                azimuth: Angle.ByDegree(altitudeDegrees),
+                altitude: Angle.ByDegree(azimuthDegrees),
+                latitude: latitude,
+                longitude: longitude,
+                dateTime: new ConstantDateTime(time));
+            return topocentric.Transform(Epoch.JNOW);
+        }
+
         public List<ModelPoint> GenerateSiderealPath(Coordinates coordinates, Angle raDelta, DateTime startTime, DateTime endTime, CustomHorizon horizon) {
             if (endTime < startTime) {
                 throw new Exception($"End time ({endTime}) comes before start time ({startTime})");
@@ -202,6 +221,9 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         azimuthDegrees = meridianLowerLimit;
                     }
 
+                    var nowHoursAngle = new AstrometricTime(currentTime.Hour, currentTime.Minute, currentTime.Second, currentTime.Millisecond / 10).ToAngle();
+                    var localMinute = (Angle.ByHours(coordinates.RA) - nowHoursAngle).Hours * 60.0d;
+
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
                     bool standardAzimuthComparison = options.MinPointAzimuth <= options.MaxPointAzimuth;
@@ -211,6 +233,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
                     } else if (!standardAzimuthComparison && (azimuthDegrees > options.MaxPointAzimuth && azimuthDegrees <= options.MinPointAzimuth)) {
                         creationState = ModelPointStateEnum.OutsideAzimuthBounds;
+                    } else if (Math.Abs(localMinute) < 14.0d) {
+                        creationState = ModelPointStateEnum.CloseToMeridian;
                     } else if (altitudeDegrees >= horizonAltitude) {
                         ++validPoints;
                         creationState = ModelPointStateEnum.Generated;

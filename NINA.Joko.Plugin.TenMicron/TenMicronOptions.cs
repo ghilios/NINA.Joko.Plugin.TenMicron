@@ -30,6 +30,12 @@ namespace NINA.Joko.Plugin.TenMicron {
             }
 
             this.optionsAccessor = new PluginOptionsAccessor(profileService, guid.Value);
+            profileService.ProfileChanged += ProfileService_ProfileChanged;
+
+            InitializeOptions();
+        }
+
+        private void ProfileService_ProfileChanged(object sender, EventArgs e) {
             InitializeOptions();
         }
 
@@ -60,12 +66,14 @@ namespace NINA.Joko.Plugin.TenMicron {
             minPointAzimuth = optionsAccessor.GetValueDouble("MinPointAzimuth", 0.5d);
             maxPointAzimuth = optionsAccessor.GetValueDouble("MaxPointAzimuth", 359.5d);
             disableRefractionCorrection = optionsAccessor.GetValueBoolean("DisableRefractionCorrection", false);
+            disableDATAlignment = optionsAccessor.GetValueBoolean("DisableDATAlignment", false);
             ipAddress = optionsAccessor.GetValueString("IPAddress", "");
             macAddress = optionsAccessor.GetValueString("MACAddress", "");
             wolBroadcastIP = optionsAccessor.GetValueString("WolBroadcastIP", "");
             port = optionsAccessor.GetValueInt32("Port", 3490);
             driverID = optionsAccessor.GetValueString("DriverID", "");
             decJitterSigmaDegrees = optionsAccessor.GetValueDouble(nameof(DecJitterSigmaDegrees), 1.0d);
+            RaiseAllPropertiesChanged();
         }
 
         public void ResetDefaults() {
@@ -95,6 +103,7 @@ namespace NINA.Joko.Plugin.TenMicron {
             MinPointAzimuth = 0.5d;
             MaxPointAzimuth = 359.5d;
             DisableRefractionCorrection = false;
+            DisableDATAlignment = false;
             MACAddress = "";
             IPAddress = "";
             WolBroadcastIP = "";
@@ -483,6 +492,19 @@ namespace NINA.Joko.Plugin.TenMicron {
                 if (disableRefractionCorrection != value) {
                     disableRefractionCorrection = value;
                     optionsAccessor.SetValueBoolean("DisableRefractionCorrection", disableRefractionCorrection);
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool disableDATAlignment;
+
+        public bool DisableDATAlignment {
+            get => disableDATAlignment;
+            set {
+                if (disableDATAlignment != value) {
+                    disableDATAlignment = value;
+                    optionsAccessor.SetValueBoolean("DisableDATAlignment", disableDATAlignment);
                     RaisePropertyChanged();
                 }
             }

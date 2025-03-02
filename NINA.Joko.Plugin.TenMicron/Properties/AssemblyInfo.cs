@@ -18,8 +18,8 @@ using System.Runtime.InteropServices;
 [assembly: Guid("751dd53f-8194-4220-90b9-197f78abb60b")]
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("3.0.0.7")]
-[assembly: AssemblyFileVersion("3.0.0.7")]
+[assembly: AssemblyVersion("3.0.0.8")]
+[assembly: AssemblyFileVersion("3.0.0.8")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("10 Micron Tools")]
@@ -35,7 +35,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright ©  2024")]
 
 // The minimum Version of N.I.N.A. that this plugin is compatible with
-[assembly: AssemblyMetadata("MinimumApplicationVersion", "3.0.0.9001")]
+[assembly: AssemblyMetadata("MinimumApplicationVersion", "3.1.2.9001")]
 
 // The license your plugin code is using
 [assembly: AssemblyMetadata("License", "MPL-2.0")]

@@ -122,7 +122,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                     var nextNumPoints = Math.Min(maxViableNumPoints, currentNumPoints + (numPoints - validPoints));
                     if (nextNumPoints == currentNumPoints) {
                         if (validPoints < numPoints) {
-                            Notification.ShowInformation($"Only {validPoints} could be generated. Continuing");
                             Logger.Warning($"Only {validPoints} could be generated. Continuing");
                         }
                         return points;

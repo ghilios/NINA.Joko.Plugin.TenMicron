@@ -256,7 +256,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                             UpdateMountValues,
                             profileService.ActiveProfile.ApplicationSettings.DevicePollingInterval
                         );
-                        updateTimer.Start();
+                        updateTimer.Run();
                     } catch (Exception e) {
                         Notification.ShowError($"Failed to connect 10u utilities. {e.Message}");
                     }

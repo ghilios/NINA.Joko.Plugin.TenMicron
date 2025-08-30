@@ -392,7 +392,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
         private ImmutableList<ModelPoint> ModelPoints = ImmutableList.Create<ModelPoint>();
 
         private void UpdateModelPoints() {
-            if (SelectedSiderealPathStartDateTimeProvider == null || SelectedSiderealPathEndDateTimeProvider == null || Coordinates?.Coordinates == null || SiderealTrackRADeltaDegrees <= 0) {
+            if (SelectedSiderealPathStartDateTimeProvider == null || SelectedSiderealPathEndDateTimeProvider == null || Coordinates?.Coordinates == null || SiderealTrackRADeltaDegrees <= 0 || this.Parent == null) {
                 return;
             }
 

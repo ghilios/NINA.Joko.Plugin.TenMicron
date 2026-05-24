@@ -21,7 +21,10 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
             ASCOM.Com.Profile.IsRegistered(ASCOM.Common.DeviceTypes.Telescope, driverId);
 
         public string GetValue(string driverId, string valueName, string subKey, string defaultValue) =>
-            ASCOM.Com.Profile.GetValue(ASCOM.Common.DeviceTypes.Telescope, driverId, valueName, subKey, defaultValue);
+            // Named args are load-bearing: ASCOM.Com.Profile.GetValue's positional order is
+            // (deviceType, progId, valueName, defaultValue, subKey), which swaps subKey/defaultValue
+            // relative to this interface. Do not drop the names.
+            ASCOM.Com.Profile.GetValue(ASCOM.Common.DeviceTypes.Telescope, progId: driverId, valueName: valueName, subKey: subKey, defaultValue: defaultValue);
 
         public Dictionary<string, string> GetValues(string driverId) =>
             ASCOM.Com.Profile.GetValues(ASCOM.Common.DeviceTypes.Telescope, driverId);

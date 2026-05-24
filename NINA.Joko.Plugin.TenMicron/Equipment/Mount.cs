@@ -166,9 +166,15 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var minutes = int.Parse(context.minutes().GetText(), CultureInfo.InvariantCulture);
             var tenthMinutes = ParseIntOrDefault(context.tenth_minutes()?.GetText(), 0);
             var seconds = ParseIntOrDefault(context.seconds()?.GetText(), 0);
-            var tenthSeconds = ParseIntOrDefault(context.tenth_seconds()?.GetText(), 0);
-            var hundredthSeconds = ParseIntOrDefault(context.hundredth_seconds()?.GetText(), 0) + 10 * tenthSeconds;
-            return new Response<AstrometricTime>(new AstrometricTime(hours, minutes, seconds + 6 * tenthMinutes, hundredthSeconds + 10 * tenthSeconds), s);
+            // Single digit after the period is a tenth-of-second (×10 to get hundredths);
+            // two digits is already hundredths.
+            int hundredthSeconds = 0;
+            var fracText = context.fractional_seconds()?.GetText();
+            if (fracText != null) {
+                var fracValue = int.Parse(fracText, CultureInfo.InvariantCulture);
+                hundredthSeconds = fracText.Length == 1 ? fracValue * 10 : fracValue;
+            }
+            return new Response<AstrometricTime>(new AstrometricTime(hours, minutes, seconds + 6 * tenthMinutes, hundredthSeconds), s);
         }
 
         public static Response<AlignmentStarInfo> ParseAlignmentStarInfo(string s) {
@@ -402,7 +408,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         public Response<bool> SetTemperature(double valCelcius) {
             //:SRTMPsTTT.T#
             var sign = Math.Sign(valCelcius) >= 0 ? '+' : '-';
-            string command = $":SRTMP{sign}{valCelcius:000.0}#";
+            string command = $":SRTMP{sign}{Math.Abs(valCelcius):000.0}#";
 
             var success = this.mountCommander.SendCommandBool(command, true);
             return new Response<bool>(success, "");

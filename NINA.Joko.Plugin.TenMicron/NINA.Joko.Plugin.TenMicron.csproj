@@ -66,8 +66,8 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ASCOM.Exception.Library" Version="6.6.1" />
-    <PackageReference Include="ASCOM.Tools" Version="1.0.108" />
+    <PackageReference Include="ASCOM.Exception.Library" Version="7.0.1" />
+    <PackageReference Include="ASCOM.Tools" Version="2.1.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.355802">
       <PrivateAssets>all</PrivateAssets>
@@ -78,7 +78,7 @@
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.11.1" />
     <PackageReference Include="Antlr4BuildTasks" Version="12.1.0" PrivateAssets="all" />
     <PackageReference Include="Dirkster.AvalonDock" Version="4.60.0" />
-    <PackageReference Include="NINA.Plugin" Version="3.1.2.9001" />
+    <PackageReference Include="NINA.Plugin" Version="3.2.0.9001" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>

@@ -524,6 +524,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
             var longitudeDegrees = profileService.ActiveProfile.AstrometrySettings.Longitude;
             var longitude = Angle.ByDegree(longitudeDegrees);
+            var elevation = profileService.ActiveProfile.AstrometrySettings.Elevation;
             var domeRadius = profileService.ActiveProfile.DomeSettings.DomeRadius_mm;
             var domeThreshold = Angle.ByDegree(profileService.ActiveProfile.DomeSettings.AzimuthTolerance_degrees);
             var lst = AstroUtil.GetLocalSiderealTimeNow(longitudeDegrees);
@@ -535,7 +536,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 }
 
                 var sideOfPier = MeridianFlip.ExpectedPierSide(celestialCoordinates, Angle.ByHours(lst));
-                var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, sideOfPier: sideOfPier);
+                var targetDomeCoordinates = domeSynchronization.TargetDomeCoordinates(celestialCoordinates, lst, siteLatitude: latitude, siteLongitude: longitude, siteElevation: elevation, sideOfPier: sideOfPier);
                 var domeAzimuth = targetDomeCoordinates.Azimuth;
                 Angle minAzimuth, maxAzimuth;
                 if (state.Options.DomeShutterWidth_mm > 0) {

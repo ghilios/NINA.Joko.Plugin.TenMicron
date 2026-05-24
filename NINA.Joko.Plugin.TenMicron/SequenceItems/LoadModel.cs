@@ -62,6 +62,7 @@ namespace NINA.Joko.Plugin.TenMicron.SequenceItems {
             }
         }
 
+        [JsonProperty]
         public string ModelName {
             get => modelName;
             set {

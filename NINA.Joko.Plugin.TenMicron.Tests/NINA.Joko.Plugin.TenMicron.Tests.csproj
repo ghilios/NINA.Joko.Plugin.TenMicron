@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <IsPackable>false</IsPackable>
+    <LangVersion>latest</LangVersion>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="FluentAssertions" Version="6.12.1" />
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- ASCOM.Tools 1.0.x ships the NOVAS and SOFA native libs plus the JPL ephemeris under
+         runtimes/win-x64/native/. NINA 3.2 brings in 2.1.0 transitively (no natives), so we
+         use PackageDownload here to fetch 1.0.112 just for its content files, without putting
+         a downgrade constraint on the dependency graph. The CopyNinaNativeAssets target below
+         relocates them into the External/ layout NINA's DllLoader expects. -->
+    <PackageDownload Include="ASCOM.Tools" Version="[1.0.112]" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NINA.Joko.Plugin.TenMicron\NINA.Joko.Plugin.TenMicron.csproj" />
+  </ItemGroup>
+  <Target Name="CopyNinaNativeAssets" AfterTargets="Build">
+    <PropertyGroup>
+      <_AscomNativesRoot>$(NuGetPackageRoot)ascom.tools\1.0.112\runtimes\win-x64\native</_AscomNativesRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <_NovasDll Include="$(_AscomNativesRoot)\Novas31\NOVASLibraries\win-x64\libnovas.dll" />
+      <_SofaDll Include="$(_AscomNativesRoot)\SOFALibraries\win-x64\libsofa.dll" />
+      <_JplEphemeris Include="$(_AscomNativesRoot)\Novas31\NOVASLibraries\win-x64\JPLEPH" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_NovasDll)" DestinationFiles="$(OutDir)External\x64\NOVAS\NOVAS31lib.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_SofaDll)" DestinationFiles="$(OutDir)External\x64\SOFA\SOFAlib.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_JplEphemeris)" DestinationFiles="$(OutDir)External\JPLEPH" SkipUnchangedFiles="true" />
+  </Target>
+  <!-- NINA's Database/ folder holds the migration SQL that NINADbContext applies on first use.
+       Only the earthrotationparameters table is exercised by our tests (DatabaseInteraction.GetUT1_UTC),
+       but the migration runner enumerates the whole folder so we ship all of it. Files are vendored from
+       NINA (MPL-2.0). Refresh from a current NINA install if UT1/UTC precision starts drifting. -->
+  <ItemGroup>
+    <None Include="NinaAssets\Database\**\*.sql">
+      <Link>Database\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

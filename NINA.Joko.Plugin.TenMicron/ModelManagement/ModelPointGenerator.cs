@@ -29,6 +29,14 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
     public class ModelPointGenerator : IModelPointGenerator {
         public const int MAX_POINTS = 100;
 
+        // Upper bound on candidate points the golden-spiral search may explore. If the user's
+        // horizon, altitude bounds, or azimuth bounds exclude every candidate (or nearly so), the
+        // search will never satisfy `validPoints == numPoints` and would otherwise grow
+        // `currentNumPoints` linearly toward int.MaxValue. Cap exploration to keep the worst case
+        // bounded and return whatever was generated. 2000 is well above what a real mount needs
+        // (MAX_POINTS = 100); needing more implies the user's constraints reject nearly all sky.
+        private const int MAX_CANDIDATES = 2_000;
+
         // Epsilon to optimize average nearest neighbor distance
         private const double EPSILON = 0.36d;
 
@@ -59,7 +67,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var points = new List<ModelPoint>();
 
             int minViableNumPoints = 0;
-            int maxViableNumPoints = int.MaxValue;
+            int maxViableNumPoints = MAX_CANDIDATES;
             int currentNumPoints = numPoints;
             var now = DateTime.UtcNow;
             var nowHoursAngle = new AstrometricTime(now.Hour, now.Minute, now.Second, now.Millisecond / 10).ToAngle();
@@ -116,13 +124,18 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 if (validPoints == numPoints) {
                     return points;
                 } else if (validPoints < numPoints) {
-                    // After excluding points below the horizon, we are short. Remember where we currently are, and try more points in another iteration.
-                    // This may take several iterations, but it is guaranteed to converge
+                    // After excluding points below the horizon, we are short. Try more points.
+                    // When we got at least some valid points, grow linearly (close to target);
+                    // when we got zero, double the candidate count to reach the cap in O(log N)
+                    // outer iterations rather than O(N) — otherwise sky-rejecting constraints
+                    // would burn millions of NOVAS transforms before hitting MAX_CANDIDATES.
                     minViableNumPoints = currentNumPoints;
-                    var nextNumPoints = Math.Min(maxViableNumPoints, currentNumPoints + (numPoints - validPoints));
+                    var linearGrowth = currentNumPoints + (numPoints - validPoints);
+                    var geometricGrowth = validPoints == 0 ? currentNumPoints * 2 : currentNumPoints;
+                    var nextNumPoints = Math.Min(maxViableNumPoints, Math.Max(linearGrowth, geometricGrowth));
                     if (nextNumPoints == currentNumPoints) {
                         if (validPoints < numPoints) {
-                            Logger.Warning($"Only {validPoints} could be generated. Continuing");
+                            Logger.Warning($"Only {validPoints} of {numPoints} requested points could be generated after exploring {currentNumPoints} candidates");
                         }
                         return points;
                     }
@@ -166,8 +179,8 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
             var longitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude);
             var topocentric = new TopocentricCoordinates(
-                azimuth: Angle.ByDegree(altitudeDegrees),
-                altitude: Angle.ByDegree(azimuthDegrees),
+                azimuth: Angle.ByDegree(azimuthDegrees),
+                altitude: Angle.ByDegree(altitudeDegrees),
                 latitude: latitude,
                 longitude: longitude,
                 dateTime: new ConstantDateTime(time));

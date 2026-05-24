@@ -46,11 +46,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
         [Test]
         public void ParseCoordinateAngle_RealMountUltraPrecisionFormat_Parses() {
-            // FLAG: 10Micron's ultra-precision mode (`:U2#` enabled by Mount.SetUltraPrecisionMode)
+            // 10Micron's ultra-precision mode (`:U2#` enabled by Mount.SetUltraPrecisionMode)
             // returns declinations as `±DD*MM:SS.S#` (asterisk separator, fractional second).
-            // The Angle.g4 grammar has NO alternative for this format — only `:`-separated long form
-            // (alt 1) or `*`-separated without fractional seconds (alts 2/3). This input fails
-            // parsing today; the grammar needs a fourth alternative for the real mount output.
+            // The grammar's fourth alternative covers this real-mount format.
             var result = MountResponseParser.ParseCoordinateAngle("+45*30:15.5#");
 
             result.Value.Degrees.Should().Be(45);

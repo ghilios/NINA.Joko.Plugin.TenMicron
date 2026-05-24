@@ -37,7 +37,7 @@ jobs:
 
       - name: Prepare package
         run: |
-          $buildOut = "NINA.Joko.Plugin.TenMicron/bin/Release/net8.0-windows7.0"
+          $buildOut = "NINA.Joko.Plugin.TenMicron/bin/x64/Release/net8.0-windows7.0"
           Copy-Item "$buildOut/${{ env.PLUGIN_DLL_NAME }}.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force
           Copy-Item "$buildOut/${{ env.PLUGIN_DLL_NAME }}.pdb" "packages/${{ env.PLUGIN_NAME }}/" -Force
           Copy-Item "$buildOut/Antlr4.Runtime.Standard.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force

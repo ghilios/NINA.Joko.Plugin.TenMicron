@@ -114,14 +114,17 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public async Task Build_DomeFollowerDisabled_RestoredOnCompletion() {
+            // UseDome=true (set below via Dome.GetInfo) activates PreStep3 inside DoBuild, which
+            // calls AstroUtil.GetLocalSiderealTimeNow → NOVAS native lib. CI runners without a
+            // local NINA install can't satisfy that, so gate this test on the NINA assets.
+            NinaAssetGate.RequireNina();
+
             var env = new MockModelBuilderEnvironment();
             // Connected dome with settable azimuth -> state.UseDome = true.
             env.Dome.Setup(d => d.GetInfo()).Returns(new DomeInfo { Connected = true, CanSetAzimuth = true });
             env.Dome.SetupGet(d => d.IsFollowingScope).Returns(true);
             env.Dome.Setup(d => d.DisableFollowing(It.IsAny<CancellationToken>())).ReturnsAsync(true);
             env.Dome.Setup(d => d.EnableFollowing(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-            // UseDome=true also activates PreStep3 inside DoBuild (cache dome ranges) — that loop
-            // iterates state.ValidPoints which is empty, so it's a no-op. Good.
             var (ct, stopToken) = PreCancelledStopToken();
             var sut = env.Build();
 

@@ -178,11 +178,13 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
         internal Coordinates ToEquatorial(double altitudeDegrees, double azimuthDegrees, DateTime time) {
             var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
             var longitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude);
+            var elevation = profileService.ActiveProfile.AstrometrySettings.Elevation;
             var topocentric = new TopocentricCoordinates(
                 azimuth: Angle.ByDegree(azimuthDegrees),
                 altitude: Angle.ByDegree(altitudeDegrees),
                 latitude: latitude,
                 longitude: longitude,
+                elevation: elevation,
                 dateTime: new ConstantDateTime(time));
             return topocentric.Transform(Epoch.JNOW);
         }

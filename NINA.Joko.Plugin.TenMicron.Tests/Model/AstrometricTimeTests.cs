@@ -42,6 +42,38 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
         }
 
         [Test]
+        public void FromAngle_Zero_ProducesZero() {
+            var result = AstrometricTime.FromAngle(Angle.ByHours(0));
+
+            result.Hours.Should().Be(0);
+            result.Minutes.Should().Be(0);
+            result.Seconds.Should().Be(0);
+            result.HundredthSeconds.Should().Be(0);
+        }
+
+        [Test]
+        public void FromAngle_ExactlyTwentyFourHours_WrapsToZero() {
+            // Euclidean modulus: 24h is the wrap edge and must collapse to 0h.
+            var result = AstrometricTime.FromAngle(Angle.ByHours(24.0));
+
+            result.Hours.Should().Be(0);
+            result.Minutes.Should().Be(0);
+            result.Seconds.Should().Be(0);
+            result.HundredthSeconds.Should().Be(0);
+        }
+
+        [Test]
+        public void FromAngle_NegativeHours_WrapsToPositive() {
+            // Euclidean modulus (not the C# % operator): -2h wraps to +22h, not -2h.
+            var result = AstrometricTime.FromAngle(Angle.ByHours(-2.0));
+
+            result.Hours.Should().Be(22);
+            result.Minutes.Should().Be(0);
+            result.Seconds.Should().Be(0);
+            result.HundredthSeconds.Should().Be(0);
+        }
+
+        [Test]
         public void RoundTenthSecond_BelowMidpoint_TruncatesDown() {
             var sut = new AstrometricTime(1, 2, 3, 14); // 14 hundredthSec → tenth = 1, remainder 4 < 5
 

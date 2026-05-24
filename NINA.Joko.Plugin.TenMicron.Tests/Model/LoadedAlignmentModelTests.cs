@@ -2,14 +2,13 @@ using System.Collections.Immutable;
 using FluentAssertions;
 using NINA.Astrometry;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Joko.Plugin.TenMicron.Tests.TestHelpers;
 using NUnit.Framework;
 
 namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
 
     [TestFixture]
     public class LoadedAlignmentModelTests {
-
-        private const string NinaNativeReason = "Requires NINA install (JPL ephemeris + migration DB). Move tests next to NINA.exe to run.";
 
         [Test]
         public void SynchronizePoints_NoStars_LeavesEmptyCollection() {
@@ -26,8 +25,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
             sut.MaxRMSError.Should().Be(0.0);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void SynchronizePoints_OneStar_PopulatesAlignmentStars() {
+            NinaAssetGate.RequireNina();
             var star = new AlignmentStarInfo(
                 new AstrometricTime(1, 0, 0, 0),
                 new CoordinateAngle(true, 30, 0, 0, 0),

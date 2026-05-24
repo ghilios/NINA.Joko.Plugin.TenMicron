@@ -2,6 +2,7 @@ using System;
 using FluentAssertions;
 using NINA.Astrometry;
 using NINA.Joko.Plugin.TenMicron.Model;
+using NINA.Joko.Plugin.TenMicron.Tests.TestHelpers;
 using NUnit.Framework;
 
 namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
@@ -10,11 +11,11 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
     public class AlignmentStarPointTests {
 
         // Every test in this fixture calls AlignmentStarPoint.FromAlignmentStarInfo, which transits
-        // NINA's AstroUtil.GetLocalSiderealTime → SOFA/NOVAS native libs + NINA's JPL ephemeris file
-        // (External\JPLEPH) + the NINA migration database (Database\Migration\). Those assets live in
-        // a NINA install, not in the plugin's NuGet payload. Tests are kept here as living docs of
-        // expected behavior and will run unchanged when the test DLL is dropped into a NINA bin folder.
-        private const string NinaNativeReason = "Requires NINA install (JPL ephemeris + migration DB). Move tests next to NINA.exe to run.";
+        // NINA's AstroUtil.GetLocalSiderealTime → NOVAS/SOFA native libs + NINA's JPL ephemeris +
+        // the NINA migration database. NativeLibraryFixture copies those from a local NINA install
+        // at session start; NinaAssetGate.RequireNina() skips the test if it can't find them.
+        [SetUp]
+        public void RequireNina() => NinaAssetGate.RequireNina();
 
 
         // NOTE: AlignmentStarPoint.FromAlignmentStarInfo uses DateTime.Now internally for LST. Tests must
@@ -22,7 +23,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
         // accept a small tolerance. Refactoring to inject an IDateTimeProvider would tighten this — flag.
         private const double TimeToleranceHours = 0.01; // ~36s
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void FromAlignmentStarInfo_ComputesRA_FromLstMinusLocalHour() {
             var localHour = new AstrometricTime(2, 0, 0, 0); // 2h hour-angle
             var dec = new CoordinateAngle(true, 45, 0, 0, 0);
@@ -38,7 +39,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
             point.RightAscension.Hours.Should().BeApproximately(expectedRaHours, TimeToleranceHours);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void FromAlignmentStarInfo_AltitudeWithinPlausibleRange() {
             var starInfo = new AlignmentStarInfo(
                 new AstrometricTime(0, 0, 0, 0),
@@ -57,7 +58,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
             point.InvertedAltitude.Should().BeApproximately(90.0 - point.Altitude, 1e-9);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void ErrorPointRadius_AtMaxError_EqualsBoostedValue() {
             // When error == modelMaxErrorArcsec, errorRatio = 1 → radius = 5 * max(1, 1.5*1) = 7.5
             var starInfo = new AlignmentStarInfo(
@@ -75,7 +76,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
             point.ErrorPointRadius.Should().BeApproximately(7.5, 1e-9);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void ErrorPointRadius_BelowThreshold_ClampsToFloor() {
             // errorRatio = 0.1 → 1.5*0.1=0.15 → max(1, 0.15)=1 → radius = 5*1 = 5
             var starInfo = new AlignmentStarInfo(
@@ -93,7 +94,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
             point.ErrorPointRadius.Should().BeApproximately(5.0, 1e-9);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void ErrorArcsec_PropagatedFromInfo() {
             var starInfo = new AlignmentStarInfo(
                 new AstrometricTime(0, 0, 0, 0),

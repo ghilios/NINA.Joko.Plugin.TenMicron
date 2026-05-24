@@ -19,8 +19,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
     [TestFixture]
     public class ModelPointGeneratorTests {
 
-        private const string NinaNativeReason = "Requires NINA install (JPL ephemeris + migration DB). Move tests next to NINA.exe to run.";
-
         // Static sea-level horizon used across point-generation tests.
         private static readonly CustomHorizon SeaHorizon = BuildConstantHorizon(0.0);
 
@@ -66,8 +64,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             act.Should().Throw<Exception>().WithMessage("*At least 3 points*");
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void GenerateGoldenSpiral_HappyPath_ReturnsAtLeastRequestedValidPoints() {
+            NinaAssetGate.RequireNina();
             // Wide bounds so most generated points should be valid.
             var options = MockOptionsBuilder.Build(minAltitude: 1, maxAltitude: 89);
             var sut = BuildSut(options);
@@ -77,8 +76,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             points.Count(p => p.ModelPointState == ModelPointStateEnum.Generated).Should().BeGreaterOrEqualTo(10);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void GenerateGoldenSpiral_AltitudeClamped_To_0p1_And_89p9() {
+            NinaAssetGate.RequireNina();
             var sut = BuildSut();
 
             var points = sut.GenerateGoldenSpiral(numPoints: 10, SeaHorizon);
@@ -86,8 +86,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             points.Should().OnlyContain(p => p.Altitude >= 0.1d && p.Altitude <= 89.9d);
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void GenerateGoldenSpiral_StandardAzimuthBounds_MarksOutsidePoints() {
+            NinaAssetGate.RequireNina();
             // Standard bounds (Min < Max): only [120, 240] valid.
             var options = MockOptionsBuilder.Build(minAzimuth: 120, maxAzimuth: 240);
             var sut = BuildSut(options);
@@ -104,8 +105,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             }
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void GenerateGoldenSpiral_WrappedAzimuthBounds_SouthernHemisphereCase() {
+            NinaAssetGate.RequireNina();
             // Wrapped bounds (Min > Max): only [0, 90] and [270, 360) valid. Regression for commit 3e33b20.
             var options = MockOptionsBuilder.Build(minAzimuth: 270, maxAzimuth: 90);
             var sut = BuildSut(options, latitudeDeg: -33.0);
@@ -121,8 +123,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             }
         }
 
-        [Test, Ignore(NinaNativeReason)]
+        [Test]
         public void GenerateGoldenSpiral_AltitudeBounds_MarkOutsideAltitudeBounds() {
+            NinaAssetGate.RequireNina();
             var options = MockOptionsBuilder.Build(minAltitude: 40, maxAltitude: 60);
             var sut = BuildSut(options);
 
@@ -135,8 +138,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             }
         }
 
-        [Test, CancelAfter(10000), Ignore(NinaNativeReason)]
+        [Test, CancelAfter(10000)]
         public void GenerateGoldenSpiral_HighHorizon_TerminatesAndReturns() {
+            NinaAssetGate.RequireNina();
             // Horizon at 89.5° — almost nothing should validate. The convergence loop must still
             // terminate (guard against infinite retry).
             var horizon = BuildConstantHorizon(89.5);
@@ -182,12 +186,12 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             act.Should().Throw<Exception>().WithMessage("*cannot be less than 1 arc second*");
         }
 
-        [Test, Ignore(NinaNativeReason + " — but this is also a FLAG test, see comment below.")]
+        [Test]
         public void ToEquatorial_KnownAltAz_RoundTripsToSameTopocentric() {
-            // FLAG: ModelPointGenerator.cs:168-170 swaps the `azimuth:` and `altitude:` named arguments
-            // when constructing TopocentricCoordinates, so the returned RA/Dec corresponds to
-            // (az=alt_input, alt=az_input). Round-tripping back to topocentric currently produces the
-            // swapped pair. Test asserts the *expected* round-trip identity.
+            NinaAssetGate.RequireNina();
+            // Regression: ModelPointGenerator.ToEquatorial previously swapped the `azimuth:` and
+            // `altitude:` named arguments when constructing TopocentricCoordinates, so a known
+            // (alt, az) input came back as (az, alt) after the round trip. Asserts the identity now.
             var sut = BuildSut(latitudeDeg: 40, longitudeDeg: -74);
             var now = new DateTime(2025, 6, 21, 6, 0, 0, DateTimeKind.Utc);
             const double inputAlt = 30.0;

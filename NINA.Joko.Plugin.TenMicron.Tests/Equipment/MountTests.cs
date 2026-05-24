@@ -108,6 +108,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
             var result = sut.GetLocalSiderealTime();
 
             result.Value.Hours.Should().Be(12);
+            result.Value.Minutes.Should().Be(34);
+            result.Value.Seconds.Should().Be(56);
+            result.Value.HundredthSeconds.Should().Be(78);
         }
 
         [Test]
@@ -125,7 +128,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
             Action act = () => sut.GetSideOfPier();
 
-            act.Should().Throw<Exception>();
+            // Source throws plain Exception with message "Unexpected pier side {raw} returned by {command}".
+            act.Should().Throw<Exception>().WithMessage("*Unexpected pier side*");
         }
 
         [Test]
@@ -204,17 +208,28 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
             Action act = () => sut.GetModelName(5);
 
-            act.Should().Throw<Exception>();
+            // Source throws plain Exception with message "{modelIndex} is not a valid model index".
+            act.Should().Throw<Exception>().WithMessage("*not a valid model index*");
         }
 
         [Test]
         public void GetAlignmentModelInfo_ParsesFields() {
+            // Response field order: raAzimuth, raAltitude, paError, raPositionAngle,
+            // orthogonalityError, azimuthTurns, altitudeTurns, modelTerms, rmsError.
             commander.Setup(c => c.SendCommandString(":getain#", true))
                 .Returns("12.3456,+78.9012,0.1234,123.45,+0.0678,+1.50,-2.75,10,123.4#");
 
             var result = sut.GetAlignmentModelInfo();
 
             result.Value.RightAscensionAzimuth.Should().Be(12.3456m);
+            result.Value.RightAscensionAltitude.Should().Be(78.9012m);
+            result.Value.PolarAlignErrorDegrees.Should().Be(0.1234m);
+            result.Value.RightAscensionPolarPositionAngleDegrees.Should().Be(123.45m);
+            result.Value.OrthogonalityErrorDegrees.Should().Be(0.0678m);
+            result.Value.AzimuthAdjustmentTurns.Should().Be(1.50m);
+            result.Value.AltitudeAdjustmentTurns.Should().Be(-2.75m);
+            result.Value.ModelTerms.Should().Be(10);
+            result.Value.RMSError.Should().Be(123.4m);
         }
 
         [Test]
@@ -237,130 +252,76 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
         // ---------- Bool methods through SendCommandBool / SendCommandString ----------
 
-        [Test]
-        public void SaveModel_SuccessResponse_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandString(":modelsv0name#", true)).Returns("1#");
+        [TestCase("1#", true)]
+        [TestCase("0#", false)]
+        public void SaveModel_ResponseDeterminesResult(string response, bool expected) {
+            commander.Setup(c => c.SendCommandString(":modelsv0name#", true)).Returns(response);
 
-            sut.SaveModel("name").Value.Should().BeTrue();
+            sut.SaveModel("name").Value.Should().Be(expected);
         }
 
-        [Test]
-        public void SaveModel_FailureResponse_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandString(":modelsv0name#", true)).Returns("0#");
+        [TestCase("1#", true)]
+        [TestCase("0#", false)]
+        public void DeleteModel_ResponseDeterminesResult(string response, bool expected) {
+            commander.Setup(c => c.SendCommandString(":modeldel0name#", true)).Returns(response);
 
-            sut.SaveModel("name").Value.Should().BeFalse();
+            sut.DeleteModel("name").Value.Should().Be(expected);
         }
 
-        [Test]
-        public void DeleteModel_SuccessResponse_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandString(":modeldel0name#", true)).Returns("1#");
+        [TestCase("1#", true)]
+        [TestCase("0#", false)]
+        public void DeleteAlignmentStar_ResponseDeterminesResult(string response, bool expected) {
+            commander.Setup(c => c.SendCommandString(":delalst3#", true)).Returns(response);
 
-            sut.DeleteModel("name").Value.Should().BeTrue();
+            sut.DeleteAlignmentStar(3).Value.Should().Be(expected);
         }
 
-        [Test]
-        public void DeleteModel_FailureResponse_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandString(":modeldel0name#", true)).Returns("0#");
+        [TestCase("V#", true)]
+        [TestCase("E#", false)]
+        public void StartNewAlignmentSpec_ResponseDeterminesResult(string response, bool expected) {
+            commander.Setup(c => c.SendCommandString(":newalig#", true)).Returns(response);
 
-            sut.DeleteModel("name").Value.Should().BeFalse();
+            sut.StartNewAlignmentSpec().Value.Should().Be(expected);
         }
 
-        [Test]
-        public void DeleteAlignmentStar_SuccessResponse_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandString(":delalst3#", true)).Returns("1#");
+        [TestCase("V#", true)]
+        [TestCase("E#", false)]
+        public void FinishAlignmentSpec_ResponseDeterminesResult(string response, bool expected) {
+            commander.Setup(c => c.SendCommandString(":endalig#", true)).Returns(response);
 
-            sut.DeleteAlignmentStar(3).Value.Should().BeTrue();
+            sut.FinishAlignmentSpec().Value.Should().Be(expected);
         }
 
-        [Test]
-        public void DeleteAlignmentStar_FailureResponse_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandString(":delalst3#", true)).Returns("0#");
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Shutdown_ReturnsCommanderResult(bool commanderResult) {
+            commander.Setup(c => c.SendCommandBool(":shutdown#", true)).Returns(commanderResult);
 
-            sut.DeleteAlignmentStar(3).Value.Should().BeFalse();
+            sut.Shutdown().Value.Should().Be(commanderResult);
         }
 
-        [Test]
-        public void StartNewAlignmentSpec_VResponse_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandString(":newalig#", true)).Returns("V#");
+        [TestCase(true)]
+        [TestCase(false)]
+        public void GetRefractionCorrectionEnabled_ReturnsCommanderResult(bool commanderResult) {
+            commander.Setup(c => c.SendCommandBool(":GREF#", true)).Returns(commanderResult);
 
-            sut.StartNewAlignmentSpec().Value.Should().BeTrue();
+            sut.GetRefractionCorrectionEnabled().Value.Should().Be(commanderResult);
         }
 
-        [Test]
-        public void StartNewAlignmentSpec_NonVResponse_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandString(":newalig#", true)).Returns("E#");
+        [TestCase(true)]
+        [TestCase(false)]
+        public void GetDualAxisTrackingEnabled_ReturnsCommanderResult(bool commanderResult) {
+            commander.Setup(c => c.SendCommandBool(":Gdat#", true)).Returns(commanderResult);
 
-            sut.StartNewAlignmentSpec().Value.Should().BeFalse();
+            sut.GetDualAxisTrackingEnabled().Value.Should().Be(commanderResult);
         }
 
-        [Test]
-        public void FinishAlignmentSpec_VResponse_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandString(":endalig#", true)).Returns("V#");
+        [TestCase(true)]
+        [TestCase(false)]
+        public void GetUnattendedFlipEnabled_ReturnsCommanderResult(bool commanderResult) {
+            commander.Setup(c => c.SendCommandBool(":Guaf#", true)).Returns(commanderResult);
 
-            sut.FinishAlignmentSpec().Value.Should().BeTrue();
-        }
-
-        [Test]
-        public void FinishAlignmentSpec_NonVResponse_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandString(":endalig#", true)).Returns("E#");
-
-            sut.FinishAlignmentSpec().Value.Should().BeFalse();
-        }
-
-        [Test]
-        public void Shutdown_TrueFromCommander_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandBool(":shutdown#", true)).Returns(true);
-
-            sut.Shutdown().Value.Should().BeTrue();
-        }
-
-        [Test]
-        public void Shutdown_FalseFromCommander_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandBool(":shutdown#", true)).Returns(false);
-
-            sut.Shutdown().Value.Should().BeFalse();
-        }
-
-        [Test]
-        public void GetRefractionCorrectionEnabled_TrueFromCommander_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandBool(":GREF#", true)).Returns(true);
-
-            sut.GetRefractionCorrectionEnabled().Value.Should().BeTrue();
-        }
-
-        [Test]
-        public void GetRefractionCorrectionEnabled_FalseFromCommander_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandBool(":GREF#", true)).Returns(false);
-
-            sut.GetRefractionCorrectionEnabled().Value.Should().BeFalse();
-        }
-
-        [Test]
-        public void GetDualAxisTrackingEnabled_TrueFromCommander_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandBool(":Gdat#", true)).Returns(true);
-
-            sut.GetDualAxisTrackingEnabled().Value.Should().BeTrue();
-        }
-
-        [Test]
-        public void GetDualAxisTrackingEnabled_FalseFromCommander_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandBool(":Gdat#", true)).Returns(false);
-
-            sut.GetDualAxisTrackingEnabled().Value.Should().BeFalse();
-        }
-
-        [Test]
-        public void GetUnattendedFlipEnabled_TrueFromCommander_ReturnsTrue() {
-            commander.Setup(c => c.SendCommandBool(":Guaf#", true)).Returns(true);
-
-            sut.GetUnattendedFlipEnabled().Value.Should().BeTrue();
-        }
-
-        [Test]
-        public void GetUnattendedFlipEnabled_FalseFromCommander_ReturnsFalse() {
-            commander.Setup(c => c.SendCommandBool(":Guaf#", true)).Returns(false);
-
-            sut.GetUnattendedFlipEnabled().Value.Should().BeFalse();
+            sut.GetUnattendedFlipEnabled().Value.Should().Be(commanderResult);
         }
 
         [Test]
@@ -448,7 +409,18 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
             sut.SetTemperature(-5.0).Value.Should().BeTrue();
         }
 
-        // ---------- Blind commands through SendCommandBlind ----------
+        [Test]
+        [Ignore("FLAG: pinned in SetTemperature_NegativeValue_SendsMinusSignAndAbsoluteFormat. Will fail until source is fixed.")]
+        public void SetTemperature_NegativeValue_ShouldSendSingleMinusSign() {
+            // Intended behavior: a single '-' sign followed by the absolute value, e.g. ":SRTMP-005.0#".
+            // When the source is fixed (Math.Abs() the value before formatting), un-ignore this and
+            // remove the pinning sibling test above.
+            commander.Setup(c => c.SendCommandBool(":SRTMP-005.0#", true)).Returns(true);
+
+            sut.SetTemperature(-5.0).Value.Should().BeTrue();
+        }
+
+        // ---------- Fire-and-forget commands ----------
 
         [Test]
         public void DeleteAlignment_EmptyResponse_DoesNotThrow() {
@@ -467,7 +439,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
             Action act = () => sut.DeleteAlignment();
 
-            act.Should().Throw<Exception>();
+            // Source throws plain Exception with message "Failed to delete alignment. {command} returned {raw}".
+            act.Should().Throw<Exception>().WithMessage("*Failed to delete alignment*");
         }
 
         [Test]
@@ -512,11 +485,12 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
             commander.Verify(c => c.SendCommandBlind(":AP#", true), Times.Once);
         }
 
-        [Test]
-        public void SetUnattendedFlip_True_SendsSuaf1Blind() {
-            sut.SetUnattendedFlip(true);
+        [TestCase(true, ":Suaf1#")]
+        [TestCase(false, ":Suaf0#")]
+        public void SetUnattendedFlip_SendsSuafBlind(bool enabled, string expectedCommand) {
+            sut.SetUnattendedFlip(enabled);
 
-            commander.Verify(c => c.SendCommandBlind(":Suaf1#", true), Times.Once);
+            commander.Verify(c => c.SendCommandBlind(expectedCommand, true), Times.Once);
         }
 
         // ---------- Complex methods ----------
@@ -649,7 +623,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
                 plateSolvedDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
                 localSiderealTime: new AstrometricTime(0, 0, 0, 0));
 
-            act.Should().Throw<Exception>();
+            // Source throws plain Exception with message "Failed to add alignment point using {command}".
+            act.Should().Throw<Exception>().WithMessage("*Failed to add alignment point*");
         }
     }
 }

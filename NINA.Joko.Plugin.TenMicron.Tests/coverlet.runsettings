@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[NINA.Joko.Plugin.TenMicron]*</Include>
+          <Exclude>[NINA.Joko.Plugin.TenMicron]NINA.Joko.Plugin.TenMicron.Properties.*,[NINA.Joko.Plugin.TenMicron]XamlGeneratedNamespace.*,[NINA.Joko.Plugin.TenMicron]NINA.Joko.Plugin.TenMicron.Grammars.*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/Grammars/*.g4.*.cs,**/Utility/NativeMethods.cs,**/Utility/ThrowingErrorListener.cs,**/ViewModels/MyInputBox.cs,**/*.xaml.cs,**/*.g.cs,**/*.g.i.cs</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>false</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

@@ -68,19 +68,19 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
             }
 
             return new MountAscomConfig() {
-                EnableUncheckedRawCommands = GetASCOMProfileBool(accessor, driverId, "enable_unchecked_raw_commands", "mount_settings", true),
-                UseJ2000Coordinates = GetASCOMProfileBool(accessor, driverId, "use_J2000_coords", "mount_settings", false),
-                EnableSync = GetASCOMProfileBool(accessor, driverId, "enable_sync", "mount_settings", false),
-                UseSyncAsAlignment = GetASCOMProfileBool(accessor, driverId, "use_sync_as_alignment", "mount_settings", false),
+                EnableUncheckedRawCommands = TryGetBool(accessor, driverId, "enable_unchecked_raw_commands", "mount_settings", true),
+                UseJ2000Coordinates = TryGetBool(accessor, driverId, "use_J2000_coords", "mount_settings", false),
+                EnableSync = TryGetBool(accessor, driverId, "enable_sync", "mount_settings", false),
+                UseSyncAsAlignment = TryGetBool(accessor, driverId, "use_sync_as_alignment", "mount_settings", false),
                 RefractionUpdateFile = accessor.GetValue(driverId, "refraction_update_file", "mount_settings", "")
             };
         }
 
-        private static bool GetASCOMProfileBool(IAscomProfileAccessor accessor, string driverId, string name, string subkey, bool defaultvalue) {
-            if (bool.TryParse(accessor.GetValue(driverId, name, subkey, ""), out var result)) {
+        private static bool TryGetBool(IAscomProfileAccessor accessor, string driverId, string name, string subKey, bool defaultValue) {
+            if (bool.TryParse(accessor.GetValue(driverId, name, subKey, ""), out var result)) {
                 return result;
             }
-            return defaultvalue;
+            return defaultValue;
         }
 
         public static bool ValidateMountAscomConfig(MountAscomConfig config) {

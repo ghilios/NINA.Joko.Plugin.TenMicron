@@ -33,7 +33,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Utility {
         public void GetMountAscomConfig_TenMicronDriver_ParsesAllSettings() {
             var accessor = BuildAccessor(
                 registered: true,
-                values: new Dictionary<(string, string, string), string> {
+                getValueResults: new Dictionary<(string, string, string), string> {
                     { ("ASCOM.tenmicron_mount.Telescope", "enable_unchecked_raw_commands", "mount_settings"), "False" },
                     { ("ASCOM.tenmicron_mount.Telescope", "use_J2000_coords", "mount_settings"), "True" },
                     { ("ASCOM.tenmicron_mount.Telescope", "enable_sync", "mount_settings"), "True" },
@@ -52,7 +52,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Utility {
         }
 
         [Test]
-        public void GetMountAscomConfig_MissingValues_UsesDefaults() {
+        public void GetMountAscomConfig_EmptyProfileValues_UsesDefaults() {
             // Accessor returns empty strings -> bool.TryParse fails -> defaults apply.
             var accessor = BuildAccessor(registered: true);
 
@@ -66,16 +66,18 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Utility {
             result.RefractionUpdateFile.Should().Be("");
         }
 
+        // GetValues is independently always stubbed to an empty dictionary because production code
+        // only uses its return for JSON logging; only getValueResults drives observable behaviour.
         private static Mock<IAscomProfileAccessor> BuildAccessor(
             bool registered,
-            Dictionary<(string, string, string), string> values = null) {
-            values ??= new Dictionary<(string, string, string), string>();
+            Dictionary<(string, string, string), string> getValueResults = null) {
+            getValueResults ??= new Dictionary<(string, string, string), string>();
             var accessor = new Mock<IAscomProfileAccessor>();
             accessor.Setup(a => a.IsRegistered(It.IsAny<string>())).Returns(registered);
             accessor.Setup(a => a.GetValues(It.IsAny<string>())).Returns(new Dictionary<string, string>());
             accessor.Setup(a => a.GetValue(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Returns<string, string, string, string>((driverId, name, subKey, defaultValue) =>
-                    values.TryGetValue((driverId, name, subKey), out var v) ? v : "");
+                    getValueResults.TryGetValue((driverId, name, subKey), out var v) ? v : "");
             return accessor;
         }
     }

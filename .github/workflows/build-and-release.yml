@@ -11,7 +11,7 @@ permissions:
 env:
   PLUGIN_NAME: "10 Micron Tools"
   PLUGIN_DLL_NAME: "NINA.Joko.Plugin.TenMicron"
-  PLUGIN_MANIFEST_PATH: "1/10 Micron Tools/3.1.2.9001"
+  PLUGIN_MANIFEST_PATH: "1/10 Micron Tools/3.2.0.9001"
   PLUGIN_IS_BETA: false
 
 jobs:

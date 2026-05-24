@@ -1,8 +1,11 @@
 using FluentAssertions;
 using Moq;
+using NINA.Core.Enum;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 using NINA.Joko.Plugin.TenMicron.Interfaces;
+using NINA.Joko.Plugin.TenMicron.Model;
 using NUnit.Framework;
+using System;
 
 namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
@@ -94,6 +97,559 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
             result.Value.IP.Should().Be("192.168.1.10");
             result.Value.FromDHCP.Should().BeTrue();
+        }
+
+        // ---------- Simple read methods through SendCommandString ----------
+
+        [Test]
+        public void GetLocalSiderealTime_SendsGS_AndParsesResponse() {
+            commander.Setup(c => c.SendCommandString(":GS#", true)).Returns("12:34:56.78#");
+
+            var result = sut.GetLocalSiderealTime();
+
+            result.Value.Hours.Should().Be(12);
+        }
+
+        [Test]
+        public void GetSideOfPier_EastResponse_ReturnsPierEast() {
+            commander.Setup(c => c.SendCommandString(":pS#", true)).Returns("East#");
+
+            var result = sut.GetSideOfPier();
+
+            result.Value.Should().Be(PierSide.pierEast);
+        }
+
+        [Test]
+        public void GetSideOfPier_UnknownResponse_Throws() {
+            commander.Setup(c => c.SendCommandString(":pS#", true)).Returns("Unknown#");
+
+            Action act = () => sut.GetSideOfPier();
+
+            act.Should().Throw<Exception>();
+        }
+
+        [Test]
+        public void GetId_TrimsTrailingHash() {
+            commander.Setup(c => c.SendCommandString(":GETID#", true)).Returns("MyMount#");
+
+            sut.GetId().Value.Should().Be("MyMount");
+        }
+
+        [Test]
+        public void GetMeridianSlewLimitDegrees_ParsesInteger() {
+            commander.Setup(c => c.SendCommandString(":Glms#", true)).Returns("10#");
+
+            sut.GetMeridianSlewLimitDegrees().Value.Should().Be(10);
+        }
+
+        [Test]
+        public void GetSlewSettleTimeSeconds_ParsesDecimal() {
+            commander.Setup(c => c.SendCommandString(":Gstm#", true)).Returns("1.5#");
+
+            sut.GetSlewSettleTimeSeconds().Value.Should().Be(1.5m);
+        }
+
+        [Test]
+        public void GetStatus_ZeroResponse_ReturnsTracking() {
+            commander.Setup(c => c.SendCommandString(":Gstat#", true)).Returns("0#");
+
+            sut.GetStatus().Value.Should().Be(MountStatusEnum.Tracking);
+        }
+
+        [Test]
+        public void GetPressure_ParsesDecimal() {
+            commander.Setup(c => c.SendCommandString(":GRPRS#", true)).Returns("1013.25#");
+
+            sut.GetPressure().Value.Should().Be(1013.25m);
+        }
+
+        [Test]
+        public void GetTemperature_ParsesDecimal() {
+            commander.Setup(c => c.SendCommandString(":GRTMP#", true)).Returns("15.5#");
+
+            sut.GetTemperature().Value.Should().Be(15.5m);
+        }
+
+        [Test]
+        public void GetMACAddress_TrimsTrailingHash() {
+            commander.Setup(c => c.SendCommandString(":GMAC#", true)).Returns("AA:BB:CC:DD:EE:FF#");
+
+            sut.GetMACAddress().Value.Should().Be("AA:BB:CC:DD:EE:FF");
+        }
+
+        [Test]
+        public void GetModelName_ValidIndex_ReturnsTrimmedName() {
+            commander.Setup(c => c.SendCommandString(":modelnam5#", true)).Returns("MyModel#");
+
+            sut.GetModelName(5).Value.Should().Be("MyModel");
+        }
+
+        [Test]
+        public void GetModelName_IndexBelowOne_ThrowsArgumentException() {
+            Action act = () => sut.GetModelName(0);
+
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Test]
+        public void GetModelName_IndexAboveNinetyNine_ThrowsArgumentException() {
+            Action act = () => sut.GetModelName(100);
+
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Test]
+        public void GetModelName_EmptyResponse_Throws() {
+            commander.Setup(c => c.SendCommandString(":modelnam5#", true)).Returns("#");
+
+            Action act = () => sut.GetModelName(5);
+
+            act.Should().Throw<Exception>();
+        }
+
+        [Test]
+        public void GetAlignmentModelInfo_ParsesFields() {
+            commander.Setup(c => c.SendCommandString(":getain#", true))
+                .Returns("12.3456,+78.9012,0.1234,123.45,+0.0678,+1.50,-2.75,10,123.4#");
+
+            var result = sut.GetAlignmentModelInfo();
+
+            result.Value.RightAscensionAzimuth.Should().Be(12.3456m);
+        }
+
+        [Test]
+        public void GetAlignmentStarInfo_ValidIndex_ParsesResponse() {
+            commander.Setup(c => c.SendCommandString(":getali1#", true))
+                .Returns("12:34:56.78,+45*30:15.5,12.3#");
+
+            var result = sut.GetAlignmentStarInfo(1);
+
+            result.Value.LocalHour.Hours.Should().Be(12);
+            result.Value.ErrorArcseconds.Should().Be(12.3m);
+        }
+
+        [Test]
+        public void GetAlignmentStarInfo_IndexBelowOne_ThrowsArgumentException() {
+            Action act = () => sut.GetAlignmentStarInfo(0);
+
+            act.Should().Throw<ArgumentException>();
+        }
+
+        // ---------- Bool methods through SendCommandBool / SendCommandString ----------
+
+        [Test]
+        public void SaveModel_SuccessResponse_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandString(":modelsv0name#", true)).Returns("1#");
+
+            sut.SaveModel("name").Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SaveModel_FailureResponse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandString(":modelsv0name#", true)).Returns("0#");
+
+            sut.SaveModel("name").Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void DeleteModel_SuccessResponse_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandString(":modeldel0name#", true)).Returns("1#");
+
+            sut.DeleteModel("name").Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void DeleteModel_FailureResponse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandString(":modeldel0name#", true)).Returns("0#");
+
+            sut.DeleteModel("name").Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void DeleteAlignmentStar_SuccessResponse_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandString(":delalst3#", true)).Returns("1#");
+
+            sut.DeleteAlignmentStar(3).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void DeleteAlignmentStar_FailureResponse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandString(":delalst3#", true)).Returns("0#");
+
+            sut.DeleteAlignmentStar(3).Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void StartNewAlignmentSpec_VResponse_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandString(":newalig#", true)).Returns("V#");
+
+            sut.StartNewAlignmentSpec().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void StartNewAlignmentSpec_NonVResponse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandString(":newalig#", true)).Returns("E#");
+
+            sut.StartNewAlignmentSpec().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void FinishAlignmentSpec_VResponse_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandString(":endalig#", true)).Returns("V#");
+
+            sut.FinishAlignmentSpec().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void FinishAlignmentSpec_NonVResponse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandString(":endalig#", true)).Returns("E#");
+
+            sut.FinishAlignmentSpec().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void Shutdown_TrueFromCommander_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandBool(":shutdown#", true)).Returns(true);
+
+            sut.Shutdown().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void Shutdown_FalseFromCommander_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":shutdown#", true)).Returns(false);
+
+            sut.Shutdown().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void GetRefractionCorrectionEnabled_TrueFromCommander_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandBool(":GREF#", true)).Returns(true);
+
+            sut.GetRefractionCorrectionEnabled().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void GetRefractionCorrectionEnabled_FalseFromCommander_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":GREF#", true)).Returns(false);
+
+            sut.GetRefractionCorrectionEnabled().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void GetDualAxisTrackingEnabled_TrueFromCommander_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandBool(":Gdat#", true)).Returns(true);
+
+            sut.GetDualAxisTrackingEnabled().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void GetDualAxisTrackingEnabled_FalseFromCommander_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":Gdat#", true)).Returns(false);
+
+            sut.GetDualAxisTrackingEnabled().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void GetUnattendedFlipEnabled_TrueFromCommander_ReturnsTrue() {
+            commander.Setup(c => c.SendCommandBool(":Guaf#", true)).Returns(true);
+
+            sut.GetUnattendedFlipEnabled().Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void GetUnattendedFlipEnabled_FalseFromCommander_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":Guaf#", true)).Returns(false);
+
+            sut.GetUnattendedFlipEnabled().Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void SetRefractionCorrection_True_SendsSREF1AndReturnsCommanderResult() {
+            commander.Setup(c => c.SendCommandBool(":SREF1#", true)).Returns(true);
+
+            sut.SetRefractionCorrection(true).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetRefractionCorrection_FalseAndCommanderReturnsFalse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":SREF0#", true)).Returns(false);
+
+            sut.SetRefractionCorrection(false).Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void SetDualAxisTracking_False_SendsSdat0() {
+            commander.Setup(c => c.SendCommandBool(":Sdat0#", true)).Returns(true);
+
+            sut.SetDualAxisTracking(false).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetDualAxisTracking_CommanderFalse_ReturnsFalse() {
+            commander.Setup(c => c.SendCommandBool(":Sdat1#", true)).Returns(false);
+
+            sut.SetDualAxisTracking(true).Value.Should().BeFalse();
+        }
+
+        [Test]
+        public void SetMeridianSlewLimit_TenDegrees_SendsSlms10() {
+            commander.Setup(c => c.SendCommandBool(":Slms10#", true)).Returns(true);
+
+            sut.SetMeridianSlewLimit(10).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetSlewSettleTime_OnePointFive_SendsFormattedCommand() {
+            // Format string ":Sstm{seconds:00000.000}#" => "1.5" becomes "00001.500".
+            commander.Setup(c => c.SendCommandBool(":Sstm00001.500#", true)).Returns(true);
+
+            sut.SetSlewSettleTime(1.5m).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetSlewSettleTime_NegativeValue_ReturnsFalseWithoutCallingCommander() {
+            sut.SetSlewSettleTime(-1m).Value.Should().BeFalse();
+
+            commander.Verify(c => c.SendCommandBool(It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        }
+
+        [Test]
+        public void SetSlewSettleTime_AboveMax_ReturnsFalseWithoutCallingCommander() {
+            sut.SetSlewSettleTime(100000m).Value.Should().BeFalse();
+
+            commander.Verify(c => c.SendCommandBool(It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+        }
+
+        [Test]
+        public void SetPressure_RoundsToSingleDecimalAndSendsSRPRS() {
+            // Source: ":SRPRS{val:0000.0}#". 1013.25 => "1013.3" (banker's-rounding via standard format).
+            commander.Setup(c => c.SendCommandBool(":SRPRS1013.3#", true)).Returns(true);
+
+            sut.SetPressure(1013.25).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetTemperature_PositiveValue_SendsPlusSignAndZeroPaddedFormat() {
+            // Source: ":SRTMP{sign}{val:000.0}#". 15.5 => "+015.5".
+            commander.Setup(c => c.SendCommandBool(":SRTMP+015.5#", true)).Returns(true);
+
+            sut.SetTemperature(15.5).Value.Should().BeTrue();
+        }
+
+        [Test]
+        public void SetTemperature_NegativeValue_SendsMinusSignAndAbsoluteFormat() {
+            // The format string `000.0` is applied to the raw value (-5.0), which itself prints `-005.0`.
+            // Combined with the explicit '-' sign the source emits, the resulting command has a doubled
+            // minus: `:SRTMP--005.0#`.
+            // FLAG: Mount.SetTemperature emits a doubled minus for negative temperatures because
+            // the sign is added explicitly AND the value is not absolute-valued before formatting.
+            commander.Setup(c => c.SendCommandBool(":SRTMP--005.0#", true)).Returns(true);
+
+            sut.SetTemperature(-5.0).Value.Should().BeTrue();
+        }
+
+        // ---------- Blind commands through SendCommandBlind ----------
+
+        [Test]
+        public void DeleteAlignment_EmptyResponse_DoesNotThrow() {
+            // Source actually uses SendCommandString (not SendCommandBlind). Empty payload "#" passes.
+            commander.Setup(c => c.SendCommandString(":delalig#", true)).Returns("#");
+
+            Action act = () => sut.DeleteAlignment();
+
+            act.Should().NotThrow();
+            commander.Verify(c => c.SendCommandString(":delalig#", true), Times.Once);
+        }
+
+        [Test]
+        public void DeleteAlignment_NonEmptyResponse_Throws() {
+            commander.Setup(c => c.SendCommandString(":delalig#", true)).Returns("E#");
+
+            Action act = () => sut.DeleteAlignment();
+
+            act.Should().Throw<Exception>();
+        }
+
+        [Test]
+        public void SetUltraPrecisionMode_SendsU2Blind() {
+            sut.SetUltraPrecisionMode();
+
+            commander.Verify(c => c.SendCommandBlind(":U2#", true), Times.Once);
+        }
+
+        [Test]
+        public void SetSiderealTrackingRate_SendsTQBlind() {
+            sut.SetSiderealTrackingRate();
+
+            commander.Verify(c => c.SendCommandBlind(":TQ#", true), Times.Once);
+        }
+
+        [Test]
+        public void SetLunarTrackingRate_SendsTLBlind() {
+            sut.SetLunarTrackingRate();
+
+            commander.Verify(c => c.SendCommandBlind(":TL#", true), Times.Once);
+        }
+
+        [Test]
+        public void SetSolarTrackingRate_SendsTSOLARBlind() {
+            sut.SetSolarTrackingRate();
+
+            commander.Verify(c => c.SendCommandBlind(":TSOLAR#", true), Times.Once);
+        }
+
+        [Test]
+        public void StopTracking_SendsALBlind() {
+            sut.StopTracking();
+
+            commander.Verify(c => c.SendCommandBlind(":AL#", true), Times.Once);
+        }
+
+        [Test]
+        public void StartTracking_SendsAPBlind() {
+            sut.StartTracking();
+
+            commander.Verify(c => c.SendCommandBlind(":AP#", true), Times.Once);
+        }
+
+        [Test]
+        public void SetUnattendedFlip_True_SendsSuaf1Blind() {
+            sut.SetUnattendedFlip(true);
+
+            commander.Verify(c => c.SendCommandBlind(":Suaf1#", true), Times.Once);
+        }
+
+        // ---------- Complex methods ----------
+
+        [Test]
+        public void GetProductFirmware_AllCommandsSucceed_ReturnsParsedFirmware() {
+            commander.Setup(c => c.SendCommandString(":GVP#", true)).Returns("10micron GM1000HPS#");
+            commander.Setup(c => c.SendCommandString(":GVD#", true)).Returns("Jan 15 2024#");
+            commander.Setup(c => c.SendCommandString(":GVN#", true)).Returns("2.15.5#");
+            commander.Setup(c => c.SendCommandString(":GVT#", true)).Returns("10:30:00#");
+
+            var result = sut.GetProductFirmware();
+
+            result.Value.ProductName.Should().Be("10micron GM1000HPS");
+            result.Value.Version.Should().Be(new Version(2, 15, 5));
+            result.Value.Timestamp.Kind.Should().Be(DateTimeKind.Utc);
+        }
+
+        [Test]
+        public void SetMaximumPrecision_VersionAboveThreshold_SendsU2() {
+            var firmware = new ProductFirmware("10micron", DateTime.UtcNow, new Version(2, 15, 0));
+
+            sut.SetMaximumPrecision(firmware);
+
+            commander.Verify(c => c.SendCommandBlind(":U2#", true), Times.Once);
+        }
+
+        [Test]
+        public void SetMaximumPrecision_VersionAtOrBelowThreshold_SendsEMUAPFallback() {
+            // Source compares with strict `>`, so version == 2.10.0 falls through to the fallback.
+            var firmware = new ProductFirmware("10micron", DateTime.UtcNow, new Version(2, 10, 0));
+
+            sut.SetMaximumPrecision(firmware);
+
+            commander.Verify(c => c.SendCommandBlind(":EMUAP#:U#", true), Times.Once);
+        }
+
+        [Test]
+        public void GetUTCTime_FullIsoDate_ReturnsUtc() {
+            commander.Setup(c => c.SendCommandString(":GUDT#", true)).Returns("2024-06-15,12:34:56#");
+
+            var result = sut.GetUTCTime();
+
+            result.Value.Year.Should().Be(2024);
+            result.Value.Month.Should().Be(6);
+            result.Value.Day.Should().Be(15);
+            result.Value.Hour.Should().Be(12);
+            result.Value.Minute.Should().Be(34);
+            result.Value.Second.Should().Be(56);
+            result.Value.Kind.Should().Be(DateTimeKind.Utc);
+        }
+
+        [Test]
+        public void GetUTCTime_ShortDateWithTenthSecond_ParsesHundredths() {
+            // Time substring length 10 => last digit is tenth-second; multiplied by 10 to yield hundredths.
+            commander.Setup(c => c.SendCommandString(":GUDT#", true)).Returns("06/15/24,12:34:56.5#");
+
+            var result = sut.GetUTCTime();
+
+            result.Value.Year.Should().Be(2024);
+            result.Value.Month.Should().Be(6);
+            result.Value.Day.Should().Be(15);
+            result.Value.Second.Should().Be(56);
+            // hundredthSeconds=50; source builds DateTime with millisecond arg = hundredthSeconds*10 = 500.
+            result.Value.Millisecond.Should().Be(500);
+            result.Value.Kind.Should().Be(DateTimeKind.Utc);
+        }
+
+        [Test]
+        public void AddAlignmentPointToSpec_EastPier_BuildsCommandWithECommaAndReturnsCount() {
+            // Capture the command the SUT assembles so we can assert format.
+            string actualCommand = null;
+            commander.Setup(c => c.SendCommandString(It.IsAny<string>(), true))
+                .Callback<string, bool>((cmd, _) => actualCommand = cmd)
+                .Returns("42#");
+
+            var result = sut.AddAlignmentPointToSpec(
+                mountRightAscension: new AstrometricTime(12, 0, 0, 0),
+                mountDeclination: new CoordinateAngle(true, 45, 0, 0, 0),
+                sideOfPier: PierSide.pierEast,
+                plateSolvedRightAscension: new AstrometricTime(12, 0, 0, 0),
+                plateSolvedDeclination: new CoordinateAngle(true, 45, 0, 0, 0),
+                localSiderealTime: new AstrometricTime(6, 0, 0, 0));
+
+            result.Value.Should().Be(42);
+            actualCommand.Should().StartWith(":newalpt");
+            actualCommand.Should().Contain(",E,");
+        }
+
+        [Test]
+        public void AddAlignmentPointToSpec_WestPier_BuildsCommandWithWComma() {
+            string actualCommand = null;
+            commander.Setup(c => c.SendCommandString(It.IsAny<string>(), true))
+                .Callback<string, bool>((cmd, _) => actualCommand = cmd)
+                .Returns("1#");
+
+            sut.AddAlignmentPointToSpec(
+                mountRightAscension: new AstrometricTime(0, 0, 0, 0),
+                mountDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                sideOfPier: PierSide.pierWest,
+                plateSolvedRightAscension: new AstrometricTime(0, 0, 0, 0),
+                plateSolvedDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                localSiderealTime: new AstrometricTime(0, 0, 0, 0));
+
+            actualCommand.Should().Contain(",W,");
+        }
+
+        [Test]
+        public void AddAlignmentPointToSpec_UnknownPier_ThrowsArgumentException() {
+            Action act = () => sut.AddAlignmentPointToSpec(
+                mountRightAscension: new AstrometricTime(0, 0, 0, 0),
+                mountDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                sideOfPier: PierSide.pierUnknown,
+                plateSolvedRightAscension: new AstrometricTime(0, 0, 0, 0),
+                plateSolvedDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                localSiderealTime: new AstrometricTime(0, 0, 0, 0));
+
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Test]
+        public void AddAlignmentPointToSpec_ErrorResponse_Throws() {
+            commander.Setup(c => c.SendCommandString(It.IsAny<string>(), true)).Returns("E#");
+
+            Action act = () => sut.AddAlignmentPointToSpec(
+                mountRightAscension: new AstrometricTime(0, 0, 0, 0),
+                mountDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                sideOfPier: PierSide.pierEast,
+                plateSolvedRightAscension: new AstrometricTime(0, 0, 0, 0),
+                plateSolvedDeclination: new CoordinateAngle(true, 0, 0, 0, 0),
+                localSiderealTime: new AstrometricTime(0, 0, 0, 0));
+
+            act.Should().Throw<Exception>();
         }
     }
 }

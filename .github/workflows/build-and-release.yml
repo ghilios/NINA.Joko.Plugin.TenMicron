@@ -33,13 +33,14 @@ jobs:
       - name: Build .NET Assemblies
         run: |
           dotnet restore "NINA.Joko.Plugin.TenMicron/NINA.Joko.Plugin.TenMicron.csproj"
-          dotnet build "NINA.Joko.Plugin.TenMicron/NINA.Joko.Plugin.TenMicron.csproj" -c Release -p:Platform=x64 -p:PostBuildEvent= -p:Version=${{ env.VERSION }} -o ./bin/Release
+          dotnet build "NINA.Joko.Plugin.TenMicron/NINA.Joko.Plugin.TenMicron.csproj" -c Release -p:Platform=x64 -p:PostBuildEvent= -p:Version=${{ env.VERSION }}
 
       - name: Prepare package
         run: |
-          Copy-Item "bin/Release/${{ env.PLUGIN_DLL_NAME }}.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force
-          Copy-Item "bin/Release/${{ env.PLUGIN_DLL_NAME }}.pdb" "packages/${{ env.PLUGIN_NAME }}/" -Force
-          Copy-Item "bin/Release/Antlr4.Runtime.Standard.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force
+          $buildOut = "NINA.Joko.Plugin.TenMicron/bin/Release/net8.0-windows7.0"
+          Copy-Item "$buildOut/${{ env.PLUGIN_DLL_NAME }}.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force
+          Copy-Item "$buildOut/${{ env.PLUGIN_DLL_NAME }}.pdb" "packages/${{ env.PLUGIN_NAME }}/" -Force
+          Copy-Item "$buildOut/Antlr4.Runtime.Standard.dll" "packages/${{ env.PLUGIN_NAME }}/" -Force
 
       - name: Create Plugin archives and manifests
         run: |

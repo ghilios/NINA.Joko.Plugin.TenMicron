@@ -17,8 +17,27 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- ASCOM.Tools 1.0.x ships the NOVAS and SOFA native libs plus the JPL ephemeris under
+         runtimes/win-x64/native/. NINA 3.2 brings in 2.1.0 transitively (no natives), so we
+         use PackageDownload here to fetch 1.0.112 just for its content files, without putting
+         a downgrade constraint on the dependency graph. The CopyNinaNativeAssets target below
+         relocates them into the External/ layout NINA's DllLoader expects. -->
+    <PackageDownload Include="ASCOM.Tools" Version="[1.0.112]" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NINA.Joko.Plugin.TenMicron\NINA.Joko.Plugin.TenMicron.csproj" />
   </ItemGroup>
+  <Target Name="CopyNinaNativeAssets" AfterTargets="Build">
+    <PropertyGroup>
+      <_AscomNativesRoot>$(NuGetPackageRoot)ascom.tools\1.0.112\runtimes\win-x64\native</_AscomNativesRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <_NovasDll Include="$(_AscomNativesRoot)\Novas31\NOVASLibraries\win-x64\libnovas.dll" />
+      <_SofaDll Include="$(_AscomNativesRoot)\SOFALibraries\win-x64\libsofa.dll" />
+      <_JplEphemeris Include="$(_AscomNativesRoot)\Novas31\NOVASLibraries\win-x64\JPLEPH" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_NovasDll)" DestinationFiles="$(OutDir)External\x64\NOVAS\NOVAS31lib.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_SofaDll)" DestinationFiles="$(OutDir)External\x64\SOFA\SOFAlib.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_JplEphemeris)" DestinationFiles="$(OutDir)External\JPLEPH" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

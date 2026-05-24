@@ -11,9 +11,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
     public class AlignmentStarPointTests {
 
         // Every test in this fixture calls AlignmentStarPoint.FromAlignmentStarInfo, which transits
-        // NINA's AstroUtil.GetLocalSiderealTime → NOVAS/SOFA native libs + NINA's JPL ephemeris +
-        // the NINA migration database. NativeLibraryFixture copies those from a local NINA install
-        // at session start; NinaAssetGate.RequireNina() skips the test if it can't find them.
+        // NINA's astrometry. The NOVAS/SOFA natives are seeded from NuGet (so the input-only
+        // assertions below work on CI). The two tests that assert on RA/Altitude values also need
+        // NINA's UT1/UTC database — they raise the gate themselves.
         [SetUp]
         public void RequireNina() => NinaAssetGate.RequireNina();
 
@@ -25,6 +25,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
 
         [Test]
         public void FromAlignmentStarInfo_ComputesRA_FromLstMinusLocalHour() {
+            // Asserts on RA: needs UT1/UTC from NINA's migration DB.
+            NinaAssetGate.RequireNinaDatabase();
             var localHour = new AstrometricTime(2, 0, 0, 0); // 2h hour-angle
             var dec = new CoordinateAngle(true, 45, 0, 0, 0);
             var starInfo = new AlignmentStarInfo(localHour, dec, errorArcseconds: 10m);
@@ -41,6 +43,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
 
         [Test]
         public void FromAlignmentStarInfo_AltitudeWithinPlausibleRange() {
+            // Asserts on Altitude/Azimuth: needs UT1/UTC from NINA's migration DB.
+            NinaAssetGate.RequireNinaDatabase();
             var starInfo = new AlignmentStarInfo(
                 new AstrometricTime(0, 0, 0, 0),
                 new CoordinateAngle(true, 30, 0, 0, 0),

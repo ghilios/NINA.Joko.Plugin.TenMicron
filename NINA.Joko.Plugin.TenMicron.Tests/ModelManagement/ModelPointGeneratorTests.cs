@@ -188,7 +188,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void ToEquatorial_KnownAltAz_RoundTripsToSameTopocentric() {
-            NinaAssetGate.RequireNina();
+            // This transit calls NINA's coordinate transform with a JNOW epoch + dateTime, which
+            // pulls UT1/UTC from NINA's migration database. RequireNina() (natives) isn't enough.
+            NinaAssetGate.RequireNinaDatabase();
             // Regression: ModelPointGenerator.ToEquatorial previously swapped the `azimuth:` and
             // `altitude:` named arguments when constructing TopocentricCoordinates, so a known
             // (alt, az) input came back as (az, alt) after the round trip. Asserts the identity now.

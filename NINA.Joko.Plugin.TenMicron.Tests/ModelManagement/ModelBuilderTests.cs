@@ -58,7 +58,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
             Func<Task> act = () => sut.Build(new List<ModelPoint>(), new ModelBuilderOptions());
 
-            await act.Should().ThrowAsync<System.Exception>().WithMessage("No telescope connected");
+            await act.Should().ThrowAsync<Exception>().WithMessage("No telescope connected");
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
             Func<Task> act = () => sut.Build(new List<ModelPoint>(), new ModelBuilderOptions());
 
-            await act.Should().ThrowAsync<System.Exception>().WithMessage("No camera connected");
+            await act.Should().ThrowAsync<Exception>().WithMessage("No camera connected");
         }
 
         // Pre-cancel stopToken so DoBuild's first stopOrCancelCt.ThrowIfCancellationRequested()
@@ -86,9 +86,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
         [Test]
         public async Task Build_RefractionDisabled_RestoredOnCompletion() {
             var env = new MockModelBuilderEnvironment();
-            env.Mount.Setup(m => m.GetRefractionCorrectionEnabled()).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(false)).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(true)).Returns(new Response<bool>(true, ""));
+            env.EnableRefractionTracking();
             var (ct, stopToken) = PreCancelledStopToken();
             var sut = env.Build();
 
@@ -101,9 +99,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
         [Test]
         public async Task Build_RefractionDisabled_RestoredOnException() {
             var env = new MockModelBuilderEnvironment();
-            env.Mount.Setup(m => m.GetRefractionCorrectionEnabled()).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(false)).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(true)).Returns(new Response<bool>(true, ""));
+            env.EnableRefractionTracking();
             // Trip DoBuild early: StartNewAlignmentSpec returning false throws ModelBuildException
             // before ProcessPoints. Exception propagates to Build's finally.
             env.MountModelMediator.Setup(m => m.StartNewAlignmentSpec()).Returns(false);
@@ -151,23 +147,22 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
         }
 
         [Test]
-        public async Task Build_CameraThrows_CleanupRuns() {
+        public async Task Build_DownstreamThrows_CleanupRuns() {
             // PreFlightChecks must pass (Camera.Connected = true from default), then we trip
             // DoBuild's first MountModel call via DeleteAlignment throwing — simulating a
-            // downstream failure after the snapshot/disable phase. Refraction was disabled
-            // up-front, and the test asserts the finally restores it.
+            // downstream mediator failure after the snapshot/disable phase. Refraction was
+            // disabled up-front, and the test asserts the finally restores it regardless of
+            // which downstream call faulted.
             var env = new MockModelBuilderEnvironment();
-            env.Mount.Setup(m => m.GetRefractionCorrectionEnabled()).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(false)).Returns(new Response<bool>(true, ""));
-            env.Mount.Setup(m => m.SetRefractionCorrection(true)).Returns(new Response<bool>(true, ""));
-            var cameraFailure = new InvalidOperationException("camera link dropped");
-            env.MountModelMediator.Setup(m => m.DeleteAlignment()).Throws(cameraFailure);
+            env.EnableRefractionTracking();
+            var downstreamFailure = new InvalidOperationException("alignment delete failed");
+            env.MountModelMediator.Setup(m => m.DeleteAlignment()).Throws(downstreamFailure);
             var sut = env.Build();
 
             Func<Task> act = () => sut.Build(new List<ModelPoint>(), new ModelBuilderOptions { DisableRefractionCorrection = true });
 
             // The exception should propagate, but refraction must still be re-enabled by the finally.
-            (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("camera link dropped");
+            (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("alignment delete failed");
             env.Mount.Verify(m => m.SetRefractionCorrection(false), Times.Once);
             env.Mount.Verify(m => m.SetRefractionCorrection(true), Times.Once);
         }

@@ -1,6 +1,7 @@
 using Moq;
 using NINA.Equipment.Equipment.MyCamera;
 using NINA.Equipment.Equipment.MyDome;
+using NINA.Equipment.Equipment.MyFilterWheel;
 using NINA.Equipment.Equipment.MyTelescope;
 using NINA.Equipment.Equipment.MyWeatherData;
 using NINA.Equipment.Interfaces;
@@ -61,11 +62,20 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.TestHelpers {
             WeatherData.Setup(w => w.GetInfo()).Returns(new WeatherDataInfo { Connected = false });
 
             // Filter wheel returns null GetInfo -> oldFilter = null, no restore branch.
-            FilterWheel.Setup(f => f.GetInfo()).Returns((NINA.Equipment.Equipment.MyFilterWheel.FilterWheelInfo)null);
+            FilterWheel.Setup(f => f.GetInfo()).Returns((FilterWheelInfo)null);
 
             // MountModel must return true from StartNewAlignmentSpec or DoBuild throws ModelBuildException.
             MountModelMediator.Setup(m => m.StartNewAlignmentSpec()).Returns(true);
             MountModelMediator.Setup(m => m.FinishAlignmentSpec()).Returns(true);
+        }
+
+        // Flips the default refraction-off state to on, plus wires the disable/enable
+        // round-trip so tests asserting the snapshot-and-restore invariant don't have to
+        // repeat the same three Setup(...) calls.
+        public void EnableRefractionTracking() {
+            Mount.Setup(m => m.GetRefractionCorrectionEnabled()).Returns(new Response<bool>(true, ""));
+            Mount.Setup(m => m.SetRefractionCorrection(false)).Returns(new Response<bool>(true, ""));
+            Mount.Setup(m => m.SetRefractionCorrection(true)).Returns(new Response<bool>(true, ""));
         }
 
         public ModelBuilder Build() => new ModelBuilder(

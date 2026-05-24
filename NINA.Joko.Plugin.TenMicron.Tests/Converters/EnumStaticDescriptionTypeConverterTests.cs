@@ -12,6 +12,7 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Converters {
 
         // ModelPointGenerationTypeEnum and ModelPointStateEnum use plain [Description("...")]
         // (not "Lbl"-prefixed), so the converter does NOT delegate to NINA.Core.Locale.Loc.Instance.
+        // Loc.Instance branch deliberately not covered — same pattern as EnumStaticDescriptionValueConverterTests.
         private readonly EnumStaticDescriptionTypeConverter sut = new EnumStaticDescriptionTypeConverter(typeof(ModelPointGenerationTypeEnum));
 
         [Test]

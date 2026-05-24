@@ -28,12 +28,20 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Converters {
             sut.Convert(1e-6d, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Visible);
         }
 
-        [TestCase(0.0)]
-        [TestCase(0)]
-        public void Convert_DecimalAndIntZero_ReturnsVisible(double raw) {
-            // Cover the decimal and int branches explicitly.
-            sut.Convert((decimal)raw, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Visible);
-            sut.Convert((int)raw, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Visible);
+        [Test]
+        public void Convert_DoubleJustAboveTolerance_ReturnsCollapsed() {
+            // 1e-4 is above the 0.00001 tolerance.
+            sut.Convert(1e-4d, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Collapsed);
+        }
+
+        [Test]
+        public void Convert_DecimalZero_ReturnsVisible() {
+            sut.Convert(0.0m, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Visible);
+        }
+
+        [Test]
+        public void Convert_IntZero_ReturnsVisible() {
+            sut.Convert(0, typeof(Visibility), null, CultureInfo.InvariantCulture).Should().Be(Visibility.Visible);
         }
 
         [Test]

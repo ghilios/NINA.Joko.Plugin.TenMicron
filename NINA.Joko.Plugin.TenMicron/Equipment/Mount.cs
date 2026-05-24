@@ -408,7 +408,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         public Response<bool> SetTemperature(double valCelcius) {
             //:SRTMPsTTT.T#
             var sign = Math.Sign(valCelcius) >= 0 ? '+' : '-';
-            string command = $":SRTMP{sign}{valCelcius:000.0}#";
+            string command = $":SRTMP{sign}{Math.Abs(valCelcius):000.0}#";
 
             var success = this.mountCommander.SendCommandBool(command, true);
             return new Response<bool>(success, "");

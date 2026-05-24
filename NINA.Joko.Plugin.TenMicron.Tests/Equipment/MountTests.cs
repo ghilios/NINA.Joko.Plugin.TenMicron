@@ -398,23 +398,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
         }
 
         [Test]
-        public void SetTemperature_NegativeValue_SendsMinusSignAndAbsoluteFormat() {
-            // The format string `000.0` is applied to the raw value (-5.0), which itself prints `-005.0`.
-            // Combined with the explicit '-' sign the source emits, the resulting command has a doubled
-            // minus: `:SRTMP--005.0#`.
-            // FLAG: Mount.SetTemperature emits a doubled minus for negative temperatures because
-            // the sign is added explicitly AND the value is not absolute-valued before formatting.
-            commander.Setup(c => c.SendCommandBool(":SRTMP--005.0#", true)).Returns(true);
-
-            sut.SetTemperature(-5.0).Value.Should().BeTrue();
-        }
-
-        [Test]
-        [Ignore("FLAG: pinned in SetTemperature_NegativeValue_SendsMinusSignAndAbsoluteFormat. Will fail until source is fixed.")]
-        public void SetTemperature_NegativeValue_ShouldSendSingleMinusSign() {
-            // Intended behavior: a single '-' sign followed by the absolute value, e.g. ":SRTMP-005.0#".
-            // When the source is fixed (Math.Abs() the value before formatting), un-ignore this and
-            // remove the pinning sibling test above.
+        public void SetTemperature_NegativeValue_SendsSingleMinusSignWithAbsoluteFormat() {
+            // Single '-' sign followed by the absolute-valued magnitude formatted to 000.0.
             commander.Setup(c => c.SendCommandBool(":SRTMP-005.0#", true)).Returns(true);
 
             sut.SetTemperature(-5.0).Value.Should().BeTrue();

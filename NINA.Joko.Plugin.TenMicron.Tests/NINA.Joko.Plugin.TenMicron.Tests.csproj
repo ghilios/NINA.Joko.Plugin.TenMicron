@@ -40,4 +40,14 @@
     <Copy SourceFiles="@(_SofaDll)" DestinationFiles="$(OutDir)External\x64\SOFA\SOFAlib.dll" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_JplEphemeris)" DestinationFiles="$(OutDir)External\JPLEPH" SkipUnchangedFiles="true" />
   </Target>
+  <!-- NINA's Database/ folder holds the migration SQL that NINADbContext applies on first use.
+       Only the earthrotationparameters table is exercised by our tests (DatabaseInteraction.GetUT1_UTC),
+       but the migration runner enumerates the whole folder so we ship all of it. Files are vendored from
+       NINA (MPL-2.0). Refresh from a current NINA install if UT1/UTC precision starts drifting. -->
+  <ItemGroup>
+    <None Include="NinaAssets\Database\**\*.sql">
+      <Link>Database\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

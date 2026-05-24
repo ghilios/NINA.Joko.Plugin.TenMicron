@@ -120,6 +120,7 @@ jobs:
 
       - name: Copy manifest file
         run: |
+          mkdir -p "./nina.plugin.manifests/manifests/${{ env.PLUGIN_MANIFEST_PATH }}"
           cp "./${{ env.PLUGIN_DLL_NAME }}.${{ env.VERSION }}.manifest.json" "./nina.plugin.manifests/manifests/${{ env.PLUGIN_MANIFEST_PATH }}/manifest.json"
           cd nina.plugin.manifests
           git add .

@@ -15,7 +15,7 @@ using NINA.Core.Utility;
 using NINA.Core.Utility.Notification;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
+using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NINA.Joko.Plugin.TenMicron.Equipment;
 
@@ -52,42 +52,35 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
             return SupportedProducts.Contains(productFirmware.ProductName);
         }
 
-        private static double GetASCOMProfileDouble(string driverId, string name, string subkey, double defaultvalue) {
-            if (double.TryParse(ASCOM.Com.Profile.GetValue(ASCOM.Common.DeviceTypes.Telescope, progId: driverId, valueName: name, subKey: subkey, defaultValue: ""), NumberStyles.Float, CultureInfo.InvariantCulture, out var result)) {
+        public static MountAscomConfig GetMountAscomConfig(string driverId) =>
+            GetMountAscomConfig(driverId, new AscomProfileAccessor());
+
+        internal static MountAscomConfig GetMountAscomConfig(string driverId, IAscomProfileAccessor accessor) {
+            if (!accessor.IsRegistered(driverId)) {
+                return null;
+            }
+
+            var profileJson = JsonConvert.SerializeObject(accessor.GetValues(driverId));
+            Logger.Info($"10u ASCOM driver configuration: {profileJson}");
+
+            if (driverId != "ASCOM.tenmicron_mount.Telescope") {
+                return null;
+            }
+
+            return new MountAscomConfig() {
+                EnableUncheckedRawCommands = GetASCOMProfileBool(accessor, driverId, "enable_unchecked_raw_commands", "mount_settings", true),
+                UseJ2000Coordinates = GetASCOMProfileBool(accessor, driverId, "use_J2000_coords", "mount_settings", false),
+                EnableSync = GetASCOMProfileBool(accessor, driverId, "enable_sync", "mount_settings", false),
+                UseSyncAsAlignment = GetASCOMProfileBool(accessor, driverId, "use_sync_as_alignment", "mount_settings", false),
+                RefractionUpdateFile = accessor.GetValue(driverId, "refraction_update_file", "mount_settings", "")
+            };
+        }
+
+        private static bool GetASCOMProfileBool(IAscomProfileAccessor accessor, string driverId, string name, string subkey, bool defaultvalue) {
+            if (bool.TryParse(accessor.GetValue(driverId, name, subkey, ""), out var result)) {
                 return result;
             }
             return defaultvalue;
-        }
-
-        private static bool GetASCOMProfileBool(string driverId, string name, string subkey, bool defaultvalue) {
-            if (bool.TryParse(ASCOM.Com.Profile.GetValue(ASCOM.Common.DeviceTypes.Telescope, progId: driverId, valueName: name, subKey: subkey, defaultValue: ""), out var result)) {
-                return result;
-            }
-            return defaultvalue;
-        }
-
-        private static string GetASCOMProfileString(string driverId, string name, string subkey, string defaultvalue) {
-            return ASCOM.Com.Profile.GetValue(ASCOM.Common.DeviceTypes.Telescope, progId: driverId, valueName: name, subKey: subkey, defaultValue: defaultvalue);
-        }
-
-        public static MountAscomConfig GetMountAscomConfig(string driverId) {
-            var registered = ASCOM.Com.Profile.IsRegistered(ASCOM.Common.DeviceTypes.Telescope, driverId);
-            if (registered) {
-                ;
-                var profileJson = JsonConvert.SerializeObject(ASCOM.Com.Profile.GetValues(ASCOM.Common.DeviceTypes.Telescope, driverId));
-                Logger.Info($"10u ASCOM driver configuration: {profileJson}");
-
-                if (driverId == "ASCOM.tenmicron_mount.Telescope") {
-                    return new MountAscomConfig() {
-                        EnableUncheckedRawCommands = GetASCOMProfileBool(driverId, "enable_unchecked_raw_commands", "mount_settings", true),
-                        UseJ2000Coordinates = GetASCOMProfileBool(driverId, "use_J2000_coords", "mount_settings", false),
-                        EnableSync = GetASCOMProfileBool(driverId, "enable_sync", "mount_settings", false),
-                        UseSyncAsAlignment = GetASCOMProfileBool(driverId, "use_sync_as_alignment", "mount_settings", false),
-                        RefractionUpdateFile = GetASCOMProfileString(driverId, "refraction_update_file", "mount_settings", "")
-                    };
-                }
-            }
-            return null;
         }
 
         public static bool ValidateMountAscomConfig(MountAscomConfig config) {

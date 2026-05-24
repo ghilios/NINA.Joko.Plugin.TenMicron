@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NINA.Joko.Plugin.TenMicron": {
+      "commandName": "Project"
+    },
+    "NINA": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\N.I.N.A. - Nighttime Imaging 'N' Astronomy\\NINA.exe"
+    }
+  }
+}

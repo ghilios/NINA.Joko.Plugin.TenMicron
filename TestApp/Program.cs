@@ -10,7 +10,7 @@
 
 #endregion "copyright"
 
-using ASCOM.DriverAccess;
+using ASCOM.Com.DriverAccess;
 using Accord.Math;
 using NINA.Astrometry;
 using NINA.Joko.Plugin.TenMicron.Equipment;
@@ -63,7 +63,7 @@ namespace TestApp {
             */
 
             // create this device
-            ASCOM.DriverAccess.Telescope device = new ASCOM.DriverAccess.Telescope("ASCOM.tenmicron_mount.Telescope");
+            ASCOM.Com.DriverAccess.Telescope device = new ASCOM.Com.DriverAccess.Telescope("ASCOM.tenmicron_mount.Telescope");
             device.Connected = true;
 
             var mountCommander = new AscomMountCommander(device);

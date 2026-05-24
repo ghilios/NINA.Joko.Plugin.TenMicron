@@ -33,16 +33,14 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
         [Test]
         public void GetRightAscension_SendsGR_AndParsesResponse() {
-            // Only asserts hours/minutes — seconds/hundredths are entangled with the grammar
-            // ambiguity FLAG covered in MountResponseParserTests. This test verifies the *wiring*:
-            // the right command goes out, and the response is parsed (not that parsed values are
-            // semantically correct).
             commander.Setup(c => c.SendCommandString(":GR#", true)).Returns("12:34:56.78#");
 
             var result = sut.GetRightAscension();
 
             result.Value.Hours.Should().Be(12);
             result.Value.Minutes.Should().Be(34);
+            result.Value.Seconds.Should().Be(56);
+            result.Value.HundredthSeconds.Should().Be(78);
         }
 
         [Test]

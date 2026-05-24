@@ -28,9 +28,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Model {
 
         [Test]
         public void FromAngle_HundredthSeconds_Populated() {
-            // FLAG: MountCommandResponses.cs:119 — `var hundredthSeconds = (int)(angleRemaining / 100.0d);`
-            // The /100 always truncates hundredths to 0. CoordinateAngle.FromAngle at line 61 does it
-            // correctly with `(int)angleRemaining`. Round-tripping 12h34m56.78s should preserve the .78.
+            // Regression: the prior implementation truncated hundredths to 0 by dividing the
+            // pre-scaled fractional value by 100 a second time. Round-tripping 12h34m56.78s must
+            // preserve the .78.
             var original = new AstrometricTime(hours: 12, minutes: 34, seconds: 56, hundredthSeconds: 78);
 
             var roundTripped = AstrometricTime.FromAngle(original.ToAngle());

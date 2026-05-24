@@ -116,7 +116,7 @@ namespace NINA.Joko.Plugin.TenMicron.Model {
             var seconds = (int)angleRemaining;
             angleRemaining -= seconds;
             angleRemaining *= 100.0d;
-            var hundredthSeconds = (int)(angleRemaining / 100.0d);
+            var hundredthSeconds = (int)angleRemaining;
             return new AstrometricTime(hours, minutes, seconds, hundredthSeconds);
         }
 

@@ -63,13 +63,8 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
         [Test]
         public void ParseAstrometricTime_FullHundredths_ParsesAllFields() {
-            // FLAG (grammar ambiguity): Time.g4 has 4 alternatives that all start with `hours ':'
-            // minutes ':'` and disambiguate only by the integer-field NAME after that — and ANTLR
-            // can't distinguish `tenth_minutes`/`seconds`/`tenth_seconds`/`hundredth_seconds`
-            // because they're all just `INTEGER`. The parser picks the first matching alternative,
-            // so "12:34:56.78#" is interpreted as `seconds=56, tenth_seconds=78` (alt #3) rather
-            // than `seconds=56, hundredth_seconds=78` (alt #4). Combined with Mount.cs:170-171
-            // doubling, hundredths becomes 78*20=1560 today. Test asserts the *expected* parse.
+            // Format HH:MM:SS.SS#. The parser disambiguates tenth-vs-hundredth by the length of
+            // the captured fractional digits (2 digits → hundredths).
             var result = MountResponseParser.ParseAstrometricTime("12:34:56.78#");
 
             result.Value.Hours.Should().Be(12);
@@ -79,11 +74,9 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
         }
 
         [Test]
-        public void ParseAstrometricTime_TenthSecondsForm_DoesNotDoubleCount() {
-            // FLAG: Mount.cs:170-171 adds `10 * tenthSeconds` twice — once into the local
-            // `hundredthSeconds` variable and again in the constructor call. For "12:34:56.5#"
-            // (correctly parsed by the grammar as tenth_seconds=5), expected hundredths=50;
-            // current output is 100. See also the grammar-ambiguity FLAG above.
+        public void ParseAstrometricTime_TenthSecondsForm_ScalesToHundredths() {
+            // Format HH:MM:SS.S#. Single digit after the period is a tenth-of-second → ×10 to get
+            // hundredths. Regression: a prior bug added 10×tenthSeconds twice (yielding 100 here).
             var result = MountResponseParser.ParseAstrometricTime("12:34:56.5#");
 
             result.Value.Hours.Should().Be(12);
@@ -93,16 +86,27 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
         }
 
         [Test]
-        public void ParseAstrometricTime_SecondsOnly_ParsesAsSecondsNotTenthMinutes() {
-            // FLAG (grammar ambiguity): Time.g4 alt #1 is `hours ':' minutes ':' tenth_minutes '#'`
-            // and alt #2 is `hours ':' minutes ':' seconds '#'` — both end at `#` after one INTEGER.
-            // ANTLR picks alt #1 first, so "12:34:56#" is interpreted as `tenth_minutes=56` and
-            // the parser code adds `seconds + 6 * 56 = 336` to seconds. Expected is `seconds=56`.
+        public void ParseAstrometricTime_SecondsOnly_ParsesSeconds() {
+            // Format HH:MM:SS#. Regression: the prior grammar used a `:` separator for both the
+            // tenth-of-minute and seconds alternatives, so ANTLR matched tenth-of-minute first and
+            // mis-treated this input.
             var result = MountResponseParser.ParseAstrometricTime("12:34:56#");
 
             result.Value.Hours.Should().Be(12);
             result.Value.Minutes.Should().Be(34);
             result.Value.Seconds.Should().Be(56);
+            result.Value.HundredthSeconds.Should().Be(0);
+        }
+
+        [Test]
+        public void ParseAstrometricTime_TenthMinutesForm_ConvertsToSeconds() {
+            // Format HH:MM.M# (low precision). One tenth-of-minute = 6 seconds, so the .5 here
+            // contributes 30 seconds. The parser folds tenths-of-minutes into the seconds field.
+            var result = MountResponseParser.ParseAstrometricTime("12:34.5#");
+
+            result.Value.Hours.Should().Be(12);
+            result.Value.Minutes.Should().Be(34);
+            result.Value.Seconds.Should().Be(30);
             result.Value.HundredthSeconds.Should().Be(0);
         }
 

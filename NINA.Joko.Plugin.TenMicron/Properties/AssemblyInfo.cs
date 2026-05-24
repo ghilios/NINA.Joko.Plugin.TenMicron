@@ -12,7 +12,10 @@
 
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+[assembly: InternalsVisibleTo("NINA.Joko.Plugin.TenMicron.Tests")]
 
 // [MANDATORY] The following GUID is used as a unique identifier of the plugin
 [assembly: Guid("751dd53f-8194-4220-90b9-197f78abb60b")]

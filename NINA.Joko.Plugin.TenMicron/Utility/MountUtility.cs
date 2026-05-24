@@ -144,7 +144,7 @@ namespace NINA.Joko.Plugin.TenMicron.Utility {
             await Task.WhenAll(wakeTasks.ToArray());
         }
 
-        private static byte[] BuildMagicPacket(string macAddress) {
+        internal static byte[] BuildMagicPacket(string macAddress) {
             macAddress = Regex.Replace(macAddress, "[: -]", "");
             byte[] macBytes = new byte[6];
             for (int i = 0; i < 6; i++) {

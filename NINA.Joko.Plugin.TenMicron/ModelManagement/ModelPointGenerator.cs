@@ -162,7 +162,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 wavelength: wavelength);
         }
 
-        private Coordinates ToEquatorial(double altitudeDegrees, double azimuthDegrees, DateTime time) {
+        internal Coordinates ToEquatorial(double altitudeDegrees, double azimuthDegrees, DateTime time) {
             var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
             var longitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude);
             var topocentric = new TopocentricCoordinates(

@@ -27,6 +27,7 @@ namespace NINA.Joko.Plugin.TenMicron.Extensions.OxyPlot {
                 case ModelPointStateEnum.BelowHorizon:
                 case ModelPointStateEnum.OutsideAltitudeBounds:
                 case ModelPointStateEnum.OutsideAzimuthBounds:
+                case ModelPointStateEnum.CloseToMeridian:
                     return OxyColors.Brown;
 
                 case ModelPointStateEnum.Failed:

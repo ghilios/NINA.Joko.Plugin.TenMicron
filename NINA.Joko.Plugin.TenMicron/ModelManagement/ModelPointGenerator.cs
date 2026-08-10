@@ -56,6 +56,21 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             this.mountMediator = mountMediator;
         }
 
+        // Signed hour angle of an alt/az position expressed in minutes of time, relative to the
+        // upper meridian: 0 at transit, negative east of the meridian, positive west, +/-720 at
+        // the lower meridian. Pure spherical trigonometry - no clock or sidereal time involved,
+        // because hour angle is fully determined by altitude, azimuth, and site latitude.
+        internal static double GetMinutesFromMeridian(double altitudeDegrees, double azimuthDegrees, double latitudeDegrees) {
+            var altitudeRadians = Angle.ByDegree(altitudeDegrees).Radians;
+            var azimuthRadians = Angle.ByDegree(azimuthDegrees).Radians;
+            var latitudeRadians = Angle.ByDegree(latitudeDegrees).Radians;
+            // HA = atan2(-sin(az) cos(alt), sin(alt) cos(lat) - cos(alt) sin(lat) cos(az)), az measured from north
+            var hourAngleRadians = Math.Atan2(
+                -Math.Sin(azimuthRadians) * Math.Cos(altitudeRadians),
+                Math.Sin(altitudeRadians) * Math.Cos(latitudeRadians) - Math.Cos(altitudeRadians) * Math.Sin(latitudeRadians) * Math.Cos(azimuthRadians));
+            return Angle.ByRadians(hourAngleRadians).Hours * 60.0d;
+        }
+
         public List<ModelPoint> GenerateGoldenSpiral(int numPoints, CustomHorizon horizon) {
             if (numPoints > MAX_POINTS) {
                 throw new Exception($"10u mounts do not support more than {MAX_POINTS} points");
@@ -69,8 +84,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             int minViableNumPoints = 0;
             int maxViableNumPoints = MAX_CANDIDATES;
             int currentNumPoints = numPoints;
-            var now = DateTime.UtcNow;
-            var nowHoursAngle = new AstrometricTime(now.Hour, now.Minute, now.Second, now.Millisecond / 10).ToAngle();
+            var latitudeDegrees = profileService.ActiveProfile.AstrometrySettings.Latitude;
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -94,8 +108,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         altitudeDegrees = 89.9;
                     }
 
-                    var coordinates = ToEquatorial(altitudeDegrees, azimuthDegrees, now);
-                    var localMinute = (Angle.ByHours(coordinates.RA) - nowHoursAngle).Hours * 60.0d;
+                    var localMinute = GetMinutesFromMeridian(altitudeDegrees, azimuthDegrees, latitudeDegrees);
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;
                     bool standardAzimuthComparison = options.MinPointAzimuth <= options.MaxPointAzimuth;
@@ -175,20 +188,6 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 wavelength: wavelength);
         }
 
-        internal Coordinates ToEquatorial(double altitudeDegrees, double azimuthDegrees, DateTime time) {
-            var latitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude);
-            var longitude = Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude);
-            var elevation = profileService.ActiveProfile.AstrometrySettings.Elevation;
-            var topocentric = new TopocentricCoordinates(
-                azimuth: Angle.ByDegree(azimuthDegrees),
-                altitude: Angle.ByDegree(altitudeDegrees),
-                latitude: latitude,
-                longitude: longitude,
-                elevation: elevation,
-                dateTime: new ConstantDateTime(time));
-            return topocentric.Transform(Epoch.JNOW);
-        }
-
         public List<ModelPoint> GenerateSiderealPath(Coordinates coordinates, Angle raDelta, DateTime startTime, DateTime endTime, CustomHorizon horizon) {
             if (endTime < startTime) {
                 throw new Exception($"End time ({endTime}) comes before start time ({startTime})");
@@ -206,6 +205,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
             var meridianLowerLimit = 360.0d - meridianLimitDegrees - 0.1d;
             var points = new List<ModelPoint>();
             var decJitterSigmaDegrees = this.options.DecJitterSigmaDegrees;
+            var latitudeDegrees = profileService.ActiveProfile.AstrometrySettings.Latitude;
             while (true) {
                 points.Clear();
                 int validPoints = 0;
@@ -235,8 +235,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                         azimuthDegrees = meridianLowerLimit;
                     }
 
-                    var nowHoursAngle = new AstrometricTime(currentTime.Hour, currentTime.Minute, currentTime.Second, currentTime.Millisecond / 10).ToAngle();
-                    var localMinute = (Angle.ByHours(coordinates.RA) - nowHoursAngle).Hours * 60.0d;
+                    var localMinute = GetMinutesFromMeridian(altitudeDegrees, azimuthDegrees, latitudeDegrees);
 
                     var horizonAltitude = horizon.GetAltitude(azimuthDegrees);
                     ModelPointStateEnum creationState;

@@ -79,7 +79,7 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
                 var maxConcurrent = options.MaxConcurrency > 0 ? options.MaxConcurrency : int.MaxValue;
                 this.ProcessingSemaphore = new SemaphoreSlim(maxConcurrent, maxConcurrent);
                 this.ModelPoints = ImmutableList.ToImmutableList(modelPoints);
-                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => p.ModelPointState != ModelPointStateEnum.BelowHorizon && p.ModelPointState != ModelPointStateEnum.OutsideAltitudeBounds && p.ModelPointState != ModelPointStateEnum.OutsideAzimuthBounds));
+                this.ValidPoints = ImmutableList.ToImmutableList(modelPoints.Where(p => IsPointIncludedInBuild(p.ModelPointState)));
                 this.PendingTasks = new List<Task<bool>>();
 
                 var domeInfo = domeMediator.GetInfo();
@@ -764,6 +764,15 @@ namespace NINA.Joko.Plugin.TenMicron.ModelManagement {
 
         private static bool IsPointEligibleForBuild(ModelPoint point) {
             return point.ModelPointState == ModelPointStateEnum.Generated;
+        }
+
+        // Points in these states were excluded at generation time and must never be slewed to,
+        // imaged, or added to the alignment spec - not even after state resets between retries
+        internal static bool IsPointIncludedInBuild(ModelPointStateEnum state) {
+            return state != ModelPointStateEnum.BelowHorizon
+                && state != ModelPointStateEnum.OutsideAltitudeBounds
+                && state != ModelPointStateEnum.OutsideAzimuthBounds
+                && state != ModelPointStateEnum.CloseToMeridian;
         }
 
         private bool IsPointVisibleThroughDome(ModelPoint point, double tolerance) {

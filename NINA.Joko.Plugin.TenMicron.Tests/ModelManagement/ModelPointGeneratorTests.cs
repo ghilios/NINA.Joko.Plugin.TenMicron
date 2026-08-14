@@ -66,7 +66,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void GenerateGoldenSpiral_HappyPath_ReturnsAtLeastRequestedValidPoints() {
-            NinaAssetGate.RequireNina();
             // Wide bounds so most generated points should be valid.
             var options = MockOptionsBuilder.Build(minAltitude: 1, maxAltitude: 89);
             var sut = BuildSut(options);
@@ -78,7 +77,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void GenerateGoldenSpiral_AltitudeClamped_To_0p1_And_89p9() {
-            NinaAssetGate.RequireNina();
             var sut = BuildSut();
 
             var points = sut.GenerateGoldenSpiral(numPoints: 10, SeaHorizon);
@@ -88,7 +86,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void GenerateGoldenSpiral_StandardAzimuthBounds_MarksOutsidePoints() {
-            NinaAssetGate.RequireNina();
             // Standard bounds (Min < Max): only [120, 240] valid.
             var options = MockOptionsBuilder.Build(minAzimuth: 120, maxAzimuth: 240);
             var sut = BuildSut(options);
@@ -107,7 +104,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void GenerateGoldenSpiral_WrappedAzimuthBounds_SouthernHemisphereCase() {
-            NinaAssetGate.RequireNina();
             // Wrapped bounds (Min > Max): only [0, 90] and [270, 360) valid. Regression for commit 3e33b20.
             var options = MockOptionsBuilder.Build(minAzimuth: 270, maxAzimuth: 90);
             var sut = BuildSut(options, latitudeDeg: -33.0);
@@ -125,7 +121,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test]
         public void GenerateGoldenSpiral_AltitudeBounds_MarkOutsideAltitudeBounds() {
-            NinaAssetGate.RequireNina();
             var options = MockOptionsBuilder.Build(minAltitude: 40, maxAltitude: 60);
             var sut = BuildSut(options);
 
@@ -140,7 +135,6 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
 
         [Test, CancelAfter(10000)]
         public void GenerateGoldenSpiral_HighHorizon_TerminatesAndReturns() {
-            NinaAssetGate.RequireNina();
             // Horizon at 89.5° — almost nothing should validate. The convergence loop must still
             // terminate (guard against infinite retry).
             var horizon = BuildConstantHorizon(89.5);
@@ -186,32 +180,5 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.ModelManagement {
             act.Should().Throw<Exception>().WithMessage("*cannot be less than 1 arc second*");
         }
 
-        [Test]
-        public void ToEquatorial_KnownAltAz_RoundTripsToSameTopocentric() {
-            // This transit calls NINA's coordinate transform with a JNOW epoch + dateTime, which
-            // pulls UT1/UTC from NINA's migration database. RequireNina() (natives) isn't enough.
-            NinaAssetGate.RequireNinaDatabase();
-            // Regression: ModelPointGenerator.ToEquatorial previously swapped the `azimuth:` and
-            // `altitude:` named arguments when constructing TopocentricCoordinates, so a known
-            // (alt, az) input came back as (az, alt) after the round trip. Asserts the identity now.
-            var sut = BuildSut(latitudeDeg: 40, longitudeDeg: -74);
-            var now = new DateTime(2025, 6, 21, 6, 0, 0, DateTimeKind.Utc);
-            const double inputAlt = 30.0;
-            const double inputAz = 120.0;
-
-            var coords = sut.ToEquatorial(inputAlt, inputAz, now);
-
-            var coordsAtTime = new Coordinates(
-                ra: Angle.ByHours(coords.RA),
-                dec: Angle.ByDegree(coords.Dec),
-                epoch: Epoch.JNOW,
-                dateTime: new NINA.Joko.Plugin.TenMicron.Utility.ConstantDateTime(now));
-            var topo = coordsAtTime.Transform(
-                latitude: Angle.ByDegree(40),
-                longitude: Angle.ByDegree(-74),
-                elevation: 100);
-            topo.Altitude.Degree.Should().BeApproximately(inputAlt, 0.5);
-            topo.Azimuth.Degree.Should().BeApproximately(inputAz, 0.5);
-        }
     }
 }

@@ -308,6 +308,8 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                 if (loadTask == null) {
                     loadTask = Task.Run(() => {
                         try {
+                            ModelLoadInProgress = true;
+                            ModelLoadFailed = false;
                             ModelLoaded = false;
                             modelAccessor.LoadActiveModelInto(LoadedAlignmentModel, progress: this.progress, ct: ct);
                             if (LoadedAlignmentModel.AlignmentStarCount <= 0) {
@@ -318,8 +320,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                             }
                         } catch (OperationCanceledException) {
                         } catch (Exception ex) {
+                            ModelLoadFailed = true;
                             Notification.ShowError("Failed to get 10u alignment model");
                             Logger.Error("Failed to get alignment model", ex);
+                        } finally {
+                            ModelLoadInProgress = false;
                         }
                     }, ct);
                     this.alignmentModelLoadTask = loadTask;
@@ -436,6 +441,30 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             private set {
                 if (modelLoaded != value) {
                     modelLoaded = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool modelLoadInProgress = false;
+
+        public bool ModelLoadInProgress {
+            get => modelLoadInProgress;
+            private set {
+                if (modelLoadInProgress != value) {
+                    modelLoadInProgress = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool modelLoadFailed = false;
+
+        public bool ModelLoadFailed {
+            get => modelLoadFailed;
+            private set {
+                if (modelLoadFailed != value) {
+                    modelLoadFailed = value;
                     RaisePropertyChanged();
                 }
             }

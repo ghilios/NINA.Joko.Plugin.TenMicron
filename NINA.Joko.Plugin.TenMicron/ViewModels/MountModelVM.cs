@@ -87,7 +87,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ModelNames = new AsyncObservableCollection<string>() { GetUnselectedModelName() };
             this.SelectedModelName = GetUnselectedModelName();
 
-            this.RefreshCommand = new AsyncRelayCommand<bool>(async o => {
+            // Non-generic on purpose: AsyncRelayCommand<bool> reports CanExecute(null) as
+            // false when the binding supplies no CommandParameter, which left the refresh
+            // button permanently disabled regardless of its IsEnabled binding.
+            this.RefreshCommand = new AsyncRelayCommand(async () => {
+                // Mark the reload as in progress up front: LoadModelNames is a full
+                // round-trip to the mount, and until it finishes LoadAlignmentModel has
+                // not run, which would otherwise leave the pane showing its empty state.
+                ModelLoadInProgress = true;
                 await LoadModelNames(this.disconnectCts.Token);
                 await LoadAlignmentModel(this.disconnectCts.Token);
             });
@@ -282,6 +289,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.disconnectCts?.Cancel();
             this.disconnectCts = new CancellationTokenSource();
+            // Set synchronously, before the pane can render: UpdateDeviceInfo raises
+            // MountInfo.Connected (which reveals the pane) immediately before calling
+            // DoConnect, so the flag must already be true by the time the dispatcher
+            // paints, or the empty state shows for the duration of LoadModelNames.
+            ModelLoadInProgress = true;
             _ = Task.Run(async () => {
                 await LoadModelNames(this.disconnectCts.Token);
                 await LoadAlignmentModel(this.disconnectCts.Token);
@@ -296,6 +308,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.disconnectCts?.Cancel();
             LoadedAlignmentModel.Clear();
+            // Nothing is loading once disconnected. Also guards the case where a load task
+            // was scheduled with a token that was cancelled before its body ran, so its
+            // finally never cleared the flag.
+            ModelLoadInProgress = false;
+            ModelLoadFailed = false;
             Connected = false;
         }
 
@@ -306,8 +323,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             lock (alignmentModelLoadLock) {
                 loadTask = alignmentModelLoadTask;
                 if (loadTask == null) {
+                    // Set before the task is scheduled so callers that reach here directly
+                    // (rather than via DoConnect/Refresh) never expose a window in which
+                    // all three state flags are false and the empty state would render.
+                    ModelLoadInProgress = true;
                     loadTask = Task.Run(() => {
                         try {
+                            ModelLoadInProgress = true;
+                            ModelLoadFailed = false;
                             ModelLoaded = false;
                             modelAccessor.LoadActiveModelInto(LoadedAlignmentModel, progress: this.progress, ct: ct);
                             if (LoadedAlignmentModel.AlignmentStarCount <= 0) {
@@ -318,8 +341,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                             }
                         } catch (OperationCanceledException) {
                         } catch (Exception ex) {
+                            ModelLoadFailed = true;
                             Notification.ShowError("Failed to get 10u alignment model");
                             Logger.Error("Failed to get alignment model", ex);
+                        } finally {
+                            ModelLoadInProgress = false;
                         }
                     }, ct);
                     this.alignmentModelLoadTask = loadTask;
@@ -436,6 +462,30 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             private set {
                 if (modelLoaded != value) {
                     modelLoaded = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool modelLoadInProgress = false;
+
+        public bool ModelLoadInProgress {
+            get => modelLoadInProgress;
+            private set {
+                if (modelLoadInProgress != value) {
+                    modelLoadInProgress = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private bool modelLoadFailed = false;
+
+        public bool ModelLoadFailed {
+            get => modelLoadFailed;
+            private set {
+                if (modelLoadFailed != value) {
+                    modelLoadFailed = value;
                     RaisePropertyChanged();
                 }
             }

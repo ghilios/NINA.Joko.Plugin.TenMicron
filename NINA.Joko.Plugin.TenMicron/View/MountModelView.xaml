@@ -12,6 +12,44 @@
     d:DataContext="{d:DesignInstance localvm:MountModelVM,
                                      IsDesignTimeCreatable=False}"
     mc:Ignorable="d">
+    <UserControl.Resources>
+        <!--  Visible only when the mount reports no alignment model, no load is in progress, and the last load attempt did not fail  -->
+        <Style x:Key="TM_ShowWhenModelEmpty" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ModelLoaded}" Value="False" />
+                        <Condition Binding="{Binding ModelLoadInProgress}" Value="False" />
+                        <Condition Binding="{Binding ModelLoadFailed}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!--  Visible only while the alignment model is being read from the mount  -->
+        <Style x:Key="TM_ShowWhenModelLoading" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ModelLoadInProgress}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!--  Visible only when the last attempt to read the alignment model from the mount failed  -->
+        <Style x:Key="TM_ShowWhenModelLoadFailed" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ModelLoadInProgress}" Value="False" />
+                        <Condition Binding="{Binding ModelLoadFailed}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Visibility="{Binding MountInfo.Connected, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
             <Grid.ColumnDefinitions>
@@ -40,7 +78,8 @@
                         Grid.ColumnSpan="2"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Orientation="Vertical">
+                        Orientation="Vertical"
+                        Visibility="{Binding ModelLoaded, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
                         <UniformGrid Columns="2">
                             <UniformGrid
                                 Margin="0,5,0,0"
@@ -222,6 +261,42 @@
                             </UniformGrid>
                         </UniformGrid>
                     </StackPanel>
+                    <StackPanel
+                        Grid.ColumnSpan="2"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Orientation="Vertical"
+                        Style="{StaticResource TM_ShowWhenModelLoading}">
+                        <TextBlock
+                            Margin="0,10"
+                            Opacity="0.8"
+                            Text="Reading the alignment model from the mount... Progress is shown in the NINA status bar."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel
+                        Grid.ColumnSpan="2"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Orientation="Vertical"
+                        Style="{StaticResource TM_ShowWhenModelEmpty}">
+                        <TextBlock
+                            Margin="0,10"
+                            Opacity="0.8"
+                            Text="No alignment model is loaded on the mount, so there is no alignment information to show."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel
+                        Grid.ColumnSpan="2"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Orientation="Vertical"
+                        Style="{StaticResource TM_ShowWhenModelLoadFailed}">
+                        <TextBlock
+                            Margin="0,10"
+                            Opacity="0.8"
+                            Text="Could not read the alignment model from the mount. See the NINA log for details."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
                 </Grid>
             </GroupBox>
             <GroupBox
@@ -256,6 +331,7 @@
                         MinHeight="300"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
+                        Visibility="{Binding ModelLoaded, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}"
                         Background="{StaticResource BackgroundBrush}"
                         PlotAreaBackground="{StaticResource BackgroundBrush}"
                         PlotAreaBorderColor="Transparent"
@@ -327,6 +403,105 @@
                                 YAxisKey="AzimuthAxis" />
                         </oxy:Plot.Series>
                     </oxy:Plot>
+                    <Grid
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Grid.Column="0"
+                        MinWidth="300"
+                        MinHeight="300"
+                        Style="{StaticResource TM_ShowWhenModelLoading}">
+                        <TextBlock
+                            MaxWidth="460"
+                            Margin="10"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Opacity="0.8"
+                            Text="Reading the alignment model from the mount... Per-star progress is shown in the NINA status bar at the bottom of the window."
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Grid.Column="0"
+                        MinWidth="300"
+                        MinHeight="300"
+                        Style="{StaticResource TM_ShowWhenModelEmpty}">
+                        <StackPanel
+                            MaxWidth="460"
+                            Margin="10"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
+                            <Path
+                                Width="50"
+                                Height="50"
+                                HorizontalAlignment="Center"
+                                Data="{StaticResource TelescopeSVG}"
+                                Fill="{StaticResource ButtonForegroundDisabledBrush}"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                Margin="0,15,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="16"
+                                Text="No Alignment Model" />
+                            <TextBlock
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                Opacity="0.8"
+                                Text="The mount reports no alignment stars, so there is no model to display. This is normal for a mount that has not been aligned yet, or after the model has been cleared."
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                Opacity="0.8"
+                                Text="Build a new model from the 10u Model Builder pane, or sync on alignment stars from the hand controller. If a model was previously saved to the mount, select it in the list on the right and press Load."
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Grid.Column="0"
+                        MinWidth="300"
+                        MinHeight="300"
+                        Style="{StaticResource TM_ShowWhenModelLoadFailed}">
+                        <StackPanel
+                            MaxWidth="460"
+                            Margin="10"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Orientation="Vertical">
+                            <Path
+                                Width="50"
+                                Height="50"
+                                HorizontalAlignment="Center"
+                                Data="{StaticResource CancelSVG}"
+                                Fill="{StaticResource ButtonForegroundDisabledBrush}"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                Margin="0,15,0,0"
+                                HorizontalAlignment="Center"
+                                FontSize="16"
+                                Text="Could Not Read Alignment Model" />
+                            <TextBlock
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                Opacity="0.8"
+                                Text="Reading the alignment model from the mount failed. This does not necessarily mean the mount has no model — see the NINA log for details."
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                Opacity="0.8"
+                                Text="Press the refresh button on the right to try again, or reconnect the mount."
+                                TextAlignment="Center"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
                     <StackPanel
                         Grid.Row="0"
                         Grid.Column="1"

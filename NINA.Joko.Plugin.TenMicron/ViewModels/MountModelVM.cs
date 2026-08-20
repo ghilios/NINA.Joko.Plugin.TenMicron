@@ -88,6 +88,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.SelectedModelName = GetUnselectedModelName();
 
             this.RefreshCommand = new AsyncRelayCommand<bool>(async o => {
+                // Mark the reload as in progress up front: LoadModelNames is a full
+                // round-trip to the mount, and until it finishes LoadAlignmentModel has
+                // not run, which would otherwise leave the pane showing its empty state.
+                ModelLoadInProgress = true;
                 await LoadModelNames(this.disconnectCts.Token);
                 await LoadAlignmentModel(this.disconnectCts.Token);
             });
@@ -282,6 +286,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.disconnectCts?.Cancel();
             this.disconnectCts = new CancellationTokenSource();
+            // Set synchronously, before the pane can render: UpdateDeviceInfo raises
+            // MountInfo.Connected (which reveals the pane) immediately before calling
+            // DoConnect, so the flag must already be true by the time the dispatcher
+            // paints, or the empty state shows for the duration of LoadModelNames.
+            ModelLoadInProgress = true;
             _ = Task.Run(async () => {
                 await LoadModelNames(this.disconnectCts.Token);
                 await LoadAlignmentModel(this.disconnectCts.Token);
@@ -296,6 +305,11 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
             this.disconnectCts?.Cancel();
             LoadedAlignmentModel.Clear();
+            // Nothing is loading once disconnected. Also guards the case where a load task
+            // was scheduled with a token that was cancelled before its body ran, so its
+            // finally never cleared the flag.
+            ModelLoadInProgress = false;
+            ModelLoadFailed = false;
             Connected = false;
         }
 
@@ -306,6 +320,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             lock (alignmentModelLoadLock) {
                 loadTask = alignmentModelLoadTask;
                 if (loadTask == null) {
+                    // Set before the task is scheduled so callers that reach here directly
+                    // (rather than via DoConnect/Refresh) never expose a window in which
+                    // all three state flags are false and the empty state would render.
+                    ModelLoadInProgress = true;
                     loadTask = Task.Run(() => {
                         try {
                             ModelLoadInProgress = true;

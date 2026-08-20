@@ -87,7 +87,10 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             this.ModelNames = new AsyncObservableCollection<string>() { GetUnselectedModelName() };
             this.SelectedModelName = GetUnselectedModelName();
 
-            this.RefreshCommand = new AsyncRelayCommand<bool>(async o => {
+            // Non-generic on purpose: AsyncRelayCommand<bool> reports CanExecute(null) as
+            // false when the binding supplies no CommandParameter, which left the refresh
+            // button permanently disabled regardless of its IsEnabled binding.
+            this.RefreshCommand = new AsyncRelayCommand(async () => {
                 // Mark the reload as in progress up front: LoadModelNames is a full
                 // round-trip to the mount, and until it finishes LoadAlignmentModel has
                 // not run, which would otherwise leave the pane showing its empty state.

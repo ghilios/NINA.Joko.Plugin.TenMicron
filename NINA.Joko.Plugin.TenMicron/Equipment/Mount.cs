@@ -249,6 +249,21 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             this.mountCommander = mountCommander;
         }
 
+        public event EventHandler<string> ValueWritten;
+
+        private void OnValueWritten(params string[] mountInfoProperties) {
+            foreach (var property in mountInfoProperties) {
+                ValueWritten?.Invoke(this, property);
+            }
+        }
+
+        private Response<bool> OnValueWrittenIfSuccessful(bool success, params string[] mountInfoProperties) {
+            if (success) {
+                OnValueWritten(mountInfoProperties);
+            }
+            return new Response<bool>(success, "");
+        }
+
         public Response<CoordinateAngle> GetDeclination() {
             const string command = ":GD#";
             var rawResponse = this.mountCommander.SendCommandString(command, true);
@@ -394,7 +409,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             string command = $":SREF{valueInt}#";
 
             var success = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(success, "");
+            return OnValueWrittenIfSuccessful(success, nameof(MountInfo.RefractionCorrectionEnabled));
         }
 
         public Response<bool> SetPressure(double val) {
@@ -402,7 +417,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             string command = $":SRPRS{val:0000.0}#";
 
             var success = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(success, "");
+            return OnValueWrittenIfSuccessful(success, nameof(MountInfo.RefractionPressure));
         }
 
         public Response<bool> SetTemperature(double valCelcius) {
@@ -411,7 +426,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             string command = $":SRTMP{sign}{Math.Abs(valCelcius):000.0}#";
 
             var success = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(success, "");
+            return OnValueWrittenIfSuccessful(success, nameof(MountInfo.RefractionTemperature));
         }
 
         public Response<int> AddAlignmentPointToSpec(
@@ -481,7 +496,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             string command = $":Slms{degrees:00}#";
 
             var result = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(result, "");
+            return OnValueWrittenIfSuccessful(result, nameof(MountInfo.MeridianLimitDegrees));
         }
 
         public Response<decimal> GetSlewSettleTimeSeconds() {
@@ -499,7 +514,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
 
             var command = $":Sstm{seconds:00000.000}#";
             var result = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(result, "");
+            return OnValueWrittenIfSuccessful(result, nameof(MountInfo.SlewSettleTimeSeconds));
         }
 
         public Response<MountStatusEnum> GetStatus() {
@@ -531,6 +546,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var command = $":Suaf{(enabled ? 1 : 0)}#";
 
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.UnattendedFlipEnabled));
         }
 
         private static readonly Version ultraPrecisionMinimumVersion = new Version(2, 10, 0);
@@ -646,32 +662,37 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
         public void SetSiderealTrackingRate() {
             const string command = ":TQ#";
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.TrackingRateArcsecPerSec), nameof(MountInfo.Status));
         }
 
         public void SetLunarTrackingRate() {
             const string command = ":TL#";
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.TrackingRateArcsecPerSec), nameof(MountInfo.Status));
         }
 
         public void SetSolarTrackingRate() {
             const string command = ":TSOLAR#";
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.TrackingRateArcsecPerSec), nameof(MountInfo.Status));
         }
 
         public void StopTracking() {
             const string command = ":AL#";
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.Status), nameof(MountInfo.TrackingRateArcsecPerSec));
         }
 
         public void StartTracking() {
             const string command = ":AP#";
             this.mountCommander.SendCommandBlind(command, true);
+            OnValueWritten(nameof(MountInfo.Status), nameof(MountInfo.TrackingRateArcsecPerSec));
         }
 
         public Response<bool> SetRefractionCorrection(bool enabled) {
             var command = $":SREF{(enabled ? 1 : 0)}#";
             var result = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(result, "");
+            return OnValueWrittenIfSuccessful(result, nameof(MountInfo.RefractionCorrectionEnabled));
         }
 
         public Response<MountIP> GetIPAddress() {
@@ -699,7 +720,7 @@ namespace NINA.Joko.Plugin.TenMicron.Equipment {
             var command = $":Sdat{(enabled ? 1 : 0)}#";
 
             var result = this.mountCommander.SendCommandBool(command, true);
-            return new Response<bool>(result, "");
+            return OnValueWrittenIfSuccessful(result, nameof(MountInfo.DualAxisTrackingEnabled));
         }
     }
 }

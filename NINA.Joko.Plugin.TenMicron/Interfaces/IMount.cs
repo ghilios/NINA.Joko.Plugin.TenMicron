@@ -19,6 +19,12 @@ namespace NINA.Joko.Plugin.TenMicron.Interfaces {
 
     public interface IMount {
 
+        /// <summary>
+        /// Raised after a command that changes a value reported in <see cref="MountInfo"/> succeeds. The argument is the
+        /// name of the affected <see cref="MountInfo"/> property, so cached copies can be refreshed.
+        /// </summary>
+        event EventHandler<string> ValueWritten;
+
         Response<CoordinateAngle> GetDeclination();
 
         Response<AstrometricTime> GetRightAscension();

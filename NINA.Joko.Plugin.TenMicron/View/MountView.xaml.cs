@@ -36,7 +36,9 @@ namespace NINA.Joko.Plugin.TenMicron.View {
             var checkBox = (CheckBox)sender;
             var mountVM = (MountVM)checkBox.DataContext;
             var isChecked = checkBox.IsChecked;
-            if (isChecked.HasValue) {
+            // Checked/Unchecked fire before the binding writes back to MountInfo, so a match means the checkbox moved
+            // because a poll updated MountInfo, not because the user clicked it. Don't echo that back to the mount
+            if (isChecked.HasValue && isChecked.Value != mountVM.MountInfo.DualAxisTrackingEnabled) {
                 mountVM.SetDualAxisTracking(isChecked.Value);
             }
         }
@@ -45,7 +47,8 @@ namespace NINA.Joko.Plugin.TenMicron.View {
             var checkBox = (CheckBox)sender;
             var mountVM = (MountVM)checkBox.DataContext;
             var isChecked = checkBox.IsChecked;
-            if (isChecked.HasValue) {
+            // See DualAxisTrackingEnabled_Toggled
+            if (isChecked.HasValue && isChecked.Value != mountVM.MountInfo.RefractionCorrectionEnabled) {
                 mountVM.SetRefactionCorrectionEnabled(isChecked.Value);
             }
         }

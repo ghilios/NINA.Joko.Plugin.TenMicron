@@ -6,6 +6,7 @@ using NINA.Joko.Plugin.TenMicron.Interfaces;
 using NINA.Joko.Plugin.TenMicron.Model;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
@@ -610,6 +611,78 @@ namespace NINA.Joko.Plugin.TenMicron.Tests.Equipment {
 
             // Source throws plain Exception with message "Failed to add alignment point using {command}".
             act.Should().Throw<Exception>().WithMessage("*Failed to add alignment point*");
+        }
+
+        private List<string> CaptureValueWritten() {
+            var written = new List<string>();
+            sut.ValueWritten += (_, property) => written.Add(property);
+            return written;
+        }
+
+        private static IEnumerable<TestCaseData> BoolWriteCases() {
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetDualAxisTracking(true)), ":Sdat1#", nameof(MountInfo.DualAxisTrackingEnabled)).SetArgDisplayNames("SetDualAxisTracking");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetRefractionCorrection(true)), ":SREF1#", nameof(MountInfo.RefractionCorrectionEnabled)).SetArgDisplayNames("SetRefractionCorrection");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetRefractionCorrectionEnabled(false)), ":SREF0#", nameof(MountInfo.RefractionCorrectionEnabled)).SetArgDisplayNames("SetRefractionCorrectionEnabled");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetMeridianSlewLimit(0)), ":Slms00#", nameof(MountInfo.MeridianLimitDegrees)).SetArgDisplayNames("SetMeridianSlewLimit");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetSlewSettleTime(0m)), ":Sstm00000.000#", nameof(MountInfo.SlewSettleTimeSeconds)).SetArgDisplayNames("SetSlewSettleTime");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetTemperature(10.0)), ":SRTMP+010.0#", nameof(MountInfo.RefractionTemperature)).SetArgDisplayNames("SetTemperature");
+            yield return new TestCaseData((Func<Mount, bool>)(m => m.SetPressure(1000.0)), ":SRPRS1000.0#", nameof(MountInfo.RefractionPressure)).SetArgDisplayNames("SetPressure");
+        }
+
+        [TestCaseSource(nameof(BoolWriteCases))]
+        public void BoolWrite_Success_RaisesValueWrittenForTheAffectedProperty(Func<Mount, bool> write, string command, string expectedProperty) {
+            commander.Setup(c => c.SendCommandBool(command, true)).Returns(true);
+            var written = CaptureValueWritten();
+
+            write(sut).Should().BeTrue();
+
+            written.Should().Equal(expectedProperty);
+        }
+
+        [TestCaseSource(nameof(BoolWriteCases))]
+        public void BoolWrite_Failure_DoesNotRaiseValueWritten(Func<Mount, bool> write, string command, string expectedProperty) {
+            commander.Setup(c => c.SendCommandBool(command, true)).Returns(false);
+            var written = CaptureValueWritten();
+
+            write(sut).Should().BeFalse();
+
+            written.Should().BeEmpty();
+        }
+
+        [Test]
+        public void SetSlewSettleTime_OutOfRange_DoesNotRaiseValueWritten() {
+            var written = CaptureValueWritten();
+
+            sut.SetSlewSettleTime(-1m);
+
+            written.Should().BeEmpty();
+        }
+
+        [Test]
+        public void SetUnattendedFlip_RaisesValueWritten() {
+            var written = CaptureValueWritten();
+
+            sut.SetUnattendedFlip(false);
+
+            commander.Verify(c => c.SendCommandBlind(":Suaf0#", true), Times.Once);
+            written.Should().Equal(nameof(MountInfo.UnattendedFlipEnabled));
+        }
+
+        private static IEnumerable<TestCaseData> TrackingWriteCases() {
+            yield return new TestCaseData((Action<Mount>)(m => m.SetSiderealTrackingRate())).SetArgDisplayNames("SetSiderealTrackingRate");
+            yield return new TestCaseData((Action<Mount>)(m => m.SetLunarTrackingRate())).SetArgDisplayNames("SetLunarTrackingRate");
+            yield return new TestCaseData((Action<Mount>)(m => m.SetSolarTrackingRate())).SetArgDisplayNames("SetSolarTrackingRate");
+            yield return new TestCaseData((Action<Mount>)(m => m.StartTracking())).SetArgDisplayNames("StartTracking");
+            yield return new TestCaseData((Action<Mount>)(m => m.StopTracking())).SetArgDisplayNames("StopTracking");
+        }
+
+        [TestCaseSource(nameof(TrackingWriteCases))]
+        public void TrackingWrite_RaisesValueWrittenForStatusAndTrackingRate(Action<Mount> write) {
+            var written = CaptureValueWritten();
+
+            write(sut);
+
+            written.Should().BeEquivalentTo(new[] { nameof(MountInfo.Status), nameof(MountInfo.TrackingRateArcsecPerSec) });
         }
     }
 }

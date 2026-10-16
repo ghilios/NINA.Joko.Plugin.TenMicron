@@ -54,9 +54,19 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private readonly ITenMicronOptions options;
         private IProgress<ApplicationStatus> progress;
         private DeviceUpdateTimer updateTimer;
+        private volatile MountValuePoller poller;
         private bool disposed = false;
         private bool supportedMountConnected = false;
         private bool previousTelescopeConnected = false;
+        private bool previousSlewing = false;
+        private bool previousAtPark = false;
+        private bool previousAtHome = false;
+        private bool previousTrackingEnabled = false;
+        private TrackingMode? previousTrackingMode = null;
+
+        // Settings that only change when someone changes them. Writes through IMount invalidate them right away, so
+        // this only bounds how long a change made from the handpad or other software takes to show up
+        private static readonly TimeSpan SettingsPollInterval = TimeSpan.FromSeconds(60);
 
         [ImportingConstructor]
         public MountVM(IProfileService profileService, ITelescopeMediator telescopeMediator, IApplicationStatusMediator applicationStatusMediator) :
@@ -113,7 +123,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private void ResetMeridianSlewLimit() {
             try {
-                this.mount.SetMeridianSlewLimit(0);
+                if (this.mount.SetMeridianSlewLimit(0)) {
+                    MountInfo.MeridianLimitDegrees = 0;
+                }
             } catch (Exception e) {
                 Notification.ShowError($"Failed to reset meridian limit: {e.Message}");
                 Logger.Error(e);
@@ -122,7 +134,9 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
         private void ResetSlewSettleTime() {
             try {
-                this.mount.SetSlewSettleTime(decimal.Zero);
+                if (this.mount.SetSlewSettleTime(decimal.Zero)) {
+                    MountInfo.SlewSettleTimeSeconds = decimal.Zero;
+                }
             } catch (Exception e) {
                 Notification.ShowError($"Failed to reset slew settle time: {e.Message}");
                 Logger.Error(e);
@@ -201,12 +215,14 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public void Dispose() {
             if (!this.disposed) {
                 updateTimer?.Stop();
+                StopPolling();
                 this.telescopeMediator.RemoveConsumer(this);
                 this.disposed = true;
             }
         }
 
         public void UpdateDeviceInfo(TelescopeInfo deviceInfo) {
+            InvalidateOnTelescopeStateChange(deviceInfo);
             if (previousTelescopeConnected == deviceInfo.Connected) {
                 return;
             }
@@ -251,6 +267,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
 
                         // This cannot be initialized in the constructor because it is running in an Async context at that time, which causes UpdateMountValues to never fire
                         _ = updateTimer?.Stop();
+                        StartPolling();
                         updateTimer = new DeviceUpdateTimer(
                             GetMountValues,
                             UpdateMountValues,
@@ -262,6 +279,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
                     }
                 } else {
                     _ = updateTimer?.Stop();
+                    StopPolling();
 
                     MountInfo = DeviceInfo.CreateDefaultInstance<MountInfo>();
                     supportedMountConnected = false;
@@ -269,6 +287,59 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             } finally {
                 previousTelescopeConnected = deviceInfo.Connected;
             }
+        }
+
+        private void StartPolling() {
+            StopPolling();
+
+            var newPoller = new MountValuePoller();
+            // Status changes constantly, and reading it every tick doubles as the connection heartbeat
+            newPoller.Register(nameof(MountInfo.Status), () => this.mount.GetStatus().Value, TimeSpan.Zero);
+            newPoller.Register(nameof(MountInfo.UnattendedFlipEnabled), () => this.mount.GetUnattendedFlipEnabled().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.TrackingRateArcsecPerSec), () => this.mount.GetTrackingRateArcsecsPerSec().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.SlewSettleTimeSeconds), () => this.mount.GetSlewSettleTimeSeconds().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.MeridianLimitDegrees), () => this.mount.GetMeridianSlewLimitDegrees().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.DualAxisTrackingEnabled), () => this.mount.GetDualAxisTrackingEnabled().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.RefractionCorrectionEnabled), () => this.mount.GetRefractionCorrectionEnabled().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.RefractionTemperature), () => this.mount.GetTemperature().Value, SettingsPollInterval);
+            newPoller.Register(nameof(MountInfo.RefractionPressure), () => this.mount.GetPressure().Value, SettingsPollInterval);
+            poller = newPoller;
+            this.mount.ValueWritten += Mount_ValueWritten;
+        }
+
+        private void StopPolling() {
+            this.mount.ValueWritten -= Mount_ValueWritten;
+            poller = null;
+        }
+
+        private void Mount_ValueWritten(object sender, string mountInfoProperty) {
+            poller?.Invalidate(mountInfoProperty);
+        }
+
+        /// <summary>
+        /// NINA polls the telescope through ASCOM anyway, so use its state transitions to refresh the 10u values they affect
+        /// without waiting for the next scheduled read
+        /// </summary>
+        private void InvalidateOnTelescopeStateChange(TelescopeInfo deviceInfo) {
+            TrackingMode? trackingMode = deviceInfo.TrackingRate.TrackingMode;
+            var currentPoller = poller;
+            if (currentPoller != null && deviceInfo.Connected) {
+                if (deviceInfo.Slewing != previousSlewing
+                    || deviceInfo.AtPark != previousAtPark
+                    || deviceInfo.AtHome != previousAtHome
+                    || deviceInfo.TrackingEnabled != previousTrackingEnabled) {
+                    currentPoller.Invalidate(nameof(MountInfo.Status));
+                }
+                if (deviceInfo.TrackingEnabled != previousTrackingEnabled || trackingMode != previousTrackingMode) {
+                    currentPoller.Invalidate(nameof(MountInfo.TrackingRateArcsecPerSec));
+                }
+            }
+
+            previousSlewing = deviceInfo.Slewing;
+            previousAtPark = deviceInfo.AtPark;
+            previousAtHome = deviceInfo.AtHome;
+            previousTrackingEnabled = deviceInfo.TrackingEnabled;
+            previousTrackingMode = trackingMode;
         }
 
         private void UpdateAddressConfig() {
@@ -310,6 +381,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             if (updateTimer != null) {
                 await updateTimer.Stop();
             }
+            StopPolling();
 
             MountInfo = DeviceInfo.CreateDefaultInstance<MountInfo>();
             MountInfo.Status = MountStatusEnum.NotConnected;
@@ -318,43 +390,53 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
             BroadcastMountInfo();
         }
 
+        private static bool TryGetMountValue<T>(Dictionary<string, object> mountValues, string key, out T value) {
+            if (mountValues.TryGetValue(key, out var o) && o is T typed) {
+                value = typed;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
         private void UpdateMountValues(Dictionary<string, object> mountValues) {
-            object o = null;
-            mountValues.TryGetValue(nameof(MountInfo.Connected), out o);
-            MountInfo.Connected = (bool)(o ?? false);
+            TryGetMountValue(mountValues, nameof(MountInfo.Connected), out bool connected);
+            MountInfo.Connected = connected;
 
             if (!MountInfo.Connected) {
                 _ = Disconnect();
                 return;
             }
 
-            mountValues.TryGetValue(nameof(MountInfo.UnattendedFlipEnabled), out o);
-            MountInfo.UnattendedFlipEnabled = (bool)(o ?? false);
-            UnattendedFlipEnabled = MountInfo.UnattendedFlipEnabled;
-
-            mountValues.TryGetValue(nameof(MountInfo.TrackingRateArcsecPerSec), out o);
-            MountInfo.TrackingRateArcsecPerSec = (decimal)(o ?? decimal.Zero);
-
-            mountValues.TryGetValue(nameof(MountInfo.Status), out o);
-            MountInfo.Status = (MountStatusEnum)(o ?? MountStatusEnum.Unknown);
-
-            mountValues.TryGetValue(nameof(MountInfo.SlewSettleTimeSeconds), out o);
-            MountInfo.SlewSettleTimeSeconds = (decimal)(o ?? decimal.Zero);
-
-            mountValues.TryGetValue(nameof(MountInfo.MeridianLimitDegrees), out o);
-            MountInfo.MeridianLimitDegrees = (int)(o ?? 0);
-
-            mountValues.TryGetValue(nameof(MountInfo.DualAxisTrackingEnabled), out o);
-            MountInfo.DualAxisTrackingEnabled = (bool)(o ?? false);
-
-            mountValues.TryGetValue(nameof(MountInfo.RefractionCorrectionEnabled), out o);
-            MountInfo.RefractionCorrectionEnabled = (bool)(o ?? false);
-
-            mountValues.TryGetValue(nameof(MountInfo.RefractionTemperature), out o);
-            MountInfo.RefractionTemperature = (decimal)(o ?? decimal.Zero);
-
-            mountValues.TryGetValue(nameof(MountInfo.RefractionPressure), out o);
-            MountInfo.RefractionPressure = (decimal)(o ?? decimal.Zero);
+            // Each tick only carries the values the poller read, so keep the cached value for anything missing
+            if (TryGetMountValue(mountValues, nameof(MountInfo.UnattendedFlipEnabled), out bool unattendedFlipEnabled)) {
+                MountInfo.UnattendedFlipEnabled = unattendedFlipEnabled;
+                UnattendedFlipEnabled = unattendedFlipEnabled;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.TrackingRateArcsecPerSec), out decimal trackingRate)) {
+                MountInfo.TrackingRateArcsecPerSec = trackingRate;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.Status), out MountStatusEnum status)) {
+                MountInfo.Status = status;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.SlewSettleTimeSeconds), out decimal slewSettleTime)) {
+                MountInfo.SlewSettleTimeSeconds = slewSettleTime;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.MeridianLimitDegrees), out int meridianLimit)) {
+                MountInfo.MeridianLimitDegrees = meridianLimit;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.DualAxisTrackingEnabled), out bool dualAxisTracking)) {
+                MountInfo.DualAxisTrackingEnabled = dualAxisTracking;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.RefractionCorrectionEnabled), out bool refractionCorrection)) {
+                MountInfo.RefractionCorrectionEnabled = refractionCorrection;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.RefractionTemperature), out decimal refractionTemperature)) {
+                MountInfo.RefractionTemperature = refractionTemperature;
+            }
+            if (TryGetMountValue(mountValues, nameof(MountInfo.RefractionPressure), out decimal refractionPressure)) {
+                MountInfo.RefractionPressure = refractionPressure;
+            }
 
             BroadcastMountInfo();
         }
@@ -362,20 +444,15 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         private Dictionary<string, object> GetMountValues() {
             var mountValues = new Dictionary<string, object>();
             try {
-                if (!supportedMountConnected) {
+                var currentPoller = poller;
+                if (!supportedMountConnected || currentPoller == null) {
                     return mountValues;
                 }
 
+                foreach (var polledValue in currentPoller.Poll()) {
+                    mountValues.Add(polledValue.Key, polledValue.Value);
+                }
                 mountValues.Add(nameof(MountInfo.Connected), true);
-                mountValues.Add(nameof(MountInfo.UnattendedFlipEnabled), this.mount.GetUnattendedFlipEnabled().Value);
-                mountValues.Add(nameof(MountInfo.TrackingRateArcsecPerSec), this.mount.GetTrackingRateArcsecsPerSec().Value);
-                mountValues.Add(nameof(MountInfo.Status), this.mount.GetStatus().Value);
-                mountValues.Add(nameof(MountInfo.SlewSettleTimeSeconds), this.mount.GetSlewSettleTimeSeconds().Value);
-                mountValues.Add(nameof(MountInfo.MeridianLimitDegrees), this.mount.GetMeridianSlewLimitDegrees().Value);
-                mountValues.Add(nameof(MountInfo.DualAxisTrackingEnabled), this.mount.GetDualAxisTrackingEnabled().Value);
-                mountValues.Add(nameof(MountInfo.RefractionCorrectionEnabled), this.mount.GetRefractionCorrectionEnabled().Value);
-                mountValues.Add(nameof(MountInfo.RefractionTemperature), this.mount.GetTemperature().Value);
-                mountValues.Add(nameof(MountInfo.RefractionPressure), this.mount.GetPressure().Value);
                 return mountValues;
             } catch (Exception e) {
                 if (telescopeMediator.GetInfo().Connected) {
@@ -409,6 +486,7 @@ namespace NINA.Joko.Plugin.TenMicron.ViewModels {
         public void DisableUnattendedFlip() {
             try {
                 mount.SetUnattendedFlip(false);
+                MountInfo.UnattendedFlipEnabled = false;
                 UnattendedFlipEnabled = false;
             } catch (Exception ex) {
                 Logger.Error(ex);
